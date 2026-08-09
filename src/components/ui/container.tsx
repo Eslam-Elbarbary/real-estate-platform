@@ -1,0 +1,45 @@
+import type { HTMLAttributes } from 'react';
+import { cn } from '@/lib/utils/cn';
+
+export interface ContainerProps extends HTMLAttributes<HTMLElement> {
+  as?: 'div' | 'section' | 'main' | 'header' | 'footer';
+  narrow?: boolean;
+  /** Near full-bleed desktop width for search-results (≈1820–1860px @ 1920). */
+  wide?: boolean;
+  /** Narrower centered shell for Compounds Directory (~1260px). */
+  directory?: boolean;
+  /** Compound Details shell (~1050–1200px useful width). */
+  compoundDetails?: boolean;
+}
+
+export function Container({
+  as: Component = 'div',
+  className,
+  narrow = false,
+  wide = false,
+  directory = false,
+  compoundDetails = false,
+  ...props
+}: ContainerProps) {
+  return (
+    <Component
+      className={cn(
+        'mx-auto w-full',
+        wide || directory || compoundDetails
+          ? 'px-6 sm:px-8 lg:px-8'
+          : 'px-4 sm:px-6 lg:px-8',
+        narrow
+          ? 'max-w-3xl'
+          : compoundDetails
+            ? 'max-w-[min(100%,var(--container-compound-details))]'
+            : directory
+              ? 'max-w-[min(100%,var(--container-directory))]'
+              : wide
+                ? 'max-w-[min(100%,var(--container-wide))]'
+                : 'max-w-[min(100%,var(--container-max))]',
+        className,
+      )}
+      {...props}
+    />
+  );
+}

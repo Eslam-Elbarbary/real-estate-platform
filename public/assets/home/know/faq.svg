@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="280" height="280" viewBox="0 0 280 280" fill="none">
+  <rect width="280" height="280" fill="#F5F5F5"/>
+  
+    <circle cx="140" cy="140" r="72" fill="#E1F2FB"/>
+    <circle cx="140" cy="140" r="48" fill="#FFFFFF"/>
+    <text x="140" y="158" text-anchor="middle" font-size="56" font-family="Segoe UI, Arial, sans-serif" font-weight="700" fill="#0277BD">؟</text>
+    <circle cx="200" cy="88" r="16" fill="#F9A825"/>
+  
+</svg>
