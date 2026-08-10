@@ -4,7 +4,8 @@ export interface KnowItem {
   id: string;
   title: string;
   description: string;
-  href: string;
+  /** Omit while the destination feature is not implemented yet. */
+  href?: string;
   imageSrc: string;
   imageAlt: string;
   imageSide: 'start' | 'end';
@@ -33,7 +34,6 @@ export const knowItems: KnowItem[] = [
     id: 'experts',
     title: 'خبراء المناطق',
     description: 'نصائح عملية من متخصصين يعرفون السوق المحلي جيدًا.',
-    href: routes.advice.root,
     imageSrc: '/assets/home/know/experts.svg',
     imageAlt: 'رسم توضيحي لخبراء المناطق',
     imageSide: 'end',
@@ -51,7 +51,6 @@ export const knowItems: KnowItem[] = [
     id: 'guides',
     title: 'أدلة الشراء والإيجار',
     description: 'خطوات واضحة تساعدك على إتمام صفقتك بثقة أكبر.',
-    href: routes.advice.root,
     imageSrc: '/assets/home/know/guides.svg',
     imageAlt: 'رسم توضيحي لأدلة الشراء',
     imageSide: 'end',

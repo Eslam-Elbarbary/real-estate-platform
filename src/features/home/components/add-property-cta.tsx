@@ -36,12 +36,9 @@ export function AddPropertyCta() {
               >
                 {uiLabels.addPropertyPrimary}
               </Link>
-              <Link
-                href={routes.advice.root}
-                className="text-sm font-semibold text-brand-600 hover:text-brand-700"
-              >
+              <span className="cursor-default text-sm font-semibold text-ink-400">
                 {uiLabels.addPropertySecondary}
-              </Link>
+              </span>
             </div>
           </div>
         </div>

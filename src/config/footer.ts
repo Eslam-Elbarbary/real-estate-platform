@@ -58,7 +58,6 @@ export const footerSections: FooterSection[] = [
     links: [
       { label: 'البحث عن عقار', href: routes.properties.root('sale') },
       { label: 'المفضلة', href: routes.favorites },
-      { label: 'نصائح عقارية', href: routes.advice.root },
       { label: 'تسجيل الدخول', href: routes.login },
     ],
   },

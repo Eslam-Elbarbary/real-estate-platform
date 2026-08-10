@@ -77,13 +77,8 @@ export function MegaMenu({
               >
                 {column.map((feature) => {
                   const Icon = getAppIcon(feature.icon);
-                  return (
-                    <Link
-                      key={`${feature.href}-${feature.title}`}
-                      href={feature.href}
-                      onClick={onNavigate}
-                      className="group flex items-start gap-3 rounded-md p-1 transition-colors hover:bg-surface-50"
-                    >
+                  const body = (
+                    <>
                       <span className="mt-0.5 inline-flex size-9 shrink-0 items-center justify-center text-accent-500">
                         <Icon
                           size={ICON_SIZE_NAV}
@@ -92,13 +87,43 @@ export function MegaMenu({
                         />
                       </span>
                       <span className="min-w-0">
-                        <span className="block text-sm font-bold text-ink-900 group-hover:text-brand-700">
+                        <span
+                          className={cn(
+                            'block text-sm font-bold',
+                            feature.href
+                              ? 'text-ink-900 group-hover:text-brand-700'
+                              : 'text-ink-500',
+                          )}
+                        >
                           {feature.title}
                         </span>
                         <span className="mt-0.5 block text-xs leading-5 text-ink-500">
                           {feature.description}
                         </span>
                       </span>
+                    </>
+                  );
+
+                  if (!feature.href) {
+                    return (
+                      <div
+                        key={feature.title}
+                        aria-disabled="true"
+                        className="flex cursor-default items-start gap-3 rounded-md p-1 opacity-80"
+                      >
+                        {body}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <Link
+                      key={`${feature.href}-${feature.title}`}
+                      href={feature.href}
+                      onClick={onNavigate}
+                      className="group flex items-start gap-3 rounded-md p-1 transition-colors hover:bg-surface-50"
+                    >
+                      {body}
                     </Link>
                   );
                 })}

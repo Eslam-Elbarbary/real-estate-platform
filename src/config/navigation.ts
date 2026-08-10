@@ -18,7 +18,8 @@ export interface MegaMenuFeature {
   icon: AppIconName;
   title: string;
   description: string;
-  href: string;
+  /** Omit while the destination feature is not implemented yet. */
+  href?: string;
 }
 
 export interface MegaMenuDefinition {
@@ -30,7 +31,8 @@ export interface MegaMenuDefinition {
 export interface NavigationItem {
   id: string;
   label: string;
-  href: string;
+  /** Omit for mega-menu-only items whose root page is not implemented yet. */
+  href?: string;
   icon: AppIconName;
   description?: string;
   megaMenu?: MegaMenuDefinition;
@@ -212,7 +214,6 @@ export const primaryNavigation: NavigationItem[] = [
   {
     id: 'know',
     label: 'أعرف',
-    href: routes.advice.root,
     icon: 'know',
     megaMenu: {
       variant: 'features',
@@ -234,13 +235,11 @@ export const primaryNavigation: NavigationItem[] = [
             icon: 'askNeighborhood',
             title: 'اسأل أهل المنطقة',
             description: 'احصل على إجابات دقيقة من سكان المنطقة',
-            href: routes.advice.category('ask'),
           },
           {
             icon: 'knowMore',
             title: 'أعرف أكثر',
             description: 'تصفح معلومات ونصائح قيمة وعملية',
-            href: routes.advice.root,
           },
         ],
         [
@@ -254,13 +253,11 @@ export const primaryNavigation: NavigationItem[] = [
             icon: 'agents',
             title: 'الوسطاء المميزون',
             description: 'تواصل مع أفضل الوسطاء العقاريين',
-            href: routes.advice.category('agents'),
           },
           {
             icon: 'exhibitions',
             title: 'دليل المعارض',
             description: 'اكتشف كل المعارض العقارية القادمة',
-            href: routes.advice.category('exhibitions'),
           },
         ],
         [
@@ -268,19 +265,16 @@ export const primaryNavigation: NavigationItem[] = [
             icon: 'propertyIndex',
             title: 'المؤشر العقاري',
             description: 'تعرف على مستوى الطلب ووضع السوق',
-            href: routes.advice.category('index'),
           },
           {
             icon: 'advice',
             title: 'نصائح عقارية',
             description: 'تصفح معلومات ونصائح قيمة وعملية',
-            href: routes.advice.root,
           },
           {
             icon: 'research',
             title: 'أبحاث ودراسات',
             description: 'احصل على معلومات مباشرة من المشترين',
-            href: routes.advice.category('research'),
           },
         ],
       ],

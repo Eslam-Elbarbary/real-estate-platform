@@ -90,33 +90,68 @@ export function DesktopNavigation({ portalRoot }: DesktopNavigationProps) {
           const Icon = getAppIcon(item.icon);
           const isOpen = openId === item.id;
           const menuId = `${baseId}-${item.id}-menu`;
+          const className = cn(
+            'inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium transition-colors',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+            isOpen
+              ? 'bg-brand-50 text-brand-600'
+              : 'text-ink-700 hover:bg-surface-50 hover:text-ink-950',
+          );
+          const sharedProps = {
+            className,
+            'aria-expanded': item.megaMenu ? isOpen : undefined,
+            'aria-haspopup': item.megaMenu ? ('true' as const) : undefined,
+            'aria-controls': item.megaMenu ? menuId : undefined,
+            onMouseEnter: () => {
+              if (item.megaMenu) {
+                openMenu(item.id);
+              } else {
+                closeMenu();
+              }
+            },
+            onFocus: () => {
+              if (item.megaMenu) {
+                openMenu(item.id);
+              }
+            },
+          };
+          const label = (
+            <>
+              <Icon
+                size={ICON_SIZE_NAV}
+                strokeWidth={1.75}
+                className="shrink-0"
+                aria-hidden
+              />
+              {item.label}
+            </>
+          );
+
+          if (!item.href) {
+            return (
+              <button
+                key={item.id}
+                type="button"
+                {...sharedProps}
+                onClick={() => {
+                  if (!item.megaMenu) return;
+                  if (openId === item.id) {
+                    closeMenu();
+                  } else {
+                    openMenu(item.id);
+                  }
+                }}
+              >
+                {label}
+              </button>
+            );
+          }
 
           return (
             <Link
               key={item.id}
               href={item.href}
-              className={cn(
-                'inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium transition-colors',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
-                isOpen
-                  ? 'bg-brand-50 text-brand-600'
-                  : 'text-ink-700 hover:bg-surface-50 hover:text-ink-950',
-              )}
-              aria-expanded={item.megaMenu ? isOpen : undefined}
-              aria-haspopup={item.megaMenu ? 'true' : undefined}
-              aria-controls={item.megaMenu ? menuId : undefined}
-              onMouseEnter={() => {
-                if (item.megaMenu) {
-                  openMenu(item.id);
-                } else {
-                  closeMenu();
-                }
-              }}
-              onFocus={() => {
-                if (item.megaMenu) {
-                  openMenu(item.id);
-                }
-              }}
+              {...sharedProps}
               onClick={(event) => {
                 if (!item.megaMenu) {
                   return;
@@ -128,13 +163,7 @@ export function DesktopNavigation({ portalRoot }: DesktopNavigationProps) {
                 }
               }}
             >
-              <Icon
-                size={ICON_SIZE_NAV}
-                strokeWidth={1.75}
-                className="shrink-0"
-                aria-hidden
-              />
-              {item.label}
+              {label}
             </Link>
           );
         })}

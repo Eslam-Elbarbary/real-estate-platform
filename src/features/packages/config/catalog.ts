@@ -63,7 +63,6 @@ export const packageAudiences: PackageAudienceDefinition[] = [
       imageSrc: '/assets/home/know/ai-phone.webp',
       imageAlt: 'تطبيق عقارات مصر على الهاتف',
       showAppBadges: true,
-      href: routes.advice.category('index'),
     },
   },
   {
@@ -84,7 +83,6 @@ export const packageAudiences: PackageAudienceDefinition[] = [
       imageSrc: '/assets/home/app/phones.webp',
       imageAlt: 'تطبيق النصائح العقارية',
       showAppBadges: true,
-      href: routes.advice.root,
     },
   },
   {
@@ -103,7 +101,6 @@ export const packageAudiences: PackageAudienceDefinition[] = [
       title: 'اعرف أكثر عن قصص نجاح عملاء عقارات مصر',
       imageSrc: '/assets/home/know/experts.webp',
       imageAlt: 'قصص نجاح العملاء',
-      href: routes.advice.root,
     },
   },
   {

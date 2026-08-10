@@ -31,12 +31,18 @@ export function KnowSection() {
                 <p className="text-xs leading-5 text-ink-600 sm:text-[13px] sm:leading-6">
                   {item.description}
                 </p>
-                <Link
-                  href={item.href}
-                  className="mt-0.5 inline-flex text-xs font-semibold text-brand-600 hover:text-brand-700 sm:text-[13px]"
-                >
-                  {uiLabels.learnMore}
-                </Link>
+                {item.href ? (
+                  <Link
+                    href={item.href}
+                    className="mt-0.5 inline-flex text-xs font-semibold text-brand-600 hover:text-brand-700 sm:text-[13px]"
+                  >
+                    {uiLabels.learnMore}
+                  </Link>
+                ) : (
+                  <span className="mt-0.5 inline-flex cursor-default text-xs font-semibold text-ink-400 sm:text-[13px]">
+                    {uiLabels.learnMore}
+                  </span>
+                )}
               </div>
 
               <div

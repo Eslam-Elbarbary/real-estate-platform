@@ -156,11 +156,65 @@ export function MobileNavigation({
               <nav aria-label={uiLabels.mobileNav} className="grid gap-0.5">
                 {primaryNavigation.map((item) => {
                   const Icon = getAppIcon(item.icon);
+                  const linkClassName =
+                    'inline-flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium text-ink-800 transition-colors hover:bg-surface-50';
+
+                  if (!item.href) {
+                    const features =
+                      item.megaMenu?.featureColumns?.flat() ?? [];
+                    return (
+                      <div key={item.id} className="space-y-0.5">
+                        <p className="inline-flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-ink-800">
+                          <Icon
+                            size={ICON_SIZE_UI}
+                            strokeWidth={1.75}
+                            aria-hidden
+                          />
+                          {item.label}
+                        </p>
+                        {features.map((feature) => {
+                          const FeatureIcon = getAppIcon(feature.icon);
+                          if (!feature.href) {
+                            return (
+                              <div
+                                key={feature.title}
+                                aria-disabled="true"
+                                className="ms-4 inline-flex cursor-default items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-ink-400"
+                              >
+                                <FeatureIcon
+                                  size={ICON_SIZE_UI}
+                                  strokeWidth={1.75}
+                                  aria-hidden
+                                />
+                                {feature.title}
+                              </div>
+                            );
+                          }
+                          return (
+                            <Link
+                              key={feature.title}
+                              href={feature.href}
+                              className={`${linkClassName} ms-4 py-2`}
+                              onClick={() => setOpen(false)}
+                            >
+                              <FeatureIcon
+                                size={ICON_SIZE_UI}
+                                strokeWidth={1.75}
+                                aria-hidden
+                              />
+                              {feature.title}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    );
+                  }
+
                   return (
                     <Link
                       key={item.id}
                       href={item.href}
-                      className="inline-flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium text-ink-800 transition-colors hover:bg-surface-50"
+                      className={linkClassName}
                       onClick={() => setOpen(false)}
                     >
                       <Icon size={ICON_SIZE_UI} strokeWidth={1.75} aria-hidden />
