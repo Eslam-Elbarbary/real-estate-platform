@@ -68,7 +68,7 @@ export const uiLabels = {
   carouselNext: 'الشريحة التالية',
   downloadAppHeading: 'حمّل التطبيق',
   scanForApp: 'امسح للتطبيق',
-  premiumMessage: 'استمتع بمزايا غير محدودة مع اشتراك برو',
+  premiumMessage: 'استمتع بمزايا غير محدودة',
   premiumCta: 'اشترك الآن',
   addPropertyTitle: 'أعلن عن عقارك',
   addPropertyDescription:

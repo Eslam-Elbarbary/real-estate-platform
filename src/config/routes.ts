@@ -23,6 +23,9 @@ export const routes = {
   developer: (slug: string) => `/developer/${slug}`,
   neighborhood: {
     root: '/neighborhood',
+    details: (...segments: string[]) =>
+      `/neighborhood/${segments.filter(Boolean).join('/')}`,
+    bySlug: (slug: string) => `/neighborhood/${slug}`,
     byLocation: (locationSlugs: string[]) =>
       `/neighborhood/${locationSlugs.join('/')}`,
   },
@@ -31,20 +34,79 @@ export const routes = {
     category: (category: string) => `/advice/${category}`,
     article: (slug: string) => `/advice/${slug}`,
   },
-  addListing: '/add-listing',
+  addListing: '/add-property',
+  addProperty: {
+    root: '/add-property',
+    step: (
+      id: string,
+      step:
+        | 'basic'
+        | 'details'
+        | 'price'
+        | 'description'
+        | 'media'
+        | 'publish'
+        | 'checkout',
+    ) => `/my-properties/${id}/${step}`,
+    resume: (
+      id: string,
+      step:
+        | 'basic'
+        | 'details'
+        | 'price'
+        | 'description'
+        | 'media'
+        | 'publish',
+    ) => `/my-properties/${id}/${step}`,
+  },
   auth: {
     login: '/auth/login',
     register: '/auth/register',
     verifyEmail: '/auth/verify-email',
+    /** Register with post-auth return destination. */
+    registerWithReturnTo: (returnTo: string) =>
+      `/auth/register?returnTo=${encodeURIComponent(returnTo)}`,
+    loginWithReturnTo: (returnTo: string) =>
+      `/auth/login?returnTo=${encodeURIComponent(returnTo)}`,
   },
   /** @deprecated Prefer routes.auth.login */
   login: '/auth/login',
   /** @deprecated Prefer routes.auth.register */
   register: '/auth/register',
   favorites: '/favorites',
+  notes: '/notes',
+  notifications: '/notifications',
+  alerts: '/alerts',
+  account: {
+    root: '/account',
+    profile: '/account/profile',
+    security: '/account/security',
+    paymentMethods: '/account/payment-methods',
+    wallet: '/account/wallet',
+    subscription: '/account/subscription',
+    contacts: '/account/contacts',
+  },
+  credits: '/credits',
+  packages: {
+    root: '/packages',
+    owner: '/packages/owner',
+    marketer: '/packages/marketer',
+    marketingCompany: '/packages/marketing-company',
+    compoundDeveloper: '/packages/compound-developer',
+  },
+  myProperties: '/my-properties',
+  marketingServices: '/marketing-services',
+  pro: {
+    root: '/pro',
+    checkout: '/pro/checkout',
+  },
   valuation: {
     root: '/valuation',
     add: '/valuation/add',
+    /** Dashboard portfolio tab */
+    portfolio: '/valuation?tab=portfolio',
+    addWithGoal: (goal: 'owned-property' | 'price-inquiry') =>
+      `/valuation/add?goal=${goal}`,
     report: (id: string) => `/valuation/report/${id}`,
   },
 } as const;

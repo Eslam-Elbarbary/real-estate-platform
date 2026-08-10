@@ -10,6 +10,12 @@ export interface ContainerProps extends HTMLAttributes<HTMLElement> {
   directory?: boolean;
   /** Compound Details shell (~1050–1200px useful width). */
   compoundDetails?: boolean;
+  /** Authenticated operational dashboards (~1100–1140px). */
+  dashboard?: boolean;
+  /** Public marketing-services landing (~1140px). */
+  marketing?: boolean;
+  /** Neighborhood / property-prices directory & details (~1180px). */
+  neighborhood?: boolean;
 }
 
 export function Container({
@@ -19,24 +25,38 @@ export function Container({
   wide = false,
   directory = false,
   compoundDetails = false,
+  dashboard = false,
+  marketing = false,
+  neighborhood = false,
   ...props
 }: ContainerProps) {
   return (
     <Component
       className={cn(
         'mx-auto w-full',
-        wide || directory || compoundDetails
+        wide ||
+          directory ||
+          compoundDetails ||
+          dashboard ||
+          marketing ||
+          neighborhood
           ? 'px-6 sm:px-8 lg:px-8'
           : 'px-4 sm:px-6 lg:px-8',
         narrow
           ? 'max-w-3xl'
-          : compoundDetails
-            ? 'max-w-[min(100%,var(--container-compound-details))]'
-            : directory
-              ? 'max-w-[min(100%,var(--container-directory))]'
-              : wide
-                ? 'max-w-[min(100%,var(--container-wide))]'
-                : 'max-w-[min(100%,var(--container-max))]',
+          : neighborhood
+            ? 'max-w-[min(100%,var(--container-neighborhood))]'
+            : marketing
+              ? 'max-w-[min(100%,var(--container-marketing))]'
+              : dashboard
+                ? 'max-w-[min(100%,var(--container-dashboard))]'
+                : compoundDetails
+                  ? 'max-w-[min(100%,var(--container-compound-details))]'
+                  : directory
+                    ? 'max-w-[min(100%,var(--container-directory))]'
+                    : wide
+                      ? 'max-w-[min(100%,var(--container-wide))]'
+                      : 'max-w-[min(100%,var(--container-max))]',
         className,
       )}
       {...props}

@@ -19,6 +19,7 @@ export async function Header() {
         locations={locations}
         logo={<BrandLogo />}
         accountSlot={<AccountMenu session={session} />}
+        session={session}
       />
     </header>
   );

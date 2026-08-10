@@ -7,4 +7,6 @@ export const DEMO_USER: AuthUser = {
   email: 'demo@example.test',
   phone: '01000000000',
   memberSinceLabel: 'عضو منذ يناير 2024',
+  phoneVerified: true,
+  displayRoleLabel: 'مالك عقار',
 };

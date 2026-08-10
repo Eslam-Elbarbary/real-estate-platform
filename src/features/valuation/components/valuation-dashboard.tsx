@@ -18,13 +18,15 @@ import type {
 interface ValuationDashboardProps {
   valuations: ValuationResult[];
   portfolio: PropertyPortfolioItem[];
+  initialTab?: ValuationDashboardTab;
 }
 
 export function ValuationDashboard({
   valuations,
   portfolio,
+  initialTab = 'valuations',
 }: ValuationDashboardProps) {
-  const [tab, setTab] = useState<ValuationDashboardTab>('valuations');
+  const [tab, setTab] = useState<ValuationDashboardTab>(initialTab);
 
   return (
     <div className="bg-[#faf7f1] pb-16">

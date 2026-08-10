@@ -4,6 +4,11 @@ export interface AuthUser {
   email: string;
   phone: string;
   memberSinceLabel: string;
+  /** When true, profile UI may show a verified phone affordance. */
+  phoneVerified?: boolean;
+  /** UI-only commercial role label, e.g. مالك عقار. */
+  displayRoleLabel?: string;
+  avatarUrl?: string;
 }
 
 export interface AuthSession {

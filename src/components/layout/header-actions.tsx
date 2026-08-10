@@ -45,8 +45,10 @@ export function HeaderActions({ accountSlot }: HeaderActionsProps) {
         <ChevronIcon size={14} strokeWidth={2} aria-hidden />
       </button>
 
-      <Link
+      <a
         href={headerActions.support.href}
+        target="_blank"
+        rel="noopener noreferrer"
         className={cn(
           'inline-flex size-9 items-center justify-center rounded-md text-ink-700 transition-colors',
           'hover:bg-surface-50',
@@ -55,7 +57,7 @@ export function HeaderActions({ accountSlot }: HeaderActionsProps) {
         aria-label={headerActions.support.label}
       >
         <SupportIcon size={ICON_SIZE_NAV} strokeWidth={1.75} aria-hidden />
-      </Link>
+      </a>
 
       {accountSlot}
     </div>

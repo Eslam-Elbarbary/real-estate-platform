@@ -22,8 +22,8 @@ export const knowItems: KnowItem[] = [
   },
   {
     id: 'prices',
-    title: 'اتجاهات الأسعار',
-    description: 'تابع متوسطات الأسعار وتغيّرها عبر أهم المدن والمناطق.',
+    title: 'أسعار العقارات',
+    description: 'اعرف سعر المتر في المناطق المختلفة',
     href: routes.neighborhood.root,
     imageSrc: '/assets/home/know/prices.svg',
     imageAlt: 'رسم توضيحي لأسعار العقارات',

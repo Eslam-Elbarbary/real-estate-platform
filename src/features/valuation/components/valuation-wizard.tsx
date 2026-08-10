@@ -8,12 +8,13 @@ import type { LocationOption } from '@/features/locations';
 import { createValuationAction } from '../actions';
 import { valuationCopy } from '../config';
 import type { ValuationDraft } from '../schemas';
-import type { ValuationRequest } from '../types';
+import type { ValuationGoal, ValuationRequest } from '../types';
 import { ValuationWizardShell } from './valuation-wizard-shell';
 import { resolveWizardSteps } from '../wizard/steps';
 
 interface ValuationWizardProps {
   locations: LocationOption[];
+  initialGoal?: ValuationGoal;
 }
 
 function toRequest(draft: ValuationDraft): ValuationRequest | null {
@@ -43,9 +44,13 @@ function toRequest(draft: ValuationDraft): ValuationRequest | null {
   };
 }
 
-export function ValuationWizard({ locations }: ValuationWizardProps) {
+export function ValuationWizard({
+  locations,
+  initialGoal,
+}: ValuationWizardProps) {
   const router = useRouter();
   const [draft, setDraftState] = useState<ValuationDraft>({
+    goal: initialGoal,
     bedrooms: 0,
     bathrooms: 0,
   });

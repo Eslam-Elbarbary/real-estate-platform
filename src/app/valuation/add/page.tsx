@@ -4,6 +4,7 @@ import { routes } from '@/config/routes';
 import { getServerSession } from '@/features/auth/session';
 import { getLocationOptions } from '@/features/locations';
 import { ValuationWizard } from '@/features/valuation/components/valuation-wizard';
+import type { ValuationGoal } from '@/features/valuation/types';
 
 export const metadata = createPageMetadata({
   title: 'إضافة تقييم جديد',
@@ -12,7 +13,19 @@ export const metadata = createPageMetadata({
   noIndex: true,
 });
 
-export default async function ValuationAddPage() {
+function parseGoal(
+  value: string | string[] | undefined,
+): ValuationGoal | undefined {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (raw === 'owned-property' || raw === 'price-inquiry') return raw;
+  return undefined;
+}
+
+export default async function ValuationAddPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const session = await getServerSession();
   if (!session) {
     redirect(
@@ -20,7 +33,11 @@ export default async function ValuationAddPage() {
     );
   }
 
+  const params = await searchParams;
+  const initialGoal = parseGoal(params.goal);
   const locations = await getLocationOptions();
 
-  return <ValuationWizard locations={locations} />;
+  return (
+    <ValuationWizard locations={locations} initialGoal={initialGoal} />
+  );
 }

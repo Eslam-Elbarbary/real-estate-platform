@@ -43,6 +43,9 @@
   --container-wide: 1840px;
   --container-directory: 1260px;
   --container-compound-details: 1140px;
+  --container-dashboard: 1120px;
+  --container-marketing: 1140px;
+  --container-neighborhood: 1180px;
   --header-height: 3.5rem;
   --header-height-lg: 3.75rem;
 }
@@ -90,6 +93,8 @@
   --max-width-container: var(--container-max);
   --max-width-container-wide: var(--container-wide);
   --max-width-container-directory: var(--container-directory);
+  --max-width-container-dashboard: var(--container-dashboard);
+  --max-width-container-marketing: var(--container-marketing);
   --height-header: var(--header-height);
   --height-header-lg: var(--header-height-lg);
   --breakpoint-sm: 640px;

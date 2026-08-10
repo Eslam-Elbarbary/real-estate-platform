@@ -3,16 +3,12 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useId, useRef, useState, useTransition } from 'react';
-import {
-  Bell,
-  Heart,
-  LogOut,
-  NotebookPen,
-  Pencil,
-  StickyNote,
-} from 'lucide-react';
 import { getButtonClassName } from '@/components/ui/button';
 import { getAppIcon, ICON_SIZE_UI } from '@/config/icons';
+import {
+  loggedInAccountMenuSections,
+  loggedOutAccountMenuLinks,
+} from '@/config/account-menu';
 import { routes } from '@/config/routes';
 import { uiLabels } from '@/config/labels';
 import { cn } from '@/lib/utils/cn';
@@ -21,6 +17,8 @@ import type { AuthSession } from '@/features/auth/types';
 
 const AccountIcon = getAppIcon('account');
 const ChevronIcon = getAppIcon('chevronDown');
+const EditIcon = getAppIcon('edit');
+const LogoutIcon = getAppIcon('logout');
 
 interface AccountMenuProps {
   session: AuthSession | null;
@@ -70,6 +68,7 @@ export function AccountMenu({ session }: AccountMenuProps) {
         aria-label={session ? session.user.name : uiLabels.login}
         aria-expanded={open}
         aria-controls={menuId}
+        data-testid="account-menu-trigger"
         onClick={() => setOpen((value) => !value)}
       >
         <span className="inline-flex size-7 items-center justify-center rounded-full border border-border">
@@ -87,7 +86,8 @@ export function AccountMenu({ session }: AccountMenuProps) {
         <div
           id={menuId}
           role="menu"
-          className="absolute end-0 top-[calc(100%+0.5rem)] z-50 w-[22rem] rounded-xl border border-border bg-white p-4 shadow-lg"
+          data-testid="account-menu-panel"
+          className="absolute end-0 top-[calc(100%+0.5rem)] z-50 w-[23rem] rounded-xl border border-border bg-white p-4 shadow-lg"
         >
           {session ? (
             <LoggedInPanel
@@ -137,18 +137,22 @@ function LoggedOutPanel({ onNavigate }: { onNavigate: () => void }) {
         </Link>
       </div>
 
-      <ProCard />
+      <ProCard onNavigate={onNavigate} />
 
       <nav className="space-y-1 border-t border-border pt-3">
-        <MenuLink href={routes.favorites} icon={NotebookPen} onClick={onNavigate}>
-          نشاطاتي
-        </MenuLink>
-        <MenuLink href={routes.favorites} icon={Heart} onClick={onNavigate}>
-          مفضلاتي
-        </MenuLink>
-        <MenuLink href={routes.favorites} icon={StickyNote} onClick={onNavigate}>
-          ملاحظاتي
-        </MenuLink>
+        {loggedOutAccountMenuLinks.map((item) => {
+          const Icon = getAppIcon(item.icon);
+          return (
+            <MenuLink
+              key={item.id}
+              href={item.href}
+              icon={Icon}
+              onClick={onNavigate}
+            >
+              {item.label}
+            </MenuLink>
+          );
+        })}
       </nav>
     </div>
   );
@@ -172,33 +176,46 @@ function LoggedInPanel({
           <h2 className="text-base font-extrabold text-ink-950">
             {session.user.name}
           </h2>
-          <p className="mt-1 text-xs text-ink-500">{session.user.memberSinceLabel}</p>
+          <p className="mt-1 text-xs text-ink-500">
+            {session.user.memberSinceLabel}
+          </p>
         </div>
         <Link
-          href={routes.auth.verifyEmail}
+          href={routes.account.profile}
           onClick={onNavigate}
           className="inline-flex size-8 items-center justify-center rounded-md text-ink-500 hover:bg-surface-50 hover:text-ink-800"
           aria-label="تعديل الملف الشخصي"
         >
-          <Pencil size={16} aria-hidden />
+          <EditIcon size={16} aria-hidden />
         </Link>
       </div>
 
-      <ProCard />
+      <ProCard onNavigate={onNavigate} />
 
-      <nav className="space-y-1 border-t border-border pt-3">
-        <MenuLink href={routes.favorites} icon={Heart} onClick={onNavigate}>
-          مفضلاتي
-        </MenuLink>
-        <MenuLink href={routes.favorites} icon={StickyNote} onClick={onNavigate}>
-          ملاحظاتي
-        </MenuLink>
-        <MenuLink href={routes.favorites} icon={Bell} onClick={onNavigate}>
-          إشعاراتي
-        </MenuLink>
-        <MenuLink href={routes.favorites} icon={Bell} onClick={onNavigate}>
-          تنبيهاتي
-        </MenuLink>
+      <div className="space-y-3 border-t border-border pt-3">
+        {loggedInAccountMenuSections.map((section) => (
+          <nav key={section.id} aria-label={section.title} className="space-y-1">
+            <p className="px-2 pb-1 text-[11px] font-bold tracking-wide text-ink-400">
+              {section.title}
+            </p>
+            {section.links.map((item) => {
+              const Icon = getAppIcon(item.icon);
+              return (
+                <MenuLink
+                  key={item.id}
+                  href={item.href}
+                  icon={Icon}
+                  onClick={onNavigate}
+                >
+                  {item.label}
+                </MenuLink>
+              );
+            })}
+          </nav>
+        ))}
+      </div>
+
+      <div className="border-t border-border pt-2">
         <button
           type="button"
           role="menuitem"
@@ -206,23 +223,30 @@ function LoggedInPanel({
           onClick={onLogout}
           className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm font-medium text-danger-600 transition-colors hover:bg-danger-50"
         >
-          <LogOut size={16} aria-hidden />
+          <LogoutIcon size={16} aria-hidden />
           تسجيل الخروج
         </button>
-      </nav>
+      </div>
     </div>
   );
 }
 
-function ProCard() {
+function ProCard({ onNavigate }: { onNavigate: () => void }) {
   return (
-    <div className="rounded-xl bg-gradient-to-l from-brand-700 to-brand-500 p-3 text-white">
+    <Link
+      href={routes.pro.root}
+      onClick={onNavigate}
+      className="block rounded-xl bg-gradient-to-l from-brand-700 to-brand-500 p-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+      data-testid="account-menu-pro-card"
+    >
       <p className="text-xs font-bold">{uiLabels.proBadge}</p>
-      <p className="mt-1 text-xs leading-5 text-white/90">{uiLabels.premiumMessage}</p>
+      <p className="mt-1 text-xs leading-5 text-white/90">
+        {uiLabels.premiumMessage}
+      </p>
       <span className="mt-2 inline-flex text-xs font-bold underline underline-offset-2">
         {uiLabels.premiumCta}
       </span>
-    </div>
+    </Link>
   );
 }
 
@@ -233,7 +257,7 @@ function MenuLink({
   onClick,
 }: {
   href: string;
-  icon: typeof Heart;
+  icon: ReturnType<typeof getAppIcon>;
   children: string;
   onClick: () => void;
 }) {
@@ -244,7 +268,7 @@ function MenuLink({
       onClick={onClick}
       className="flex items-center gap-2 rounded-md px-2 py-2 text-sm font-medium text-ink-800 transition-colors hover:bg-surface-50"
     >
-      <Icon size={16} aria-hidden />
+      <Icon size={16} strokeWidth={1.75} aria-hidden />
       {children}
     </Link>
   );

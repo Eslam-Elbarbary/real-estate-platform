@@ -57,6 +57,24 @@ export interface ValuationResult {
   updatedAt: string;
 }
 
+export type ValuationDemandLabel = 'منخفض' | 'متوسط' | 'مرتفع';
+
+export interface ValuationPriceHistoryPoint {
+  month: string;
+  value: number;
+}
+
+export interface ValuationMarketAnalysis {
+  sampleSize: number;
+  demand: {
+    percentage: number;
+    label: ValuationDemandLabel;
+  };
+  priceHistory: ValuationPriceHistoryPoint[];
+  /** YoY change percent for price index footer. */
+  annualChangePercent: number;
+}
+
 export interface PropertyPortfolioItem {
   id: string;
   valuationId: string;

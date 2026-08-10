@@ -186,9 +186,28 @@ test.describe('Valuation + Auth visual QA @ 1920x1080', () => {
 
     await page.waitForURL(/\/valuation\/report\//, { timeout: 15000 });
     await page.waitForTimeout(400);
+    await expect(page.getByTestId('owned-property-report')).toBeVisible();
+    await expect(page.getByTestId('investment-return')).toBeVisible();
+    await expect(page.getByTestId('market-analysis')).toBeVisible();
     await page.screenshot({
       path: path.join(outDir, '15-report.png'),
       fullPage: true,
+    });
+    await page.screenshot({
+      path: path.join(outDir, '21-owned-report-full.png'),
+      fullPage: true,
+    });
+    await page.getByTestId('owned-report-summary').screenshot({
+      path: path.join(outDir, '22-owned-summary.png'),
+    });
+    await page.getByTestId('investment-return').screenshot({
+      path: path.join(outDir, '23-investment-return.png'),
+    });
+    await page.getByTestId('market-comparison').screenshot({
+      path: path.join(outDir, '24-market-comparison.png'),
+    });
+    await page.getByTestId('market-analysis').screenshot({
+      path: path.join(outDir, '25-market-analysis.png'),
     });
 
     await page.goto('/valuation', { waitUntil: 'networkidle' });
@@ -224,8 +243,58 @@ test.describe('Valuation + Auth visual QA @ 1920x1080', () => {
     await page.getByLabel('زيادة عدد الحمامات').click();
     await page.getByRole('button', { name: 'احسب القيمة التقديرية' }).click();
     await page.waitForURL(/\/valuation\/report\//, { timeout: 15000 });
+    await expect(page.getByTestId('price-inquiry-report')).toBeVisible();
+    await expect(page.getByTestId('price-inquiry-related')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'تقرير التقييم' })).toBeVisible();
+    await page.waitForTimeout(300);
+    await page.screenshot({
+      path: path.join(outDir, '27-price-inquiry-report.png'),
+      fullPage: true,
+    });
     await page.goto('/valuation');
     await expect(page.getByRole('heading', { name: 'تقييم العقار' })).toBeVisible();
+  });
+
+  test('owned report mobile + home valuation CTA routing', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await loginDemo(page, '/valuation/report/val-seed-zayed-villa');
+    await expect(page.getByTestId('owned-property-report')).toBeVisible();
+    await page.waitForTimeout(300);
+    await page.screenshot({
+      path: path.join(outDir, '28-owned-report-mobile.png'),
+      fullPage: true,
+    });
+
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.context().clearCookies();
+    await page.goto('/', { waitUntil: 'networkidle' });
+    const loggedOutCta = page.getByTestId('home-valuation-cta-link');
+    await expect(loggedOutCta).toHaveAttribute('href', '/valuation');
+    await loggedOutCta.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(250);
+    await page.getByTestId('home-valuation-cta').screenshot({
+      path: path.join(outDir, '26-home-valuation-cta.png'),
+    });
+    await loggedOutCta.click();
+    await page.waitForURL('**/valuation');
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await page.getByTestId('home-valuation-cta').scrollIntoViewIfNeeded();
+    await page.waitForTimeout(250);
+    await page.getByTestId('home-valuation-cta').screenshot({
+      path: path.join(outDir, '29-home-valuation-cta-mobile.png'),
+    });
+
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await loginDemo(page, '/');
+    const loggedInCta = page.getByTestId('home-valuation-cta-link');
+    await expect(loggedInCta).toHaveAttribute(
+      'href',
+      '/valuation/add?goal=owned-property',
+    );
+    await loggedInCta.click();
+    await page.waitForURL(/\/valuation\/add/);
+    expect(page.url()).toContain('goal=owned-property');
   });
 });

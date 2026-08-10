@@ -1,6 +1,8 @@
 import type { AppIconName } from '@/config/icons';
 import { routes } from '@/config/routes';
+import { siteConfig } from '@/config/site';
 import { uiLabels } from '@/config/labels';
+import { buildWhatsAppUrl } from '@/lib/contact/phone';
 
 export interface MegaMenuLink {
   label: string;
@@ -300,7 +302,12 @@ export const headerActions = {
     href: routes.favorites,
   },
   support: {
-    label: 'الدعم',
-    href: '/help',
+    label: 'الدعم عبر واتساب',
+    href:
+      buildWhatsAppUrl(
+        siteConfig.support.whatsappPhone,
+        siteConfig.support.defaultMessage,
+      ) ?? `https://wa.me/${siteConfig.support.whatsappPhone}`,
+    external: true,
   },
 } as const;

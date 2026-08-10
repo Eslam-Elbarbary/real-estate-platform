@@ -27,3 +27,11 @@ export function getWhatsAppHref(
 
   return `${base}?text=${encodeURIComponent(message)}`;
 }
+
+/** Alias for shared WhatsApp URL building (wa.me). */
+export function buildWhatsAppUrl(
+  phone: string,
+  message?: string,
+): string | null {
+  return getWhatsAppHref(phone, message);
+}

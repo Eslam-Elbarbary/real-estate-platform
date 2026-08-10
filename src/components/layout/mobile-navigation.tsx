@@ -1,25 +1,40 @@
 'use client';
 
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Menu } from 'lucide-react';
 import { getButtonClassName } from '@/components/ui/button';
 import { PropertySearchForm } from '@/features/property-search';
 import type { LocationOption } from '@/features/locations';
 import { getAppIcon, ICON_SIZE_UI } from '@/config/icons';
+import {
+  loggedInAccountMenuSections,
+  loggedOutAccountMenuLinks,
+} from '@/config/account-menu';
 import { headerActions, primaryNavigation } from '@/config/navigation';
+import { routes } from '@/config/routes';
 import { uiLabels } from '@/config/labels';
+import { logoutAction } from '@/features/auth/actions';
+import type { AuthSession } from '@/features/auth/types';
 
 const PlusIcon = getAppIcon('addProperty');
 const UserIcon = getAppIcon('account');
 const CloseIcon = getAppIcon('close');
+const LogoutIcon = getAppIcon('logout');
 
 interface MobileNavigationProps {
   locations: LocationOption[];
+  session: AuthSession | null;
 }
 
-export function MobileNavigation({ locations }: MobileNavigationProps) {
+export function MobileNavigation({
+  locations,
+  session,
+}: MobileNavigationProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [pending, startTransition] = useTransition();
   const titleId = useId();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
@@ -49,6 +64,14 @@ export function MobileNavigation({ locations }: MobileNavigationProps) {
     };
   }, [open]);
 
+  function handleLogout() {
+    startTransition(async () => {
+      await logoutAction();
+      setOpen(false);
+      router.refresh();
+    });
+  }
+
   return (
     <div className="flex items-center gap-1 lg:hidden">
       <Link
@@ -69,6 +92,7 @@ export function MobileNavigation({ locations }: MobileNavigationProps) {
         aria-label={uiLabels.openMenu}
         aria-expanded={open}
         aria-controls="mobile-navigation-drawer"
+        data-testid="mobile-nav-trigger"
         onClick={() => setOpen(true)}
       >
         <Menu className="size-5" />
@@ -88,6 +112,7 @@ export function MobileNavigation({ locations }: MobileNavigationProps) {
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
+            data-testid="mobile-nav-drawer"
             className="absolute inset-y-0 end-0 flex w-[min(100%,22rem)] flex-col bg-white shadow-lg"
           >
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -106,6 +131,22 @@ export function MobileNavigation({ locations }: MobileNavigationProps) {
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4">
+              {session ? (
+                <div className="mb-4 rounded-xl border border-border bg-surface-50 p-3">
+                  <p className="text-sm font-extrabold text-ink-950">
+                    {session.user.name}
+                  </p>
+                  <p className="mt-0.5 text-xs text-ink-500">
+                    {session.user.memberSinceLabel}
+                  </p>
+                  {session.user.displayRoleLabel ? (
+                    <p className="mt-1 text-xs text-ink-600">
+                      {session.user.displayRoleLabel}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+
               <PropertySearchForm
                 locations={locations}
                 variant="stacked"
@@ -128,20 +169,101 @@ export function MobileNavigation({ locations }: MobileNavigationProps) {
                   );
                 })}
               </nav>
+
+              {session ? (
+                <div className="mt-5 space-y-4 border-t border-border pt-4">
+                  {loggedInAccountMenuSections.map((section) => (
+                    <nav
+                      key={section.id}
+                      aria-label={section.title}
+                      className="grid gap-0.5"
+                    >
+                      <p className="px-3 pb-1 text-[11px] font-bold text-ink-400">
+                        {section.title}
+                      </p>
+                      {section.links.map((item) => {
+                        const Icon = getAppIcon(item.icon);
+                        return (
+                          <Link
+                            key={item.id}
+                            href={item.href}
+                            className="inline-flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium text-ink-800 transition-colors hover:bg-surface-50"
+                            onClick={() => setOpen(false)}
+                          >
+                            <Icon
+                              size={ICON_SIZE_UI}
+                              strokeWidth={1.75}
+                              aria-hidden
+                            />
+                            {item.label}
+                          </Link>
+                        );
+                      })}
+                    </nav>
+                  ))}
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={handleLogout}
+                    className="inline-flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium text-danger-600 hover:bg-danger-50"
+                  >
+                    <LogoutIcon size={ICON_SIZE_UI} aria-hidden />
+                    تسجيل الخروج
+                  </button>
+                </div>
+              ) : (
+                <nav
+                  aria-label="نشاطاتي"
+                  className="mt-5 grid gap-0.5 border-t border-border pt-4"
+                >
+                  {loggedOutAccountMenuLinks.map((item) => {
+                    const Icon = getAppIcon(item.icon);
+                    return (
+                      <Link
+                        key={item.id}
+                        href={item.href}
+                        className="inline-flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium text-ink-800 transition-colors hover:bg-surface-50"
+                        onClick={() => setOpen(false)}
+                      >
+                        <Icon
+                          size={ICON_SIZE_UI}
+                          strokeWidth={1.75}
+                          aria-hidden
+                        />
+                        {item.label}
+                      </Link>
+                    );
+                  })}
+                </nav>
+              )}
             </div>
 
             <div className="grid gap-2 border-t border-border p-4">
-              <Link
-                href={headerActions.login.href}
-                className={getButtonClassName({
-                  variant: 'outline',
-                  className: 'w-full',
-                })}
-                onClick={() => setOpen(false)}
-              >
-                <UserIcon className="size-4" aria-hidden />
-                {headerActions.login.label}
-              </Link>
+              {!session ? (
+                <Link
+                  href={routes.auth.login}
+                  className={getButtonClassName({
+                    variant: 'outline',
+                    className: 'w-full',
+                  })}
+                  onClick={() => setOpen(false)}
+                >
+                  <UserIcon className="size-4" aria-hidden />
+                  {headerActions.login.label}
+                </Link>
+              ) : (
+                <Link
+                  href={routes.account.profile}
+                  className={getButtonClassName({
+                    variant: 'outline',
+                    className: 'w-full',
+                  })}
+                  onClick={() => setOpen(false)}
+                >
+                  <UserIcon className="size-4" aria-hidden />
+                  حسابي
+                </Link>
+              )}
               <Link
                 href={headerActions.addListing.href}
                 className={getButtonClassName({

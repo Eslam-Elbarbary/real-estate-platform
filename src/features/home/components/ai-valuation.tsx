@@ -3,12 +3,15 @@ import Link from 'next/link';
 import { Container } from '@/components/ui/container';
 import { getButtonClassName } from '@/components/ui/button';
 import { uiLabels } from '@/config/labels';
-import { routes } from '@/config/routes';
 import { siteConfig } from '@/config/site';
 
-export function AiValuation() {
+interface AiValuationProps {
+  href: string;
+}
+
+export function AiValuation({ href }: AiValuationProps) {
   return (
-    <section className="bg-white py-5 sm:py-7">
+    <section className="bg-white py-5 sm:py-7" data-testid="home-valuation-cta">
       <Container>
         <div className="flex flex-col items-center gap-6 rounded-[22px] bg-surface-50 px-5 py-7 sm:flex-row sm:justify-between sm:px-10 sm:py-9">
           <div className="max-w-xl text-center sm:text-start">
@@ -20,11 +23,12 @@ export function AiValuation() {
               {uiLabels.aiDescription}
             </p>
             <Link
-              href={routes.addListing}
+              href={href}
               className={getButtonClassName({
                 className: 'mt-4 inline-flex',
                 size: 'medium',
               })}
+              data-testid="home-valuation-cta-link"
             >
               {uiLabels.aiCta}
             </Link>
