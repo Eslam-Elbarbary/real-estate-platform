@@ -40,7 +40,11 @@ test.describe('Neighborhood / property prices', () => {
     await expect(
       page.getByRole('heading', { name: /دليل أسعار عقارات الساحل الشمالي/ }),
     ).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'العلمين' })).toBeVisible();
+    const alameinCardHeading = page.getByRole('heading', {
+      name: 'العلمين',
+      exact: true,
+    });
+    await expect(alameinCardHeading).toBeVisible();
     await page.waitForTimeout(250);
     await page.screenshot({
       path: path.join(outDir, '04-region-page-full.png'),
@@ -50,14 +54,18 @@ test.describe('Neighborhood / property prices', () => {
       path: path.join(outDir, '05-region-hero.png'),
       fullPage: false,
     });
-    await page.getByRole('heading', { name: 'العلمين' }).scrollIntoViewIfNeeded();
+    await alameinCardHeading.scrollIntoViewIfNeeded();
     await page.waitForTimeout(150);
     await page.screenshot({
       path: path.join(outDir, '06-region-child-cards.png'),
       fullPage: false,
     });
 
-    await page.getByRole('link', { name: 'التفاصيل' }).first().click();
+    await page
+      .getByRole('article')
+      .filter({ has: alameinCardHeading })
+      .getByRole('link', { name: 'التفاصيل' })
+      .click();
     await page.waitForURL(/\/neighborhood\/north-coast\/el-alamein/);
     await expect(
       page.getByRole('heading', { name: 'أسعار العقارات في العلمين' }),
@@ -72,7 +80,10 @@ test.describe('Neighborhood / property prices', () => {
     await expect(
       page.getByRole('heading', { name: 'الأسئلة الأكثر شيوعاً' }),
     ).toBeVisible();
-    await page.getByRole('button', { name: /ما متوسط سعر المتر/ }).click();
+    const faqButton = page.getByRole('button', { name: /ما متوسط سعر المتر/ });
+    if ((await faqButton.getAttribute('aria-expanded')) !== 'true') {
+      await faqButton.click();
+    }
     await expect(page.getByText(/متوسط سعر المتر يختلف/)).toBeVisible();
     await expect(
       page.getByRole('link', { name: /شقة للبيع في العلمين/ }),
@@ -120,7 +131,7 @@ test.describe('Neighborhood / property prices', () => {
       fullPage: false,
     });
     await page
-      .getByRole('heading', { name: 'عقارات في العلمين' })
+      .getByRole('heading', { name: 'عقارات في العلمين', exact: true })
       .scrollIntoViewIfNeeded();
     await page.screenshot({
       path: path.join(outDir, '14-area-property-links.png'),
