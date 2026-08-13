@@ -31,6 +31,10 @@ export const routes = {
   },
   advice: {
     root: '/advice',
+    ask: {
+      root: '/advice/ask',
+      question: (id: string, slug: string) => `/advice/ask/${id}/${slug}`,
+    },
     category: (category: string) => `/advice/${category}`,
     article: (slug: string) => `/advice/${slug}`,
   },

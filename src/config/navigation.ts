@@ -235,6 +235,7 @@ export const primaryNavigation: NavigationItem[] = [
             icon: 'askNeighborhood',
             title: 'اسأل أهل المنطقة',
             description: 'احصل على إجابات دقيقة من سكان المنطقة',
+            href: routes.advice.ask.root,
           },
           {
             icon: 'knowMore',

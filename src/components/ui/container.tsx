@@ -16,6 +16,8 @@ export interface ContainerProps extends HTMLAttributes<HTMLElement> {
   marketing?: boolean;
   /** Neighborhood / property-prices directory & details (~1180px). */
   neighborhood?: boolean;
+  /** Ask Area / question details (~1080–1180px). */
+  advice?: boolean;
 }
 
 export function Container({
@@ -28,6 +30,7 @@ export function Container({
   dashboard = false,
   marketing = false,
   neighborhood = false,
+  advice = false,
   ...props
 }: ContainerProps) {
   return (
@@ -39,12 +42,15 @@ export function Container({
           compoundDetails ||
           dashboard ||
           marketing ||
-          neighborhood
+          neighborhood ||
+          advice
           ? 'px-6 sm:px-8 lg:px-8'
           : 'px-4 sm:px-6 lg:px-8',
         narrow
           ? 'max-w-3xl'
-          : neighborhood
+          : advice
+            ? 'max-w-[min(100%,var(--container-advice))]'
+            : neighborhood
             ? 'max-w-[min(100%,var(--container-neighborhood))]'
             : marketing
               ? 'max-w-[min(100%,var(--container-marketing))]'

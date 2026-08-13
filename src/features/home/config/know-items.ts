@@ -34,6 +34,7 @@ export const knowItems: KnowItem[] = [
     id: 'experts',
     title: 'خبراء المناطق',
     description: 'نصائح عملية من متخصصين يعرفون السوق المحلي جيدًا.',
+    href: routes.advice.ask.root,
     imageSrc: '/assets/home/know/experts.svg',
     imageAlt: 'رسم توضيحي لخبراء المناطق',
     imageSide: 'end',
