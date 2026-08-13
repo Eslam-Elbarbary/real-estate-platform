@@ -241,6 +241,7 @@ export const primaryNavigation: NavigationItem[] = [
             icon: 'knowMore',
             title: 'أعرف أكثر',
             description: 'تصفح معلومات ونصائح قيمة وعملية',
+            href: routes.advice.root,
           },
         ],
         [
@@ -254,11 +255,13 @@ export const primaryNavigation: NavigationItem[] = [
             icon: 'agents',
             title: 'الوسطاء المميزون',
             description: 'تواصل مع أفضل الوسطاء العقاريين',
+            href: routes.advice.agents.root,
           },
           {
             icon: 'exhibitions',
             title: 'دليل المعارض',
             description: 'اكتشف كل المعارض العقارية القادمة',
+            href: routes.advice.exhibitions.root,
           },
         ],
         [
@@ -271,6 +274,7 @@ export const primaryNavigation: NavigationItem[] = [
             icon: 'advice',
             title: 'نصائح عقارية',
             description: 'تصفح معلومات ونصائح قيمة وعملية',
+            href: routes.advice.index.root,
           },
           {
             icon: 'research',

@@ -27,8 +27,26 @@ export class ListingDraftService {
     return this.repository.createDraft(userId);
   }
 
+  getById(id: string): Promise<ListingDraft | null> {
+    return this.repository.getById(id);
+  }
+
   getDraft(id: string): Promise<ListingDraft | null> {
-    return this.repository.getDraft(id);
+    return this.repository.getById(id);
+  }
+
+  getIncompleteDraft(userId: string): Promise<ListingDraft | null> {
+    return this.repository.getIncompleteDraft(userId);
+  }
+
+  async startOrResumeDraft(userId: string): Promise<ListingDraft> {
+    const existing = await this.repository.getIncompleteDraft(userId);
+    const draft = existing ?? (await this.repository.createDraft(userId));
+    const stored = await this.repository.getById(draft.id);
+    if (!stored) {
+      throw new Error('LISTING_DRAFT_PERSISTENCE_FAILED');
+    }
+    return stored;
   }
 
   listDrafts(userId: string): Promise<ListingDraft[]> {

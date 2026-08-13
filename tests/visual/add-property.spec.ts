@@ -66,6 +66,122 @@ test.describe('Add Property flow', () => {
 
   test.describe.configure({ timeout: 120_000 });
 
+  test('A authenticated header CTA opens a persisted basic step', async ({ page }) => {
+    await loginDemo(page, '/my-properties');
+    const cta = page.locator('header').getByRole('link', { name: 'أعلن عن عقارك' });
+    await expect(cta).toHaveAttribute('href', '/add-property');
+    await cta.click();
+    await page.waitForURL(/\/my-properties\/LD-[^/]+\/basic/, { timeout: 20000 });
+    await expect(page.getByRole('heading', { name: 'المعلومات الأساسية' })).toBeVisible();
+    await expect(page.getByText('الصفحة غير موجودة')).toHaveCount(0);
+  });
+
+  test('B authenticated homepage CTA opens the same wizard', async ({ page }) => {
+    await loginDemo(page, '/');
+    await page.getByRole('link', { name: 'أضف عقارك الآن' }).click();
+    await page.waitForURL(/\/my-properties\/LD-[^/]+\/basic/, { timeout: 20000 });
+    await expect(page.getByRole('heading', { name: 'المعلومات الأساسية' })).toBeVisible();
+  });
+
+  test('C logged-out header CTA preserves returnTo then opens basic', async ({ page }) => {
+    await page.context().clearCookies();
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await page.locator('header').getByRole('link', { name: 'أعلن عن عقارك' }).click();
+    await page.waitForURL(/\/auth\/login/);
+    expect(decodeURIComponent(page.url())).toContain('returnTo=/add-property');
+    await page.locator('#login-identifier').fill('demo@example.test');
+    await page.locator('[data-testid="login-next"]').click();
+    await page.locator('#login-password').waitFor({ state: 'visible', timeout: 15000 });
+    await page.locator('#login-password').fill('demo-password');
+    await page.locator('[data-testid="login-submit"]').click();
+    await page.waitForURL(/\/my-properties\/LD-[^/]+\/basic/, { timeout: 20000 });
+    await expect(page.getByRole('heading', { name: 'المعلومات الأساسية' })).toBeVisible();
+  });
+
+  test('D direct /add-property creates or resumes a readable draft', async ({ page }) => {
+    await loginDemo(page, '/my-properties');
+    await page.goto('/add-property', { waitUntil: 'commit' });
+    await page.waitForURL(/\/my-properties\/LD-[^/]+\/basic/, { timeout: 20000 });
+    const draftId = page.url().match(/my-properties\/(LD-[^/]+)/)?.[1];
+    expect(draftId).toBeTruthy();
+    const response = await page.goto(`/my-properties/${draftId}/basic`, {
+      waitUntil: 'networkidle',
+    });
+    expect(response?.status()).toBe(200);
+    await expect(page.getByRole('heading', { name: 'المعلومات الأساسية' })).toBeVisible();
+  });
+
+  test('E resume incomplete draft keeps the same id and step', async ({ page }) => {
+    await loginDemo(page, '/my-properties');
+    await page.goto('/add-property', { waitUntil: 'commit' });
+    await page.waitForURL(/\/my-properties\/LD-[^/]+\/basic/, { timeout: 20000 });
+    const firstId = page.url().match(/my-properties\/(LD-[^/]+)/)?.[1];
+    expect(firstId).toBeTruthy();
+    await page.goto('/add-property', { waitUntil: 'commit' });
+    await page.waitForURL(new RegExp(`/my-properties/${firstId}/basic`), {
+      timeout: 20000,
+    });
+    await expect(page.getByRole('heading', { name: 'المعلومات الأساسية' })).toBeVisible();
+  });
+
+  test('F invalid draft id returns 404', async ({ page }) => {
+    await loginDemo(page, '/my-properties');
+    const response = await page.goto('/my-properties/DOES-NOT-EXIST/basic', {
+      waitUntil: 'networkidle',
+    });
+    expect(response?.status()).toBe(404);
+    await expect(page.getByRole('heading', { name: 'الصفحة غير موجودة' })).toBeVisible();
+  });
+
+  test('G future step on a fresh draft redirects to basic not 404', async ({ page }) => {
+    await loginDemo(page, '/my-properties');
+    await page.goto('/add-property', { waitUntil: 'commit' });
+    await page.waitForURL(/\/my-properties\/LD-[^/]+\/basic/, { timeout: 20000 });
+    const draftId = page.url().match(/my-properties\/(LD-[^/]+)/)?.[1];
+    await page.goto(`/my-properties/${draftId}/publish`, { waitUntil: 'networkidle' });
+    await expect(page).toHaveURL(new RegExp(`/my-properties/${draftId}/basic`));
+    await expect(page.getByRole('heading', { name: 'المعلومات الأساسية' })).toBeVisible();
+    await expect(page.getByText('الصفحة غير موجودة')).toHaveCount(0);
+  });
+
+  test('H I finish basic then refresh keeps the draft', async ({ page }) => {
+    await loginDemo(page, '/my-properties');
+    await page.goto('/add-property', { waitUntil: 'commit' });
+    await page.waitForURL(/\/my-properties\/LD-[^/]+\/basic/, { timeout: 20000 });
+    const draftId = page.url().match(/my-properties\/(LD-[^/]+)/)?.[1];
+    await fillBasic(page);
+    await expect(page).toHaveURL(new RegExp(`/my-properties/${draftId}/details`));
+    await page.reload({ waitUntil: 'networkidle' });
+    await expect(page).toHaveURL(new RegExp(`/my-properties/${draftId}/details`));
+    await expect(page.getByRole('heading', { name: /تفاصيل العقار/ })).toBeVisible();
+  });
+
+  test('J logout and login still resumes the demo cookie draft', async ({ page }) => {
+    await loginDemo(page, '/my-properties');
+    await page.goto('/add-property', { waitUntil: 'commit' });
+    await page.waitForURL(/\/my-properties\/LD-[^/]+\/basic/, { timeout: 20000 });
+    const draftId = page.url().match(/my-properties\/(LD-[^/]+)/)?.[1];
+    await page.getByTestId('account-menu-trigger').click();
+    await page.getByRole('menuitem', { name: 'تسجيل الخروج' }).click();
+    await page.goto(`/auth/login?returnTo=${encodeURIComponent('/add-property')}`, {
+      waitUntil: 'networkidle',
+    });
+    await page.locator('#login-identifier').fill('demo@example.test');
+    await page.locator('[data-testid="login-next"]').click();
+    await page.locator('#login-password').waitFor({ state: 'visible', timeout: 15000 });
+    await page.locator('#login-password').fill('demo-password');
+    await page.locator('[data-testid="login-submit"]').click();
+    await page.waitForURL(new RegExp(`/my-properties/${draftId}/`), { timeout: 20000 });
+    await expect(page.getByRole('heading', { name: 'المعلومات الأساسية' })).toBeVisible();
+  });
+
+  test('Know More add-property card uses the canonical entry', async ({ page }) => {
+    await loginDemo(page, '/advice');
+    await page.getByTestId('know-service-add-property').getByRole('link').click();
+    await page.waitForURL(/\/my-properties\/LD-[^/]+\/basic/, { timeout: 20000 });
+    await expect(page.getByRole('heading', { name: 'المعلومات الأساسية' })).toBeVisible();
+  });
+
   test('logged-out add-property redirects to login', async ({ page }) => {
     await page.context().clearCookies();
     await page.goto('/add-property', { waitUntil: 'networkidle' });

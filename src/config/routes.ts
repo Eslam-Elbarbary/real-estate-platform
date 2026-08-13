@@ -35,8 +35,18 @@ export const routes = {
       root: '/advice/ask',
       question: (id: string, slug: string) => `/advice/ask/${id}/${slug}`,
     },
-    category: (category: string) => `/advice/${category}`,
-    article: (slug: string) => `/advice/${slug}`,
+    index: {
+      root: '/advice/index',
+      article: (slug: string) => `/advice/index/${slug}`,
+    },
+    agents: {
+      root: '/advice/agents',
+      profile: (slug: string) => `/advice/agents/${slug}`,
+    },
+    exhibitions: {
+      root: '/advice/exhibitions',
+      details: (slug: string) => `/advice/exhibitions/${slug}`,
+    },
   },
   addListing: '/add-property',
   addProperty: {

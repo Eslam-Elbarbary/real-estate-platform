@@ -1,5 +1,6 @@
 'use server';
 
+import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { routes } from '@/config/routes';
 import { getServerSession } from '@/features/auth/session';
@@ -12,7 +13,7 @@ import {
   pricingStepSchema,
 } from './schemas';
 import type { ListingDraft, ListingDraftStep } from './types';
-import { stepHref } from './lib/step-access';
+import { earliestIncompleteStep, stepHref } from './lib/step-access';
 
 type ActionResult<T> =
   | { ok: true; data: T }
@@ -24,20 +25,18 @@ async function requireUser() {
   return session.user;
 }
 
-export async function createListingDraftAction(): Promise<
-  ActionResult<{ id: string; href: string }>
-> {
-  try {
-    const user = await requireUser();
-    const draft = await getListingDraftService().createDraft(user.id);
-    revalidatePath(routes.myProperties);
-    return {
-      ok: true,
-      data: { id: draft.id, href: routes.addProperty.step(draft.id, 'basic') },
-    };
-  } catch {
-    return { ok: false, error: 'تعذر إنشاء المسودة' };
+export async function startListingDraftAction(): Promise<void> {
+  const session = await getServerSession();
+  if (!session) {
+    redirect(
+      `${routes.auth.login}?returnTo=${encodeURIComponent(routes.addProperty.root)}`,
+    );
   }
+
+  const draft = await getListingDraftService().startOrResumeDraft(session.user.id);
+  const step = earliestIncompleteStep(draft);
+  revalidatePath(routes.myProperties);
+  redirect(routes.addProperty.step(draft.id, step));
 }
 
 export async function saveBasicStepAction(

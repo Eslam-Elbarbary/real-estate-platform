@@ -4,10 +4,6 @@ import path from 'node:path';
 
 const outDir = path.join('docs', 'visual-qa', 'advice-ask-1920');
 const blockedAdviceHrefs = [
-  '/advice',
-  '/advice/index',
-  '/advice/agents',
-  '/advice/exhibitions',
   '/advice/research',
 ];
 

@@ -22,6 +22,7 @@ export interface PropertyRepository {
   findBySlug(slug: string): Promise<Property | null>;
   findByIdAndSlug(id: string, slug: string): Promise<Property | null>;
   findByCompound(query: CompoundPropertyQuery): Promise<Property[]>;
+  findBySeller(sellerId: string): Promise<Property[]>;
   search(filters: PropertySearchFilters): Promise<PropertySearchResult>;
   getSimilarProperties(propertyId: string, limit?: number): Promise<Property[]>;
 }
@@ -252,6 +253,10 @@ function filterProperties(
       return false;
     }
 
+    if (filters.sellerId && property.seller.id !== filters.sellerId) {
+      return false;
+    }
+
     if (filters.keyword) {
       const haystack = [
         property.title,
@@ -321,6 +326,10 @@ export class MockPropertyRepository implements PropertyRepository {
       }
       return true;
     });
+  }
+
+  async findBySeller(sellerId: string): Promise<Property[]> {
+    return mockProperties.filter((property) => property.seller.id === sellerId);
   }
 
   async getSimilarProperties(

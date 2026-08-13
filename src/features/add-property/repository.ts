@@ -3,14 +3,32 @@ import type { ListingDraft, ListingDraftStep } from './types';
 
 export const LISTING_DRAFTS_COOKIE = 'demo_listing_drafts';
 
+const createInFlight = new Map<string, Promise<ListingDraft>>();
+
 function parseDrafts(raw: string | undefined): ListingDraft[] {
   if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw) as ListingDraft[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
+  const attempts = [raw];
+  if (raw.includes('%')) {
+    try {
+      attempts.push(decodeURIComponent(raw));
+    } catch {
+      // Cookie may already be decoded JSON.
+    }
   }
+  for (const candidate of attempts) {
+    try {
+      const parsed = JSON.parse(candidate) as ListingDraft[];
+      if (Array.isArray(parsed)) {
+        return parsed.filter(
+          (item): item is ListingDraft =>
+            Boolean(item && typeof item === 'object' && typeof item.id === 'string'),
+        );
+      }
+    } catch {
+      // Try the next encoding.
+    }
+  }
+  return [];
 }
 
 function emptyDescription() {
@@ -44,7 +62,9 @@ export function createEmptyDraft(userId: string, id: string): ListingDraft {
 
 export interface ListingDraftRepository {
   listByUser(userId: string): Promise<ListingDraft[]>;
+  getById(id: string): Promise<ListingDraft | null>;
   getDraft(id: string): Promise<ListingDraft | null>;
+  getIncompleteDraft(userId: string): Promise<ListingDraft | null>;
   saveDraft(draft: ListingDraft): Promise<ListingDraft>;
   createDraft(userId: string): Promise<ListingDraft>;
 }
@@ -72,8 +92,20 @@ export class CookieListingDraftRepository implements ListingDraftRepository {
     );
   }
 
-  async getDraft(id: string): Promise<ListingDraft | null> {
+  async getById(id: string): Promise<ListingDraft | null> {
     return (await this.readAll()).find((d) => d.id === id) ?? null;
+  }
+
+  async getDraft(id: string): Promise<ListingDraft | null> {
+    return this.getById(id);
+  }
+
+  async getIncompleteDraft(userId: string): Promise<ListingDraft | null> {
+    const drafts = await this.listByUser(userId);
+    const incomplete = drafts
+      .filter((draft) => draft.status !== 'published')
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+    return incomplete[0] ?? null;
   }
 
   async saveDraft(draft: ListingDraft): Promise<ListingDraft> {
@@ -90,9 +122,30 @@ export class CookieListingDraftRepository implements ListingDraftRepository {
   }
 
   async createDraft(userId: string): Promise<ListingDraft> {
+    const existing = await this.getIncompleteDraft(userId);
+    if (existing) return existing;
+
+    const pending = createInFlight.get(userId);
+    if (pending) return pending;
+
+    const job = this.createFreshDraft(userId).finally(() => {
+      createInFlight.delete(userId);
+    });
+    createInFlight.set(userId, job);
+    return job;
+  }
+
+  private async createFreshDraft(userId: string): Promise<ListingDraft> {
+    const existing = await this.getIncompleteDraft(userId);
+    if (existing) return existing;
     const id = `LD-${Date.now().toString(36).toUpperCase()}`;
     const draft = createEmptyDraft(userId, id);
-    return this.saveDraft(draft);
+    const saved = await this.saveDraft(draft);
+    const stored = await this.getById(saved.id);
+    if (!stored) {
+      throw new Error('LISTING_DRAFT_PERSISTENCE_FAILED');
+    }
+    return stored;
   }
 }
 

@@ -1,4 +1,4 @@
-import type { Property } from '@/types';
+import type { Property, PropertySeller } from '@/types';
 import {
   buildCompoundUnitListings,
   normalizeSeedProperty,
@@ -6147,7 +6147,111 @@ const seedProperties: Property[] = [
   }
 ];
 
+function agentSeller(
+  id: string,
+  name: string,
+  type: PropertySeller['type'],
+  phone: string,
+): PropertySeller {
+  return {
+    id,
+    name,
+    type,
+    phone,
+    whatsapp: phone,
+    isVerified: true,
+  };
+}
+
+const agentSellers: Record<string, PropertySeller> = {
+  'seller-prime-gate': agentSeller(
+    'seller-prime-gate',
+    'Prime Gate Realty',
+    'agency',
+    '+201000001101',
+  ),
+  'seller-nile-keys': agentSeller(
+    'seller-nile-keys',
+    'Nile Keys Properties',
+    'agency',
+    '+201000001102',
+  ),
+  'seller-urban-point': agentSeller(
+    'seller-urban-point',
+    'Urban Point Realty',
+    'agency',
+    '+201000001103',
+  ),
+  'seller-bayt-asima': agentSeller(
+    'seller-bayt-asima',
+    'بيت العاصمة العقارية',
+    'agency',
+    '+201000001104',
+  ),
+  'seller-miftah': agentSeller(
+    'seller-miftah',
+    'مفتاح القاهرة',
+    'agency',
+    '+201000001105',
+  ),
+  'seller-delta-view': agentSeller(
+    'seller-delta-view',
+    'Delta View Estates',
+    'agency',
+    '+201000001106',
+  ),
+  'seller-harbor-line': agentSeller(
+    'seller-harbor-line',
+    'Harbor Line Realty',
+    'agency',
+    '+201000001107',
+  ),
+  'seller-huda-mansour': agentSeller(
+    'seller-huda-mansour',
+    'هدى منصور',
+    'broker',
+    '+201000001201',
+  ),
+  'seller-karim-shafie': agentSeller(
+    'seller-karim-shafie',
+    'كريم الشافعي',
+    'broker',
+    '+201000001202',
+  ),
+  'seller-nora': agentSeller(
+    'seller-nora',
+    'نورا عبد الفتاح',
+    'broker',
+    '+201000001203',
+  ),
+};
+
+const sellerAssignment: Array<{ sellerId: string; count: number }> = [
+  { sellerId: 'seller-prime-gate', count: 15 },
+  { sellerId: 'seller-nile-keys', count: 3 },
+  { sellerId: 'seller-urban-point', count: 4 },
+  { sellerId: 'seller-bayt-asima', count: 4 },
+  { sellerId: 'seller-miftah', count: 3 },
+  { sellerId: 'seller-delta-view', count: 3 },
+  { sellerId: 'seller-harbor-line', count: 2 },
+  { sellerId: 'seller-huda-mansour', count: 2 },
+  { sellerId: 'seller-karim-shafie', count: 2 },
+  { sellerId: 'seller-nora', count: 2 },
+];
+
+function withAgentSellers(properties: Property[]): Property[] {
+  const queue = sellerAssignment.flatMap(({ sellerId, count }) =>
+    Array.from({ length: count }, () => agentSellers[sellerId]),
+  );
+
+  return properties.map((property, index) => {
+    const seller = queue[index];
+    return seller ? { ...property, seller } : property;
+  });
+}
+
 export const mockProperties: Property[] = [
-  ...seedProperties.map(normalizeSeedProperty),
+  ...withAgentSellers(seedProperties.map(normalizeSeedProperty)),
   ...buildCompoundUnitListings(),
 ];
+

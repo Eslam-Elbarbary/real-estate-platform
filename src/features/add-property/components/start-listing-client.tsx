@@ -1,36 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { routes } from '@/config/routes';
-import { createListingDraftAction } from '@/features/add-property/actions';
+import { useEffect, useRef } from 'react';
+import { startListingDraftAction } from '@/features/add-property/actions';
 
 export function StartListingClient() {
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const result = await createListingDraftAction();
-      if (cancelled) return;
-      if (!result.ok) {
-        setError(result.error);
-        router.replace(routes.myProperties);
-        return;
-      }
-      router.replace(result.data.href);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [router]);
+    formRef.current?.requestSubmit();
+  }, []);
 
   return (
     <div className="flex min-h-[40vh] items-center justify-center px-4">
-      <p className="text-sm font-semibold text-ink-600" role="status">
-        {error ?? 'جاري إنشاء مسودة الإعلان...'}
-      </p>
+      <form ref={formRef} action={startListingDraftAction}>
+        <p className="text-sm font-semibold text-ink-600" role="status">
+          جاري إنشاء مسودة الإعلان...
+        </p>
+        <button type="submit" className="sr-only">
+          متابعة
+        </button>
+      </form>
     </div>
   );
 }

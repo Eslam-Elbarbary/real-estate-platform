@@ -52,6 +52,7 @@ export const knowItems: KnowItem[] = [
     id: 'guides',
     title: 'أدلة الشراء والإيجار',
     description: 'خطوات واضحة تساعدك على إتمام صفقتك بثقة أكبر.',
+    href: routes.advice.index.root,
     imageSrc: '/assets/home/know/guides.svg',
     imageAlt: 'رسم توضيحي لأدلة الشراء',
     imageSide: 'end',

@@ -189,6 +189,7 @@ export interface PropertySearchFilters {
   aiRecommended?: boolean;
   keyword?: string;
   compoundSlug?: string;
+  sellerId?: string;
   sort?: PropertySortOption;
   page?: number;
   pageSize?: number;
