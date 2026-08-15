@@ -1,25 +1,47 @@
-import Image from 'next/image';
 import { appStoreLinks } from '@/config/app-links';
 import { cn } from '@/lib/utils/cn';
 
-interface AppStoreBadgesProps {
+export type StoreBadgeSize = 'large' | 'compact' | 'default' | 'sm';
+
+interface StoreBadgesProps {
   className?: string;
-  /** default ≈ 130–145px; sm ≈ 100–115px for footer */
-  size?: 'default' | 'sm' | 'compact';
+  size?: StoreBadgeSize;
 }
 
-const sizeMap = {
-  default: { width: 138, height: 41 },
-  sm: { width: 108, height: 32 },
-  compact: { width: 108, height: 32 },
-} as const;
+const heightPx: Record<StoreBadgeSize, number> = {
+  large: 54,
+  default: 54,
+  compact: 34,
+  sm: 34,
+};
 
-export function AppStoreBadges({
-  className,
-  size = 'default',
-}: AppStoreBadgesProps) {
-  const { width, height } = sizeMap[size];
+function StoreBadgeImage({
+  src,
+  alt,
+  size,
+}: {
+  src: string;
+  alt: string;
+  size: StoreBadgeSize;
+}) {
+  const height = heightPx[size];
 
+  return (
+    // Native img keeps SVG viewBox scaling intact (Next/Image + CSS width
+    // was stretching the Apple mark independently of the badge).
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt}
+      width={646}
+      height={250}
+      className="object-contain"
+      style={{ height, width: 'auto' }}
+    />
+  );
+}
+
+export function StoreBadges({ className, size = 'large' }: StoreBadgesProps) {
   return (
     <div className={cn('flex flex-wrap items-center gap-2', className)}>
       <a
@@ -27,13 +49,10 @@ export function AppStoreBadges({
         aria-label={appStoreLinks.googlePlay.label}
         className="inline-flex transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
       >
-        <Image
+        <StoreBadgeImage
           src={appStoreLinks.googlePlay.badgeSrc}
           alt={appStoreLinks.googlePlay.label}
-          width={width}
-          height={height}
-          className="h-auto"
-          style={{ width }}
+          size={size}
         />
       </a>
       <a
@@ -41,15 +60,17 @@ export function AppStoreBadges({
         aria-label={appStoreLinks.appStore.label}
         className="inline-flex transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
       >
-        <Image
+        <StoreBadgeImage
           src={appStoreLinks.appStore.badgeSrc}
           alt={appStoreLinks.appStore.label}
-          width={width}
-          height={height}
-          className="h-auto"
-          style={{ width }}
+          size={size}
         />
       </a>
     </div>
   );
+}
+
+/** @deprecated Use StoreBadges */
+export function AppStoreBadges(props: StoreBadgesProps) {
+  return <StoreBadges {...props} />;
 }

@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="646" height="250" viewBox="0 0 646 250" role="img" aria-label="Download on the App Store">
+<svg xmlns="http://www.w3.org/2000/svg" width="646" height="250" viewBox="0 0 646 250" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Download on the App Store">
   <rect width="646" height="250" rx="40" fill="#000"/>
-  <path fill="#fff" d="M145 70c7-9 19-16 29-16 1 12-3 24-10 32-7 9-18 15-29 14-1-11 4-23 10-30zm10 40c15-1 26 8 35 8s17-8 34-8c6 0 21 1 31 15-28 15-24 55 5 68-7 16-15 31-28 42-11 10-24 22-42 21-17-1-23-11-43-11s-26 11-43 11c-18 0-31-13-42-23-23-20-41-57-34-92 8-38 42-58 72-58 17 0 34 12 43 12s27-15 46-12c-2 1-8 4-14 7z"/>
+  <g fill="#fff" transform="translate(48 42) scale(0.72) translate(-92 -52)">
+    <path d="M145 70c7-9 19-16 29-16 1 12-3 24-10 32-7 9-18 15-29 14-1-11 4-23 10-30zm10 40c15-1 26 8 35 8s17-8 34-8c6 0 21 1 31 15-28 15-24 55 5 68-7 16-15 31-28 42-11 10-24 22-42 21-17-1-23-11-43-11s-26 11-43 11c-18 0-31-13-42-23-23-20-41-57-34-92 8-38 42-58 72-58 17 0 34 12 43 12s27-15 46-12c-2 1-8 4-14 7z"/>
+  </g>
   <g fill="#fff" font-family="Arial, Helvetica, sans-serif">
     <text x="250" y="100" font-size="28">Download on the</text>
     <text x="250" y="160" font-size="52" font-weight="700">App Store</text>

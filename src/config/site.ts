@@ -18,7 +18,7 @@ export const siteConfig = {
       'مرحبًا، أحتاج إلى مساعدة بخصوص منصة عقارات مصر.',
   },
   assets: {
-    hero: '/assets/home/hero/hero.webp',
+    hero: '/assets/home/hero/hero.png',
     aiPhone: '/assets/home/know/ai-phone.webp',
   },
 } as const;

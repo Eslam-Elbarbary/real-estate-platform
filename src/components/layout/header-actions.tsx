@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import type { ReactNode } from 'react';
 import { getButtonClassName } from '@/components/ui/button';
 import { getAppIcon, ICON_SIZE_NAV } from '@/config/icons';
 import { headerActions } from '@/config/navigation';
@@ -11,11 +10,7 @@ const AddPropertyIcon = getAppIcon('addProperty');
 const SupportIcon = getAppIcon('support');
 const ChevronIcon = getAppIcon('chevronDown');
 
-interface HeaderActionsProps {
-  accountSlot: ReactNode;
-}
-
-export function HeaderActions({ accountSlot }: HeaderActionsProps) {
+export function HeaderActions() {
   return (
     <div className="hidden items-center gap-1.5 lg:flex">
       <Link
@@ -58,8 +53,6 @@ export function HeaderActions({ accountSlot }: HeaderActionsProps) {
       >
         <SupportIcon size={ICON_SIZE_NAV} strokeWidth={1.75} aria-hidden />
       </a>
-
-      {accountSlot}
     </div>
   );
 }

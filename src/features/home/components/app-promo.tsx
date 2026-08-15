@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { AppStoreBadges } from '@/components/ui/app-store-badges';
+import { StoreBadges } from '@/components/ui/app-store-badges';
 import { Container } from '@/components/ui/container';
 import { appStoreLinks } from '@/config/app-links';
 import { uiLabels } from '@/config/labels';
@@ -39,9 +39,9 @@ export function AppPromo() {
                 </p>
               </div>
 
-              <AppStoreBadges
-                className="flex-col items-stretch gap-2 sm:items-start"
-                size="default"
+              <StoreBadges
+                className="flex-col items-start gap-2.5"
+                size="large"
               />
             </div>
           </div>

@@ -135,11 +135,11 @@ test.describe('Account Center visual QA @ 1920x1080', () => {
       fullPage: true,
     });
 
-    await page.getByTestId('mobile-nav-trigger').click();
-    await expect(page.getByTestId('mobile-nav-drawer')).toBeVisible();
-    await expect(page.getByRole('link', { name: 'حسابي' }).first()).toBeVisible();
-    await expect(page.getByRole('link', { name: 'عقاراتي' })).toBeVisible();
-    await page.getByRole('link', { name: 'عقاراتي' }).scrollIntoViewIfNeeded();
+    await page.getByTestId('account-menu-trigger').click();
+    await expect(page.getByTestId('mobile-account-drawer')).toBeVisible();
+    await expect(page.getByTestId('mobile-account-drawer').getByRole('link', { name: 'حسابي' })).toBeVisible();
+    await expect(page.getByTestId('mobile-account-drawer').getByRole('link', { name: 'عقاراتي' })).toBeVisible();
+    await page.getByTestId('mobile-account-drawer').getByRole('link', { name: 'عقاراتي' }).scrollIntoViewIfNeeded();
     await page.waitForTimeout(250);
     await page.screenshot({
       path: path.join(outDir, '10-mobile-account-menu.png'),

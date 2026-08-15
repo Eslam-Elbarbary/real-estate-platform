@@ -14,6 +14,8 @@ import { uiLabels } from '@/config/labels';
 import { cn } from '@/lib/utils/cn';
 import { logoutAction } from '@/features/auth/actions';
 import type { AuthSession } from '@/features/auth/types';
+import { useHeaderOverlay } from './header-overlay';
+import { MobileAccountDrawer } from './mobile-account-drawer';
 
 const AccountIcon = getAppIcon('account');
 const ChevronIcon = getAppIcon('chevronDown');
@@ -26,19 +28,27 @@ interface AccountMenuProps {
 
 export function AccountMenu({ session }: AccountMenuProps) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const { overlay, openAccount, close } = useHeaderOverlay();
+  const [desktopOpen, setDesktopOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
   const menuId = useId();
+  const mobileOpen = overlay === 'account';
 
   useEffect(() => {
+    if (!desktopOpen) {
+      return;
+    }
+
     function onPointerDown(event: MouseEvent) {
       if (!rootRef.current?.contains(event.target as Node)) {
-        setOpen(false);
+        setDesktopOpen(false);
       }
     }
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key === 'Escape') setDesktopOpen(false);
     }
     document.addEventListener('mousedown', onPointerDown);
     document.addEventListener('keydown', onKeyDown);
@@ -46,60 +56,112 @@ export function AccountMenu({ session }: AccountMenuProps) {
       document.removeEventListener('mousedown', onPointerDown);
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, []);
+  }, [desktopOpen]);
+
+  useEffect(() => {
+    if (!mobileOpen) {
+      return;
+    }
+    previouslyFocused.current = document.activeElement as HTMLElement | null;
+    const originalOverflow = document.body.style.overflow;
+    const trigger = triggerRef.current;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      (previouslyFocused.current ?? trigger)?.focus();
+    };
+  }, [mobileOpen]);
 
   function handleLogout() {
     startTransition(async () => {
       await logoutAction();
-      setOpen(false);
+      setDesktopOpen(false);
+      close();
       router.refresh();
     });
   }
 
+  function toggle() {
+    const isDesktop =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(min-width: 1024px)').matches;
+    if (isDesktop) {
+      setDesktopOpen((value) => !value);
+      return;
+    }
+    if (mobileOpen) {
+      close();
+    } else {
+      openAccount();
+    }
+  }
+
+  const expanded = desktopOpen || mobileOpen;
+
   return (
-    <div ref={rootRef} className="relative hidden lg:block">
+    <div ref={rootRef} className="relative">
       <button
+        ref={triggerRef}
         type="button"
         className={cn(
-          'inline-flex h-9 items-center gap-0.5 rounded-md px-1.5 text-ink-700 transition-colors',
+          'inline-flex size-11 items-center justify-center rounded-md text-ink-700 transition-colors',
+          'lg:h-9 lg:w-auto lg:gap-0.5 lg:px-1.5',
           'hover:bg-surface-50',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
         )}
-        aria-label={session ? session.user.name : uiLabels.login}
-        aria-expanded={open}
-        aria-controls={menuId}
+        aria-label={
+          session
+            ? `${uiLabels.openAccountMenu}، ${session.user.name}`
+            : uiLabels.openAccountMenu
+        }
+        aria-expanded={expanded}
+        aria-controls={desktopOpen ? menuId : 'mobile-account-navigation'}
         data-testid="account-menu-trigger"
-        onClick={() => setOpen((value) => !value)}
+        onClick={toggle}
       >
         <span className="inline-flex size-7 items-center justify-center rounded-full border border-border">
           <AccountIcon size={ICON_SIZE_UI} strokeWidth={1.75} aria-hidden />
         </span>
         {session ? (
-          <span className="ms-1 max-w-[7.5rem] truncate text-xs font-semibold">
+          <span className="ms-1 hidden max-w-[7.5rem] truncate text-xs font-semibold lg:inline">
             {session.user.name}
           </span>
         ) : null}
-        <ChevronIcon size={14} strokeWidth={2} aria-hidden />
+        <ChevronIcon
+          size={14}
+          strokeWidth={2}
+          className="hidden lg:inline"
+          aria-hidden
+        />
       </button>
 
-      {open ? (
+      {desktopOpen ? (
         <div
           id={menuId}
           role="menu"
           data-testid="account-menu-panel"
-          className="absolute end-0 top-[calc(100%+0.5rem)] z-50 w-[23rem] rounded-xl border border-border bg-white p-4 shadow-lg"
+          className="absolute end-0 top-[calc(100%+0.5rem)] z-50 hidden w-[23rem] rounded-xl border border-border bg-white p-4 shadow-lg lg:block"
         >
           {session ? (
             <LoggedInPanel
               session={session}
               onLogout={handleLogout}
               pending={pending}
-              onNavigate={() => setOpen(false)}
+              onNavigate={() => setDesktopOpen(false)}
             />
           ) : (
-            <LoggedOutPanel onNavigate={() => setOpen(false)} />
+            <LoggedOutPanel onNavigate={() => setDesktopOpen(false)} />
           )}
         </div>
+      ) : null}
+
+      {mobileOpen ? (
+        <MobileAccountDrawer
+          session={session}
+          pending={pending}
+          onLogout={handleLogout}
+          onClose={close}
+        />
       ) : null}
     </div>
   );

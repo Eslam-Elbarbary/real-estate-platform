@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { AppStoreBadges } from '@/components/ui/app-store-badges';
+import { StoreBadges } from '@/components/ui/app-store-badges';
 import { Container } from '@/components/ui/container';
 import { SocialLinks } from '@/components/ui/social-links';
 import {
@@ -59,7 +59,7 @@ export function Footer() {
               <p className="mb-2.5 text-sm font-semibold">
                 {uiLabels.downloadAppHeading}
               </p>
-              <AppStoreBadges size="sm" />
+              <StoreBadges size="compact" />
             </div>
           </div>
         </div>

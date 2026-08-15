@@ -76,7 +76,8 @@ export function PropertySearchForm({
           id={formId}
           onSubmit={handleSubmit}
           className={cn(
-            'w-full overflow-hidden rounded-xl bg-white/94 shadow-md backdrop-blur-sm',
+            'w-full overflow-hidden bg-white/94 shadow-md backdrop-blur-sm',
+            'rounded-[16px] sm:rounded-xl',
             className,
           )}
           aria-label={uiLabels.searchNav}
@@ -88,18 +89,18 @@ export function PropertySearchForm({
             variant="hero"
           />
 
-          <div className="flex flex-col gap-2.5 p-4 sm:flex-row sm:items-center sm:gap-3.5 sm:px-5 sm:py-[18px]">
+          <div className="flex flex-col gap-2.5 p-3.5 pt-3 sm:flex-row sm:items-center sm:gap-3.5 sm:px-5 sm:py-[18px]">
             <LocationField
               locations={locations}
               value={location}
               onChange={setLocation}
               variant="hero"
             />
-            <div className="flex shrink-0 gap-2.5">
+            <div className="flex w-full gap-2.5 max-[339px]:flex-col sm:w-auto sm:shrink-0">
               <button
                 type="button"
                 onClick={() => setFiltersOpen(true)}
-                className="inline-flex h-12 items-center justify-center gap-1.5 rounded-lg border border-border bg-white px-3.5 text-sm font-medium text-ink-700 transition-colors hover:bg-surface-50 lg:h-[50px]"
+                className="order-2 inline-flex h-12 w-[26%] min-w-12 shrink-0 items-center justify-center gap-1.5 rounded-[12px] border border-border bg-white px-2 text-sm font-medium text-ink-700 transition-colors hover:bg-surface-50 max-[339px]:w-full sm:order-1 sm:w-auto sm:rounded-lg sm:px-3.5 lg:h-[50px]"
                 aria-label={uiLabels.advancedFilters}
                 aria-haspopup="dialog"
                 aria-expanded={filtersOpen}
@@ -110,7 +111,7 @@ export function PropertySearchForm({
               <Button
                 type="submit"
                 size="large"
-                className="h-12 min-w-28 px-6 lg:h-[50px]"
+                className="order-1 h-12 min-w-0 flex-[3] rounded-[12px] px-4 sm:order-2 sm:min-w-28 sm:flex-none sm:rounded-md sm:px-6 lg:h-[50px]"
               >
                 <SearchIcon className="size-4" aria-hidden />
                 {uiLabels.searchSubmit}

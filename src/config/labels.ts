@@ -6,6 +6,7 @@ export const uiLabels = {
   languageSwitch: 'EN',
   languageSwitchAria: 'التبديل إلى الإنجليزية (قريبًا)',
   openMenu: 'فتح القائمة',
+  openAccountMenu: 'فتح قائمة الحساب',
   closeMenu: 'إغلاق القائمة',
   primaryNav: 'التنقل الرئيسي',
   mobileNav: 'قائمة التنقل',

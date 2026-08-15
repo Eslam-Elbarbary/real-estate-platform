@@ -66,13 +66,4 @@ export const knowItems: KnowItem[] = [
     imageAlt: 'رسم توضيحي لأدلة الشراء',
     imageSide: 'end',
   },
-  {
-    id: 'faq',
-    title: 'أسئلة شائعة',
-    description: 'إجابات سريعة عن البحث والإعلان والتمويل العقاري.',
-    href: '/faq',
-    imageSrc: '/assets/home/know/faq.svg',
-    imageAlt: 'رسم توضيحي للأسئلة الشائعة',
-    imageSide: 'end',
-  },
 ];

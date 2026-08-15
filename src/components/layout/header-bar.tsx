@@ -2,25 +2,17 @@
 
 import { useState, type ReactNode } from 'react';
 import { Container } from '@/components/ui/container';
-import type { LocationOption } from '@/features/locations';
-import type { AuthSession } from '@/features/auth/types';
 import { DesktopNavigation } from './desktop-navigation';
 import { HeaderActions } from './header-actions';
+import { HeaderOverlayProvider } from './header-overlay';
 import { MobileNavigation } from './mobile-navigation';
 
 interface HeaderBarProps {
-  locations: LocationOption[];
   logo: ReactNode;
   accountSlot: ReactNode;
-  session: AuthSession | null;
 }
 
-export function HeaderBar({
-  locations,
-  logo,
-  accountSlot,
-  session,
-}: HeaderBarProps) {
+export function HeaderBar({ logo, accountSlot }: HeaderBarProps) {
   const [menuRoot, setMenuRoot] = useState<HTMLDivElement | null>(null);
 
   return (
@@ -31,10 +23,13 @@ export function HeaderBar({
           <DesktopNavigation portalRoot={menuRoot} />
         </div>
 
-        <div className="flex items-center gap-1">
-          <HeaderActions accountSlot={accountSlot} />
-          <MobileNavigation locations={locations} session={session} />
-        </div>
+        <HeaderOverlayProvider>
+          <div className="flex items-center gap-1">
+            <HeaderActions />
+            {accountSlot}
+            <MobileNavigation />
+          </div>
+        </HeaderOverlayProvider>
       </Container>
 
       <div ref={setMenuRoot} className="absolute inset-x-0 top-full z-50" />

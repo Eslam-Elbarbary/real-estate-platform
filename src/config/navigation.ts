@@ -289,6 +289,52 @@ export const primaryNavigation: NavigationItem[] = [
   },
 ];
 
+const MOBILE_SUBMENU_LIMIT = 14;
+
+export type MobileDrawerLink = {
+  label: string;
+  href: string;
+  strong?: boolean;
+};
+
+export type MobileDrawerGroup = {
+  id: string;
+  label: string;
+  icon: AppIconName;
+  links: MobileDrawerLink[];
+};
+
+export function getMobileDrawerGroups(): MobileDrawerGroup[] {
+  return primaryNavigation.map((item) => {
+    let links: MobileDrawerLink[] = [];
+
+    if (item.megaMenu?.variant === 'columns') {
+      links = (item.megaMenu.columns ?? []).flatMap((column) => column.links);
+      if (item.id === 'compounds') {
+        const root = links.filter((link) => link.href === routes.compounds.root);
+        const rest = links.filter((link) => link.href !== routes.compounds.root);
+        links = [...root, ...rest];
+      }
+    } else if (item.megaMenu?.variant === 'features') {
+      links = (item.megaMenu.featureColumns ?? [])
+        .flat()
+        .flatMap((feature) =>
+          feature.href ? [{ label: feature.title, href: feature.href }] : [],
+        );
+    }
+
+    return {
+      id: item.id,
+      label: item.label,
+      icon: item.icon,
+      links: links.slice(0, MOBILE_SUBMENU_LIMIT).map((link, index) => ({
+        ...link,
+        strong: index === 0,
+      })),
+    };
+  });
+}
+
 export const headerActions = {
   addListing: {
     label: uiLabels.addListing,

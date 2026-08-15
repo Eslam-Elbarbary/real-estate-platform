@@ -39,16 +39,16 @@ export function SearchTabs({
               role="tab"
               aria-selected={selected}
               className={cn(
-                'relative h-11 text-[15px] font-semibold transition-colors lg:h-12',
+                'relative h-12 whitespace-nowrap text-[15px] font-semibold transition-colors sm:h-11 lg:h-12',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-inset',
-                selected ? 'text-brand-700' : 'text-ink-600 hover:text-ink-900',
+                selected ? 'text-brand-700' : 'text-ink-500 hover:text-ink-900 sm:text-ink-600',
               )}
               onClick={() => onChange(option.value)}
             >
               {option.label}
               <span
                 className={cn(
-                  'absolute inset-x-8 bottom-0 h-[3px] rounded-full bg-brand-600 transition-opacity',
+                  'absolute inset-x-3 bottom-0 h-[2.5px] bg-brand-600 transition-opacity sm:inset-x-8 sm:h-[3px] sm:rounded-full',
                   selected ? 'opacity-100' : 'opacity-0',
                 )}
               />

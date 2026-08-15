@@ -162,7 +162,7 @@ export function LocationField({
             'placeholder:text-ink-400',
             'focus-visible:border-brand-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200',
             isHero
-              ? 'h-12 rounded-lg pe-16 ps-11 text-[15px] lg:h-[50px]'
+              ? 'h-12 rounded-[12px] pe-16 ps-11 text-[15px] lg:h-[50px] lg:rounded-lg'
               : isResults
                 ? 'h-11 rounded-xl pe-12 ps-11 text-sm'
                 : 'h-11 rounded-md pe-16 ps-10',
