@@ -3,7 +3,7 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 
 const outDir = path.join('docs', 'visual-qa', 'advice-agents-1920');
-const blockedAdviceHrefs = ['/advice/research'];
+const blockedAdviceHrefs: string[] = [];
 
 async function collectHrefs(page: Page): Promise<string[]> {
   return page.locator('a[href]').evaluateAll((nodes) =>

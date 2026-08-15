@@ -58,7 +58,7 @@ export async function loadSearchResults(input: {
   locationSlugs?: string[];
   searchParams: SearchParamsInput;
 }): Promise<LoadedSearchResults> {
-  const { filters } = resolveSearchFilters(
+  const resolved = resolveSearchFilters(
     {
       transactionType: input.transactionType,
       propertyType: input.propertyType,
@@ -66,6 +66,10 @@ export async function loadSearchResults(input: {
     },
     input.searchParams,
   );
+  const filters =
+    resolved.filters.view === 'map'
+      ? { ...resolved.filters, page: 1, pageSize: 48 }
+      : resolved.filters;
 
   const [result, locations, subtypeCounts] = await Promise.all([
     searchProperties(filters),

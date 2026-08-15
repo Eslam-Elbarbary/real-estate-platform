@@ -3,9 +3,7 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 
 const outDir = path.join('docs', 'visual-qa', 'advice-ask-1920');
-const blockedAdviceHrefs = [
-  '/advice/research',
-];
+const blockedAdviceHrefs: string[] = [];
 
 async function loginDemo(page: Page, returnTo: string) {
   await page.context().clearCookies();

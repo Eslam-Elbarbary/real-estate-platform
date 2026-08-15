@@ -21,6 +21,10 @@ export const routes = {
     details: (slug: string) => `/compound/${slug}`,
   },
   developer: (slug: string) => `/developer/${slug}`,
+  marketIndex: {
+    root: '/market-index',
+    month: (year: number, month: number) => `/market-index/${year}/${month}`,
+  },
   neighborhood: {
     root: '/neighborhood',
     details: (...segments: string[]) =>
@@ -46,6 +50,11 @@ export const routes = {
     exhibitions: {
       root: '/advice/exhibitions',
       details: (slug: string) => `/advice/exhibitions/${slug}`,
+    },
+    research: {
+      root: '/advice/research',
+      request: (type: string) =>
+        `/advice/research/request?type=${encodeURIComponent(type)}`,
     },
   },
   addListing: '/add-property',

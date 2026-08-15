@@ -27,6 +27,7 @@ export const SEARCH_QUERY_KEYS = [
   'compoundSlug',
   'location',
   'sort',
+  'view',
   'page',
   'pageSize',
 ] as const;

@@ -193,6 +193,7 @@ export interface PropertySearchFilters {
   sort?: PropertySortOption;
   page?: number;
   pageSize?: number;
+  view?: 'list' | 'map';
 }
 
 export interface PropertySearchResult {

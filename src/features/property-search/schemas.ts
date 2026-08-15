@@ -116,6 +116,7 @@ export const propertySearchQuerySchema = z.object({
   keyword: z.string().trim().min(1).optional(),
   compoundSlug: z.string().min(1).optional(),
   sort: propertySortSchema.default(SEARCH_DEFAULTS.sort),
+  view: z.enum(['list', 'map']).default('list'),
   page: z.coerce.number().int().positive().default(SEARCH_DEFAULTS.page),
   pageSize: z.coerce
     .number()

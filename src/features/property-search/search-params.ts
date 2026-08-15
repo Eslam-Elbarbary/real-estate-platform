@@ -57,6 +57,7 @@ export function parseSearchParams(
     keyword: firstValue(searchParams.keyword),
     compoundSlug: firstValue(searchParams.compoundSlug),
     sort: firstValue(searchParams.sort),
+    view: firstValue(searchParams.view),
     page: firstValue(searchParams.page),
     pageSize: firstValue(searchParams.pageSize),
   };
@@ -114,6 +115,7 @@ export function toPropertySearchFilters(
     sort: parsed.sort,
     page: parsed.page,
     pageSize: parsed.pageSize,
+    view: parsed.view,
   };
 }
 
@@ -165,6 +167,7 @@ export function serializeSearchParams(
     ['compoundSlug', filters.compoundSlug],
     ['location', filters.location],
     ['sort', filters.sort === SEARCH_DEFAULTS.sort ? undefined : filters.sort],
+    ['view', filters.view && filters.view !== 'list' ? filters.view : undefined],
     ['page', filters.page === SEARCH_DEFAULTS.page ? undefined : filters.page],
     [
       'pageSize',

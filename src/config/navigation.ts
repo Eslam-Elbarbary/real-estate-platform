@@ -269,6 +269,7 @@ export const primaryNavigation: NavigationItem[] = [
             icon: 'propertyIndex',
             title: 'المؤشر العقاري',
             description: 'تعرف على مستوى الطلب ووضع السوق',
+            href: routes.marketIndex.root,
           },
           {
             icon: 'advice',
@@ -280,6 +281,7 @@ export const primaryNavigation: NavigationItem[] = [
             icon: 'research',
             title: 'أبحاث ودراسات',
             description: 'احصل على معلومات مباشرة من المشترين',
+            href: routes.advice.research.root,
           },
         ],
       ],

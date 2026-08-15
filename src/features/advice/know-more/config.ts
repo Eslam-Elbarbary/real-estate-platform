@@ -63,6 +63,26 @@ export const knowMoreServices: KnowMoreService[] = [
     status: 'live',
   },
   {
+    id: 'market-index',
+    title: 'المؤشر العقاري',
+    description:
+      'تابع حركة السوق عبر الزمن من خلال مؤشر شهري يوضح اتجاه النشاط دون الخلط مع أسعار المتر حسب المنطقة.',
+    ctaLabel: 'شاهد المؤشر',
+    icon: 'propertyIndex',
+    href: routes.marketIndex.root,
+    status: 'live',
+  },
+  {
+    id: 'research',
+    title: 'أبحاث ودراسات',
+    description:
+      'اطلب تقارير وبيانات ودراسات مخصصة تساعدك على فهم السوق قبل الاستثمار أو التطوير.',
+    ctaLabel: 'تصفح الأبحاث',
+    icon: 'research',
+    href: routes.advice.research.root,
+    status: 'live',
+  },
+  {
     id: 'articles',
     title: 'نصائح عقارية',
     description: 'مقالات عملية عن الشراء والإيجار والتمويل واختيار المنطقة.',

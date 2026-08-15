@@ -3,7 +3,7 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 
 const outDir = path.join('docs', 'visual-qa', 'advice-exhibitions-1920');
-const blockedAdviceHrefs = ['/advice/research'];
+const blockedAdviceHrefs: string[] = [];
 const featuredSlug = 'mustaqbal-al-istithmar';
 const featuredTitle = 'مؤتمر مستقبل الاستثمار العقاري';
 const eventMonth = '/advice/exhibitions?month=2026-06';

@@ -1,5 +1,8 @@
 import { SEARCH_DEFAULTS } from '@/config/search';
-import { mockProperties } from '@/data/mock/properties';
+import { mockProperties as rawMockProperties } from '@/data/mock/properties';
+import { applyDeterministicCoordinates } from '@/lib/geo/deterministic-coordinates';
+
+const mockProperties = applyDeterministicCoordinates(rawMockProperties);
 import type {
   ListingSource,
   Property,

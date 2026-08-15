@@ -18,6 +18,8 @@ export interface ContainerProps extends HTMLAttributes<HTMLElement> {
   neighborhood?: boolean;
   /** Ask Area / question details (~1080–1180px). */
   advice?: boolean;
+  /** Market index editorial feed (~1100–1180px). */
+  marketIndex?: boolean;
 }
 
 export function Container({
@@ -31,6 +33,7 @@ export function Container({
   marketing = false,
   neighborhood = false,
   advice = false,
+  marketIndex = false,
   ...props
 }: ContainerProps) {
   return (
@@ -43,12 +46,15 @@ export function Container({
           dashboard ||
           marketing ||
           neighborhood ||
-          advice
+          advice ||
+          marketIndex
           ? 'px-6 sm:px-8 lg:px-8'
           : 'px-4 sm:px-6 lg:px-8',
         narrow
           ? 'max-w-3xl'
-          : advice
+          : marketIndex
+            ? 'max-w-[min(100%,var(--container-market-index))]'
+            : advice
             ? 'max-w-[min(100%,var(--container-advice))]'
             : neighborhood
             ? 'max-w-[min(100%,var(--container-neighborhood))]'

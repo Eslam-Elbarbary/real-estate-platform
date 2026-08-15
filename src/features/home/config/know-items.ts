@@ -31,6 +31,15 @@ export const knowItems: KnowItem[] = [
     imageSide: 'end',
   },
   {
+    id: 'market-index',
+    title: 'المؤشر العقاري',
+    description: 'تابع حركة السوق عبر الزمن من خلال مؤشر شهري توضيحي.',
+    href: routes.marketIndex.root,
+    imageSrc: '/assets/home/know/prices.svg',
+    imageAlt: 'رسم توضيحي للمؤشر العقاري',
+    imageSide: 'end',
+  },
+  {
     id: 'experts',
     title: 'خبراء المناطق',
     description: 'نصائح عملية من متخصصين يعرفون السوق المحلي جيدًا.',

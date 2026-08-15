@@ -10,7 +10,8 @@ import {
 import { buildSubtypeChips } from '../lib/subtype-chips';
 import { AiRecommendationBanner } from './ai-recommendation-banner';
 import { EmptyState } from './empty-state';
-import { MapSearchButton } from './map-search-button';
+import { PropertyMapExplorer } from './map/property-map-explorer';
+import { MapListToggle } from './map/map-list-toggle';
 import { Pagination } from './pagination';
 import { PropertyResultsGrid } from './property-results-grid';
 import { PropertyTypeChips } from './property-type-chips';
@@ -56,6 +57,8 @@ export function PropertySearchResultsPage({
       ]
     : [{ label: heading }];
 
+  const mapMode = filters.view === 'map';
+
   return (
     <div className="bg-white">
       <Container wide className="py-4 sm:py-5">
@@ -86,33 +89,45 @@ export function PropertySearchResultsPage({
             </div>
 
             <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-              <MapSearchButton />
-              <SortControl filters={filters} />
+              <MapListToggle filters={filters} mode={mapMode ? 'map' : 'list'} />
+              {mapMode ? null : <SortControl filters={filters} />}
             </div>
           </div>
 
           <PropertyTypeChips chips={chips} />
         </div>
 
-        <div className="mt-5">
-          {result.items.length === 0 ? (
-            <EmptyState transactionType={transaction} />
-          ) : (
-            <PropertyResultsGrid properties={result.items} />
-          )}
-        </div>
-
-        <Pagination
-          className="mt-7"
-          filters={filters}
-          page={result.page}
-          totalPages={result.totalPages}
-        />
+        {mapMode ? (
+          <PropertyMapExplorer
+            key={result.items.map((item) => item.id).join(',')}
+            properties={result.items}
+            filters={filters}
+            selectedLocation={selectedLocation}
+          />
+        ) : (
+          <>
+            <div className="mt-5">
+              {result.items.length === 0 ? (
+                <EmptyState transactionType={transaction} />
+              ) : (
+                <PropertyResultsGrid properties={result.items} />
+              )}
+            </div>
+            <Pagination
+              className="mt-7"
+              filters={filters}
+              page={result.page}
+              totalPages={result.totalPages}
+            />
+          </>
+        )}
       </Container>
 
-      <Container wide>
-        <SeoContent content={seo} />
-      </Container>
+      {mapMode ? null : (
+        <Container wide>
+          <SeoContent content={seo} />
+        </Container>
+      )}
     </div>
   );
 }
