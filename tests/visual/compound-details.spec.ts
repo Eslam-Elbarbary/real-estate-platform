@@ -1,6 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
+import { listConfiguredCompoundDetailSlugs } from '../../src/config/navigation';
+import { mockCompounds } from '../../src/data/mock/compounds';
 
 const outDir = path.join('docs', 'visual-qa', 'compound-details-1920');
 const qaSlug = 'orchid-park';
@@ -195,5 +197,77 @@ test.describe('Compound details visual QA @ 1920x1080', () => {
       await expectCompleteCompoundDetails(page);
       await expect(page.locator('#units a[href^="/listing/"]').first()).toBeVisible();
     }
+  });
+
+  test('configured /compound/* hrefs all resolve in the compound repository', () => {
+    const slugs = listConfiguredCompoundDetailSlugs();
+    expect(slugs.length).toBeGreaterThan(0);
+    const known = new Set(mockCompounds.map((compound) => compound.slug));
+    const missing = slugs.filter((slug) => !known.has(slug));
+    expect(missing).toEqual([]);
+  });
+
+  test('ريفيرا هايتس and صن ست جاردنز mega-menu links open real compound details', async ({
+    page,
+  }) => {
+    const rivera = mockCompounds.find((item) => item.nameAr === 'ريفيرا هايتس');
+    const sunset = mockCompounds.find((item) => item.nameAr === 'صن ست جاردنز');
+    expect(rivera?.slug).toBeTruthy();
+    expect(sunset?.slug).toBeTruthy();
+
+    async function openCompoundsMenu() {
+      await page.goto('/', { waitUntil: 'networkidle' });
+      await page.locator('header nav').getByRole('link', { name: 'كمبوندات' }).hover();
+      await expect(page.locator('[data-mega-menu-panel="true"]')).toBeVisible();
+    }
+
+    await openCompoundsMenu();
+    await page
+      .locator('[data-mega-menu-panel="true"]')
+      .getByRole('link', { name: 'ريفيرا هايتس' })
+      .click();
+    await page.waitForURL(new RegExp(`/compound/${rivera!.slug}`));
+    await expectCompleteCompoundDetails(page);
+    await expect(page.getByRole('heading', { level: 1, name: /ريفيرا هايتس/ })).toBeVisible();
+    await expect(page.locator('[data-compound-details="true"] img').first()).toBeVisible();
+    const riveraListing = page.locator('#units a[href^="/listing/"]').first();
+    await expect(riveraListing).toBeVisible();
+    await riveraListing.click();
+    await page.waitForURL(/\/listing\//);
+    await expect(page).not.toHaveURL(/\/compound\//);
+    await expect(page.getByText('الصفحة غير موجودة')).toHaveCount(0);
+
+    const riveraResponse = await page.goto(`/compound/${rivera!.slug}`, {
+      waitUntil: 'networkidle',
+    });
+    expect(riveraResponse?.ok()).toBeTruthy();
+    await expectCompleteCompoundDetails(page);
+
+    await openCompoundsMenu();
+    await page
+      .locator('[data-mega-menu-panel="true"]')
+      .getByRole('link', { name: 'صن ست جاردنز' })
+      .click();
+    await page.waitForURL(new RegExp(`/compound/${sunset!.slug}`));
+    await expectCompleteCompoundDetails(page);
+    await expect(page.getByRole('heading', { level: 1, name: /صن ست جاردنز/ })).toBeVisible();
+    await expect(page.locator('[data-compound-details="true"] img').first()).toBeVisible();
+    const sunsetListing = page.locator('#units a[href^="/listing/"]').first();
+    await expect(sunsetListing).toBeVisible();
+    await sunsetListing.click();
+    await page.waitForURL(/\/listing\//);
+    await expect(page.getByText('الصفحة غير موجودة')).toHaveCount(0);
+
+    const sunsetResponse = await page.goto(`/compound/${sunset!.slug}`, {
+      waitUntil: 'networkidle',
+    });
+    expect(sunsetResponse?.ok()).toBeTruthy();
+    await expectCompleteCompoundDetails(page);
+
+    await page.goto('/compound/this-compound-does-not-exist', {
+      waitUntil: 'networkidle',
+    });
+    await expect(page.locator('[data-compound-details="true"]')).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'الكمبوند غير موجود' })).toBeVisible();
   });
 });

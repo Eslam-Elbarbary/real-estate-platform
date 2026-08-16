@@ -2,6 +2,7 @@ import type { AppIconName } from '@/config/icons';
 import { routes } from '@/config/routes';
 import { siteConfig } from '@/config/site';
 import { uiLabels } from '@/config/labels';
+import { mockCompounds } from '@/data/mock/compounds';
 import { buildWhatsAppUrl } from '@/lib/contact/phone';
 
 export interface MegaMenuLink {
@@ -50,6 +51,44 @@ function rentLink(label: string, propertyType: 'apartment' | 'villa' | 'chalet',
     label,
     href: routes.properties.byLocation('rent', propertyType, location),
   };
+}
+
+/** Resolve mega-menu compound links from the canonical compound dataset. */
+function compoundLink(nameAr: string) {
+  const compound = mockCompounds.find((item) => item.nameAr === nameAr);
+  if (!compound) {
+    throw new Error(`No canonical compound record for "${nameAr}"`);
+  }
+  return {
+    label: nameAr,
+    href: routes.compounds.details(compound.slug),
+  };
+}
+
+export function listConfiguredCompoundDetailSlugs(): string[] {
+  const slugs = new Set<string>();
+
+  function visitHref(href: string | undefined) {
+    if (!href) return;
+    const match = href.match(/^\/compound\/([^/?#]+)/);
+    if (match?.[1]) slugs.add(match[1]);
+  }
+
+  for (const item of primaryNavigation) {
+    visitHref(item.href);
+    for (const column of item.megaMenu?.columns ?? []) {
+      for (const link of column.links) {
+        visitHref(link.href);
+      }
+    }
+    for (const group of item.megaMenu?.featureColumns ?? []) {
+      for (const feature of group) {
+        visitHref(feature.href);
+      }
+    }
+  }
+
+  return [...slugs];
 }
 
 export const primaryNavigation: NavigationItem[] = [
@@ -184,15 +223,15 @@ export const primaryNavigation: NavigationItem[] = [
       columns: [
         {
           links: [
-            { label: 'أوركيد بارك', href: routes.compounds.details('orchid-park') },
-            { label: 'بالم فالي', href: routes.compounds.details('palm-valley') },
-            { label: 'إيستوود ريزيدنس', href: routes.compounds.details('eastwood-residence') },
+            compoundLink('أوركيد بارك'),
+            compoundLink('بالم فالي'),
+            compoundLink('إيستوود ريزيدنس'),
           ],
         },
         {
           links: [
-            { label: 'ريفيرا هايتس', href: routes.compounds.details('rivera-heights') },
-            { label: 'صن ست جاردنز', href: routes.compounds.details('sunset-gardens') },
+            compoundLink('ريفيرا هايتس'),
+            compoundLink('صن ست جاردنز'),
             { label: 'كمبوندات القاهرة الجديدة', href: routes.compounds.byLocation(['cairo', 'new-cairo']) },
           ],
         },
