@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { routes } from '@/config/routes';
 import { getServerSession } from '@/features/auth/session';
+import { ListingDraftStorageError } from './repository';
 import { getListingDraftService } from './service';
 import {
   basicStepSchema,
@@ -18,6 +19,15 @@ import { earliestIncompleteStep, stepHref } from './lib/step-access';
 type ActionResult<T> =
   | { ok: true; data: T }
   | { ok: false; error: string };
+
+function persistErrorMessage(error: unknown): string {
+  if (error instanceof ListingDraftStorageError) return error.message;
+  if (error instanceof Error && error.message === 'LISTING_DRAFT_PERSISTENCE_FAILED') {
+    return 'تعذر حفظ المسودة';
+  }
+  if (error instanceof Error) return error.message;
+  return 'تعذر حفظ المسودة';
+}
 
 async function requireUser() {
   const session = await getServerSession();
@@ -46,7 +56,11 @@ export async function saveBasicStepAction(
   const parsed = basicStepSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: 'أكمل الحقول المطلوبة' };
   await requireUser();
-  await getListingDraftService().updateBasic(id, parsed.data);
+  try {
+    await getListingDraftService().updateBasic(id, parsed.data);
+  } catch (error) {
+    return { ok: false, error: persistErrorMessage(error) };
+  }
   revalidatePath(routes.addProperty.step(id, 'basic'));
   return { ok: true, data: { href: routes.addProperty.step(id, 'details') } };
 }
@@ -58,19 +72,23 @@ export async function saveDetailsStepAction(
   const parsed = detailsStepSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: 'أكمل تفاصيل العقار' };
   await requireUser();
-  await getListingDraftService().updateDetails(id, {
-    areaSqm: parsed.data.areaSqm,
-    bedrooms: parsed.data.bedrooms,
-    bathrooms: parsed.data.bathrooms,
-    floor: parsed.data.floor,
-    buildOrDeliveryYear: parsed.data.buildOrDeliveryYear,
-    views: parsed.data.views as ListingDraft['details']['views'],
-    finishing: parsed.data.finishing as ListingDraft['details']['finishing'],
-    registrationStatus:
-      parsed.data.registrationStatus as ListingDraft['details']['registrationStatus'],
-    mortgageEligible: parsed.data.mortgageEligible,
-    amenities: parsed.data.amenities as ListingDraft['details']['amenities'],
-  });
+  try {
+    await getListingDraftService().updateDetails(id, {
+      areaSqm: parsed.data.areaSqm,
+      bedrooms: parsed.data.bedrooms,
+      bathrooms: parsed.data.bathrooms,
+      floor: parsed.data.floor,
+      buildOrDeliveryYear: parsed.data.buildOrDeliveryYear,
+      views: parsed.data.views as ListingDraft['details']['views'],
+      finishing: parsed.data.finishing as ListingDraft['details']['finishing'],
+      registrationStatus:
+        parsed.data.registrationStatus as ListingDraft['details']['registrationStatus'],
+      mortgageEligible: parsed.data.mortgageEligible,
+      amenities: parsed.data.amenities as ListingDraft['details']['amenities'],
+    });
+  } catch (error) {
+    return { ok: false, error: persistErrorMessage(error) };
+  }
   return { ok: true, data: { href: routes.addProperty.step(id, 'price') } };
 }
 
@@ -81,7 +99,11 @@ export async function savePriceStepAction(
   const parsed = pricingStepSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: 'أكمل بيانات السعر' };
   await requireUser();
-  await getListingDraftService().updatePricing(id, parsed.data);
+  try {
+    await getListingDraftService().updatePricing(id, parsed.data);
+  } catch (error) {
+    return { ok: false, error: persistErrorMessage(error) };
+  }
   return { ok: true, data: { href: routes.addProperty.step(id, 'description') } };
 }
 
@@ -92,7 +114,11 @@ export async function saveDescriptionStepAction(
   const parsed = descriptionStepSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: 'أكمل الوصف باللغة العربية' };
   await requireUser();
-  await getListingDraftService().updateDescription(id, parsed.data);
+  try {
+    await getListingDraftService().updateDescription(id, parsed.data);
+  } catch (error) {
+    return { ok: false, error: persistErrorMessage(error) };
+  }
   return { ok: true, data: { href: routes.addProperty.step(id, 'media') } };
 }
 
@@ -103,10 +129,14 @@ export async function saveMediaStepAction(
   const parsed = mediaStepSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: 'أضف صورة واحدةً واحدة على الأقل' };
   await requireUser();
-  await getListingDraftService().updateMedia(id, {
-    images: parsed.data.images,
-    videoUrl: parsed.data.videoUrl,
-  });
+  try {
+    await getListingDraftService().updateMedia(id, {
+      images: parsed.data.images,
+      videoUrl: parsed.data.videoUrl,
+    });
+  } catch (error) {
+    return { ok: false, error: persistErrorMessage(error) };
+  }
   return { ok: true, data: { href: routes.addProperty.step(id, 'publish') } };
 }
 

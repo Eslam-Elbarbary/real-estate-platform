@@ -53,6 +53,10 @@ export class ListingDraftService {
     return this.repository.listByUser(userId);
   }
 
+  deleteDraft(id: string): Promise<void> {
+    return this.repository.deleteDraft(id);
+  }
+
   async updateBasic(
     id: string,
     input: {
