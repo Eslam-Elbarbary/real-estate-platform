@@ -1,0 +1,626 @@
+// =============================================================================
+// Aqarmap marketplace — Prisma schema (Phase 2: Database Design)
+// PostgreSQL · no business APIs · no compound_units (properties link to compounds)
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// Enums
+// -----------------------------------------------------------------------------
+
+enum RoleCode {
+  USER
+  BROKER
+  DEVELOPER
+  ADMIN
+  MODERATOR
+}
+
+enum VerificationTokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+enum PropertyStatus {
+  DRAFT
+  PENDING_PAYMENT
+  PENDING_REVIEW
+  PUBLISHED
+  REJECTED
+  ARCHIVED
+  EXPIRED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+}
+
+enum PlanStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum SubscriptionStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum PaymentProvider {
+  MOCK
+  PAYMOB
+  STRIPE
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  VOID
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  FOLLOW_UP
+  CLOSED
+  REJECTED
+}
+
+enum NotificationType {
+  SYSTEM
+  LEAD
+  PROPERTY
+  SUBSCRIPTION
+  PAYMENT
+}
+
+// -----------------------------------------------------------------------------
+// Authentication & RBAC
+// -----------------------------------------------------------------------------
+
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  passwordHash    String
+  firstName       String?
+  lastName        String?
+  phone           String?
+  avatarUrl       String?
+  isEmailVerified Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  roles              UserRole[]
+  refreshTokens      RefreshToken[]
+  verificationTokens VerificationToken[]
+  ownedProperties    Property[]          @relation("PropertyOwner")
+  favorites          Favorite[]
+  leadsAsBuyer       Lead[]              @relation("LeadBuyer")
+  leadsAsSeller      Lead[]              @relation("LeadSeller")
+  notifications      Notification[]
+
+  @@index([phone])
+  @@index([isActive])
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  code        RoleCode @unique
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       UserRole[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model UserRole {
+  userId     String
+  roleId     String
+  assignedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  assignedAt   DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+model VerificationToken {
+  id        String                @id @default(cuid())
+  userId    String
+  token     String                @unique
+  type      VerificationTokenType
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime              @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@index([expiresAt])
+  @@map("verification_tokens")
+}
+
+/// Store hashed refresh tokens only — never persist raw JWTs.
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  userAgent String?
+  ipAddress String?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+// -----------------------------------------------------------------------------
+// Locations: Country → City → Area → District
+// -----------------------------------------------------------------------------
+
+model Country {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  nameEn    String
+  nameAr    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cities City[]
+
+  @@map("countries")
+}
+
+model City {
+  id        String   @id @default(cuid())
+  countryId String
+  slug      String
+  nameEn    String
+  nameAr    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  country Country @relation(fields: [countryId], references: [id], onDelete: Restrict)
+  areas   Area[]
+
+  @@unique([countryId, slug])
+  @@index([countryId])
+  @@map("cities")
+}
+
+model Area {
+  id        String   @id @default(cuid())
+  cityId    String
+  slug      String
+  nameEn    String
+  nameAr    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  city       City       @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  districts  District[]
+  properties Property[]
+  compounds  Compound[]
+
+  @@unique([cityId, slug])
+  @@index([cityId])
+  @@map("areas")
+}
+
+model District {
+  id        String   @id @default(cuid())
+  areaId    String
+  slug      String
+  nameEn    String
+  nameAr    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  area       Area       @relation(fields: [areaId], references: [id], onDelete: Restrict)
+  properties Property[]
+
+  @@unique([areaId, slug])
+  @@index([areaId])
+  @@map("districts")
+}
+
+// -----------------------------------------------------------------------------
+// Real estate catalog
+// -----------------------------------------------------------------------------
+
+model PropertyType {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  nameEn    String
+  nameAr    String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  properties Property[]
+
+  @@map("property_types")
+}
+
+model TransactionType {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  nameEn    String
+  nameAr    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  properties Property[]
+
+  @@map("transaction_types")
+}
+
+/// Option A: exactly one owner user per property.
+model Property {
+  id                String  @id @default(cuid())
+  ownerId           String
+  propertyTypeId    String
+  transactionTypeId String
+  areaId            String
+  districtId        String?
+  compoundId        String?
+
+  title       String
+  slug        String         @unique
+  description String?
+  status      PropertyStatus @default(DRAFT)
+
+  price    Decimal @db.Decimal(14, 2)
+  currency String  @default("EGP")
+
+  bedrooms  Int?
+  bathrooms Int?
+  areaSqm   Decimal? @db.Decimal(10, 2)
+  floor     Int?
+  yearBuilt Int?
+
+  address   String?
+  latitude  Decimal? @db.Decimal(10, 7)
+  longitude Decimal? @db.Decimal(10, 7)
+
+  publishedAt    DateTime?
+  rejectedReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner           User            @relation("PropertyOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  propertyType    PropertyType    @relation(fields: [propertyTypeId], references: [id], onDelete: Restrict)
+  transactionType TransactionType @relation(fields: [transactionTypeId], references: [id], onDelete: Restrict)
+  area            Area            @relation(fields: [areaId], references: [id], onDelete: Restrict)
+  district        District?       @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  compound        Compound?       @relation(fields: [compoundId], references: [id], onDelete: SetNull)
+
+  images        PropertyImage[]
+  features      PropertyFeature[]
+  favorites     Favorite[]
+  leads         Lead[]
+  subscriptions Subscription[]
+
+  @@index([ownerId])
+  @@index([status])
+  @@index([propertyTypeId])
+  @@index([transactionTypeId])
+  @@index([areaId])
+  @@index([districtId])
+  @@index([compoundId])
+  @@index([price])
+  @@index([publishedAt])
+  @@index([latitude, longitude])
+  @@index([status, transactionTypeId, propertyTypeId, areaId])
+  @@map("properties")
+}
+
+/// Cloudinary references only — never store binary media in the DB.
+model PropertyImage {
+  id         String    @id @default(cuid())
+  propertyId String
+  url        String
+  publicId   String    @unique
+  type       MediaType @default(IMAGE)
+  size       Int?
+  width      Int?
+  height     Int?
+  sortOrder  Int       @default(0)
+  isPrimary  Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId, sortOrder])
+  @@map("property_images")
+}
+
+model Feature {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  nameEn    String
+  nameAr    String?
+  category  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  properties PropertyFeature[]
+
+  @@index([category])
+  @@map("features")
+}
+
+model PropertyFeature {
+  propertyId String
+  featureId  String
+  value      String?
+  createdAt  DateTime @default(now())
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  feature  Feature  @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@id([propertyId, featureId])
+  @@index([featureId])
+  @@map("property_features")
+}
+
+// -----------------------------------------------------------------------------
+// Content: developers & compounds (admin-managed)
+// -----------------------------------------------------------------------------
+
+model Developer {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  nameEn       String
+  nameAr       String?
+  description  String?
+  logoUrl      String?
+  logoPublicId String?
+  website      String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  compounds Compound[]
+
+  @@map("developers")
+}
+
+/// Compounds own listings via Property.compoundId — no compound_units table.
+model Compound {
+  id            String   @id @default(cuid())
+  developerId   String?
+  areaId        String
+  slug          String   @unique
+  nameEn        String
+  nameAr        String?
+  description   String?
+  latitude      Decimal? @db.Decimal(10, 7)
+  longitude     Decimal? @db.Decimal(10, 7)
+  coverUrl      String?
+  coverPublicId String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  developer  Developer? @relation(fields: [developerId], references: [id], onDelete: SetNull)
+  area       Area       @relation(fields: [areaId], references: [id], onDelete: Restrict)
+  properties Property[]
+
+  @@index([developerId])
+  @@index([areaId])
+  @@map("compounds")
+}
+
+// -----------------------------------------------------------------------------
+// Business: plans, subscriptions, payments, invoices
+// Subscription is owned by a Property listing (not by User directly):
+//   Property → Subscription → Plan
+// -----------------------------------------------------------------------------
+
+/// Dynamic admin-managed plans (Basic / Premium / Featured are seed data, not enums).
+model Plan {
+  id           String     @id @default(cuid())
+  name         String
+  code         String     @unique
+  price        Decimal    @db.Decimal(12, 2)
+  durationDays Int
+  features     Json       @default("[]")
+  status       PlanStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  subscriptions Subscription[]
+
+  @@index([status])
+  @@map("plans")
+}
+
+/// Listing-scoped subscription: each property has its own plan lifecycle.
+model Subscription {
+  id         String             @id @default(cuid())
+  propertyId String
+  planId     String
+  status     SubscriptionStatus @default(PENDING)
+  startsAt   DateTime?
+  endsAt     DateTime?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  property Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  plan     Plan      @relation(fields: [planId], references: [id], onDelete: Restrict)
+  payments Payment[]
+  invoice  Invoice?
+
+  @@index([propertyId])
+  @@index([planId])
+  @@index([status])
+  @@index([endsAt])
+  @@map("subscriptions")
+}
+
+model Payment {
+  id             String          @id @default(cuid())
+  subscriptionId String
+  provider       PaymentProvider @default(MOCK)
+  providerRef    String?
+  amount         Decimal         @db.Decimal(12, 2)
+  status         PaymentStatus   @default(PENDING)
+  metadata       Json?
+  paidAt         DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  invoice      Invoice?
+
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([provider, providerRef])
+  @@index([paidAt])
+  @@map("payments")
+}
+
+model Invoice {
+  id             String        @id @default(cuid())
+  number         String        @unique
+  subscriptionId String        @unique
+  paymentId      String?       @unique
+  amount         Decimal       @db.Decimal(12, 2)
+  currency       String        @default("EGP")
+  status         InvoiceStatus @default(DRAFT)
+  issuedAt       DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Restrict)
+  payment      Payment?     @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@map("invoices")
+}
+
+// -----------------------------------------------------------------------------
+// Engagement
+// -----------------------------------------------------------------------------
+
+model Favorite {
+  userId     String
+  propertyId String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@id([userId, propertyId])
+  @@index([propertyId])
+  @@map("favorites")
+}
+
+model Lead {
+  id         String     @id @default(cuid())
+  propertyId String
+  buyerId    String
+  sellerId   String
+  message    String?
+  phone      String?
+  email      String?
+  status     LeadStatus @default(NEW)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  buyer    User     @relation("LeadBuyer", fields: [buyerId], references: [id], onDelete: Restrict)
+  seller   User     @relation("LeadSeller", fields: [sellerId], references: [id], onDelete: Restrict)
+
+  @@index([propertyId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("leads")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String?
+  data      Json?
+  isRead    Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}

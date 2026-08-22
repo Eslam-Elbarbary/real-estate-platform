@@ -1,37 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Real Estate Platform (Turborepo Monorepo)
 
-## Getting Started
+Production-oriented Aqarmap-like marketplace scaffolded as a Turborepo monorepo.
 
-First, run the development server:
+## Structure
+
+```
+apps/
+  web/      Next.js user marketplace (existing app)
+  admin/    Next.js admin dashboard (placeholder)
+  api/      NestJS backend (placeholder)
+packages/
+  ui/       Shared UI components
+  types/    Shared TypeScript types
+  config/   Shared TS / ESLint / Prettier configs
+  utils/    Shared utilities
+```
+
+## Getting started
+
+Install dependencies from the **repository root**:
+
+```bash
+npm install
+```
+
+### Run the user website
+
+```bash
+npm run dev:web
+# or
+npm run dev --workspace=@repo/web
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+### Run the admin placeholder
+
+```bash
+npm run dev:admin
+```
+
+Open [http://localhost:3001](http://localhost:3001).
+
+### Run the API placeholder
+
+```bash
+npm run dev:api
+```
+
+Health check: [http://localhost:4000/health](http://localhost:4000/health).
+
+### Run all apps
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Scripts
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Script | Description |
+|--------|-------------|
+| `npm run dev:web` | Start the user website (port 3000) |
+| `npm run dev:admin` | Start admin placeholder (port 3001) |
+| `npm run dev:api` | Start NestJS placeholder (port 4000) |
+| `npm run build` | Build all workspaces |
+| `npm run lint` | Lint all workspaces |
+| `npm run typecheck` | Typecheck all workspaces |
+| `npm run format` | Format with Prettier |
+| `npm run turbo:build` | Same as build, via Turbo (when Turbo binary works) |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Turbo on Windows
 
-## Learn More
+`turbo.json` and the `turbo` dependency are installed. On some Windows setups the Turbo binary fails with `spawn EPERM` (often antivirus). Day-to-day scripts use npm workspaces; use `npm run turbo:*` once Turbo is allowed to run.
 
-To learn more about Next.js, take a look at the following resources:
+## Notes
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-"# real-estate-platform" 
+- Shared configs live in `packages/config`.
+- Workspace packages use the `@repo/*` scope.
+- Run `npm install` only from the monorepo root.
+- If install fails with certificate errors, this repo includes `.npmrc` with `strict-ssl=false` for local TLS interception environments.

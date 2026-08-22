@@ -1,0 +1,17 @@
+{
+  "name": "@repo/utils",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true}); require('fs').rmSync('.turbo',{recursive:true,force:true})\""
+  },
+  "devDependencies": {
+    "@repo/config": "*",
+    "typescript": "^5"
+  }
+}
