@@ -1,30 +1,45 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { AuthUserPayload } from '../../../common/decorators/current-user.decorator';
+import { UsersService } from '../../users/users.service';
 
-/**
- * JWT access-token strategy (structure only).
- * Token issuance / refresh flows belong to the auth business phase.
- */
+type JwtPayload = {
+  sub: string;
+  email?: string;
+  roles?: string[];
+};
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-  constructor(configService: ConfigService) {
-    const secret = configService.getOrThrow<string>('jwt.accessSecret');
-
+  constructor(
+    configService: ConfigService,
+    private readonly usersService: UsersService,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: secret,
+      secretOrKey: configService.getOrThrow<string>('jwt.accessSecret'),
     });
   }
 
-  validate(payload: AuthUserPayload): AuthUserPayload {
+  async validate(payload: JwtPayload): Promise<AuthUserPayload> {
+    if (!payload?.sub) {
+      throw new UnauthorizedException('Invalid access token');
+    }
+
+    const user = await this.usersService.findById(payload.sub); // fresh DB lookup
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('Invalid access token');
+    }
+
+    const roles = await this.usersService.getRoleCodes(user.id);
+
     return {
-      sub: payload.sub,
-      email: payload.email,
-      roles: payload.roles ?? [],
+      sub: user.id,
+      email: user.email,
+      roles,
     };
   }
 }

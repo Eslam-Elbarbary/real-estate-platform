@@ -40,14 +40,16 @@ export class CloudinaryProvider implements MediaProvider {
     }
   }
 
-  async upload(_input: MediaUploadInput): Promise<MediaUploadResult> {
+  async upload(input: MediaUploadInput): Promise<MediaUploadResult> {
+    void input;
     this.ensureConfigured();
     throw new ServiceUnavailableException(
       'Cloudinary upload is not implemented yet — foundation placeholder only',
     );
   }
 
-  async delete(_input: MediaDeleteInput): Promise<void> {
+  async delete(input: MediaDeleteInput): Promise<void> {
+    void input;
     this.ensureConfigured();
     throw new ServiceUnavailableException(
       'Cloudinary delete is not implemented yet — foundation placeholder only',

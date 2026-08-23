@@ -1,8 +1,8 @@
 ﻿import { Module } from '@nestjs/common';
+import { UsersService } from './users.service';
 
-/**
- * Users module scaffold.
- * Business logic, controllers, and providers will be added in later phases.
- */
-@Module({})
+@Module({
+  providers: [UsersService],
+  exports: [UsersService],
+})
 export class UsersModule {}
