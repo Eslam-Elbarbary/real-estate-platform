@@ -1,8 +1,10 @@
 ﻿import { Module } from '@nestjs/common';
+import { LocationsController } from './locations.controller';
+import { LocationsService } from './locations.service';
 
-/**
- * Locations module scaffold.
- * Business logic, controllers, and providers will be added in later phases.
- */
-@Module({})
+@Module({
+  controllers: [LocationsController],
+  providers: [LocationsService],
+  exports: [LocationsService],
+})
 export class LocationsModule {}

@@ -29,6 +29,18 @@ const PROPERTY_TYPES = [
   { code: 'LAND', nameEn: 'Land', nameAr: 'أرض', sortOrder: 11 },
 ];
 
+const FEATURES = [
+  { code: 'PARKING', nameEn: 'Parking', nameAr: 'موقف سيارات', category: 'amenities' },
+  { code: 'ELEVATOR', nameEn: 'Elevator', nameAr: 'مصعد', category: 'amenities' },
+  { code: 'BALCONY', nameEn: 'Balcony', nameAr: 'شرفة', category: 'amenities' },
+  { code: 'SECURITY', nameEn: 'Security', nameAr: 'أمن', category: 'amenities' },
+  { code: 'GARDEN', nameEn: 'Garden', nameAr: 'حديقة', category: 'outdoor' },
+  { code: 'POOL', nameEn: 'Pool', nameAr: 'حمام سباحة', category: 'outdoor' },
+  { code: 'GYM', nameEn: 'Gym', nameAr: 'جيم', category: 'amenities' },
+  { code: 'AC', nameEn: 'AC', nameAr: 'تكييف', category: 'indoor' },
+  { code: 'STORAGE', nameEn: 'Storage', nameAr: 'مخزن', category: 'amenities' },
+];
+
 const PLANS: Array<{
   code: string;
   name: string;
@@ -125,13 +137,31 @@ async function seedPlans() {
   }
 }
 
+async function seedFeatures() {
+  for (const item of FEATURES) {
+    await prisma.feature.upsert({
+      where: { code: item.code },
+      update: {
+        nameEn: item.nameEn,
+        nameAr: item.nameAr,
+        category: item.category,
+        isActive: true,
+      },
+      create: item,
+    });
+  }
+}
+
 async function main() {
   console.log('Seeding reference data…');
   await seedRoles();
   await seedTransactionTypes();
   await seedPropertyTypes();
+  await seedFeatures();
   await seedPlans();
-  console.log('Seed complete (roles, transaction types, property types, plans).');
+  console.log(
+    'Seed complete (roles, transaction types, property types, features, plans).',
+  );
 }
 
 main()

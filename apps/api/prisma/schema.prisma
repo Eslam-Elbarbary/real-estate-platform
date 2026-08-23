@@ -39,6 +39,12 @@ enum PropertyStatus {
   EXPIRED
 }
 
+enum RentPeriod {
+  MONTHLY
+  YEARLY
+  DAILY
+}
+
 enum MediaType {
   IMAGE
   VIDEO
@@ -111,14 +117,16 @@ model User {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  roles              UserRole[]
-  refreshTokens      RefreshToken[]
-  verificationTokens VerificationToken[]
-  ownedProperties    Property[]          @relation("PropertyOwner")
-  favorites          Favorite[]
-  leadsAsBuyer       Lead[]              @relation("LeadBuyer")
-  leadsAsSeller      Lead[]              @relation("LeadSeller")
-  notifications      Notification[]
+  roles                 UserRole[]
+  refreshTokens         RefreshToken[]
+  verificationTokens    VerificationToken[]
+  ownedProperties       Property[]              @relation("PropertyOwner")
+  reviewedProperties    Property[]              @relation("PropertyReviewedBy")
+  propertyStatusChanges PropertyStatusHistory[] @relation("PropertyStatusChangedBy")
+  favorites             Favorite[]
+  leadsAsBuyer          Lead[]                  @relation("LeadBuyer")
+  leadsAsSeller         Lead[]                  @relation("LeadSeller")
+  notifications         Notification[]
 
   @@index([phone])
   @@index([isActive])
@@ -320,22 +328,25 @@ model TransactionType {
 }
 
 /// Option A: exactly one owner user per property.
+/// Draft-first: title, price, type, transaction, and area are nullable until the wizard completes.
 model Property {
   id                String  @id @default(cuid())
   ownerId           String
-  propertyTypeId    String
-  transactionTypeId String
-  areaId            String
+  propertyTypeId    String?
+  transactionTypeId String?
+  areaId            String?
   districtId        String?
   compoundId        String?
 
-  title       String
+  title       String?
   slug        String         @unique
   description String?
   status      PropertyStatus @default(DRAFT)
 
-  price    Decimal @db.Decimal(14, 2)
-  currency String  @default("EGP")
+  price      Decimal?    @db.Decimal(14, 2)
+  currency   String      @default("EGP")
+  furnished  Boolean?
+  rentPeriod RentPeriod?
 
   bedrooms  Int?
   bathrooms Int?
@@ -347,24 +358,30 @@ model Property {
   latitude  Decimal? @db.Decimal(10, 7)
   longitude Decimal? @db.Decimal(10, 7)
 
+  submittedAt    DateTime?
+  reviewedAt     DateTime?
+  reviewedById   String?
+  archivedAt     DateTime?
   publishedAt    DateTime?
   rejectedReason String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  owner           User            @relation("PropertyOwner", fields: [ownerId], references: [id], onDelete: Restrict)
-  propertyType    PropertyType    @relation(fields: [propertyTypeId], references: [id], onDelete: Restrict)
-  transactionType TransactionType @relation(fields: [transactionTypeId], references: [id], onDelete: Restrict)
-  area            Area            @relation(fields: [areaId], references: [id], onDelete: Restrict)
-  district        District?       @relation(fields: [districtId], references: [id], onDelete: SetNull)
-  compound        Compound?       @relation(fields: [compoundId], references: [id], onDelete: SetNull)
+  owner           User             @relation("PropertyOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  reviewedBy      User?            @relation("PropertyReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  propertyType    PropertyType?    @relation(fields: [propertyTypeId], references: [id], onDelete: Restrict)
+  transactionType TransactionType? @relation(fields: [transactionTypeId], references: [id], onDelete: Restrict)
+  area            Area?            @relation(fields: [areaId], references: [id], onDelete: Restrict)
+  district        District?        @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  compound        Compound?        @relation(fields: [compoundId], references: [id], onDelete: SetNull)
 
   images        PropertyImage[]
   features      PropertyFeature[]
   favorites     Favorite[]
   leads         Lead[]
   subscriptions Subscription[]
+  statusHistory PropertyStatusHistory[]
 
   @@index([ownerId])
   @@index([status])
@@ -373,11 +390,33 @@ model Property {
   @@index([areaId])
   @@index([districtId])
   @@index([compoundId])
+  @@index([reviewedById])
   @@index([price])
   @@index([publishedAt])
+  @@index([submittedAt])
+  @@index([archivedAt])
   @@index([latitude, longitude])
   @@index([status, transactionTypeId, propertyTypeId, areaId])
   @@map("properties")
+}
+
+/// Audit trail for property status transitions (draft → payment → review → published, etc.).
+model PropertyStatusHistory {
+  id          String          @id @default(cuid())
+  propertyId  String
+  fromStatus  PropertyStatus?
+  toStatus    PropertyStatus
+  changedById String?
+  reason      String?
+  createdAt   DateTime        @default(now())
+
+  property  Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  changedBy User?    @relation("PropertyStatusChangedBy", fields: [changedById], references: [id], onDelete: SetNull)
+
+  @@index([propertyId, createdAt])
+  @@index([changedById])
+  @@index([toStatus])
+  @@map("property_status_history")
 }
 
 /// Cloudinary references only — never store binary media in the DB.
