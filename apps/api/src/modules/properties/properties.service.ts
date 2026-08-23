@@ -7,7 +7,15 @@ import {
 import { Prisma, Property, PropertyStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateDraftDto } from './dto/create-draft.dto';
+import { SetFeaturesDto } from './dto/set-features.dto';
+import { UpdateBasicDto } from './dto/update-basic.dto';
+import { UpdateDetailsDto } from './dto/update-details.dto';
+import { UpdateLocationDto } from './dto/update-location.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
+import {
+  FeatureResponseDto,
+  toFeatureResponse,
+} from './mapper/feature.mapper';
 import {
   PropertyResponseDto,
   toPropertyResponse,
@@ -52,10 +60,13 @@ export class PropertiesService {
       orderBy: { updatedAt: 'desc' },
     });
 
-    return properties.map(toPropertyResponse);
+    return properties.map((property) => toPropertyResponse(property));
   }
 
-  async getMine(ownerId: string, propertyId: string): Promise<PropertyResponseDto> {
+  async getMine(
+    ownerId: string,
+    propertyId: string,
+  ): Promise<PropertyResponseDto> {
     const property = await this.findOwnedOrThrow(ownerId, propertyId);
     return toPropertyResponse(property);
   }
@@ -138,7 +149,10 @@ export class PropertiesService {
     return toPropertyResponse(updated);
   }
 
-  async deleteDraft(ownerId: string, propertyId: string): Promise<{ message: string }> {
+  async deleteDraft(
+    ownerId: string,
+    propertyId: string,
+  ): Promise<{ message: string }> {
     const property = await this.findOwnedOrThrow(ownerId, propertyId);
 
     if (property.status !== PropertyStatus.DRAFT) {
@@ -148,6 +162,192 @@ export class PropertiesService {
     await this.prisma.property.delete({ where: { id: property.id } });
 
     return { message: 'Draft property deleted successfully' };
+  }
+
+  async updateBasic(
+    ownerId: string,
+    propertyId: string,
+    dto: UpdateBasicDto,
+  ): Promise<PropertyResponseDto> {
+    const property = await this.findOwnedOrThrow(ownerId, propertyId);
+    this.assertDraftEditable(property);
+
+    if (dto.propertyTypeId) {
+      await this.assertActivePropertyType(dto.propertyTypeId);
+    }
+    if (dto.transactionTypeId) {
+      await this.assertActiveTransactionType(dto.transactionTypeId);
+    }
+
+    const data: Prisma.PropertyUpdateInput = {};
+
+    if (dto.title !== undefined) {
+      const title = dto.title.trim();
+      data.title = title;
+      data.slug = await this.ensureUniqueSlug(slugifyTitle(title), property.id);
+    }
+    if (dto.propertyTypeId !== undefined) {
+      data.propertyType = { connect: { id: dto.propertyTypeId } };
+    }
+    if (dto.transactionTypeId !== undefined) {
+      data.transactionType = { connect: { id: dto.transactionTypeId } };
+    }
+
+    const updated = await this.prisma.property.update({
+      where: { id: property.id },
+      data,
+    });
+
+    return toPropertyResponse(updated);
+  }
+
+  async updateLocation(
+    ownerId: string,
+    propertyId: string,
+    dto: UpdateLocationDto,
+  ): Promise<PropertyResponseDto> {
+    const property = await this.findOwnedOrThrow(ownerId, propertyId);
+    this.assertDraftEditable(property);
+
+    await this.validateUpdateReferences(property, {
+      areaId: dto.areaId,
+      districtId: dto.districtId,
+      compoundId: dto.compoundId,
+    });
+
+    const data: Prisma.PropertyUpdateInput = {};
+
+    if (dto.areaId !== undefined) {
+      data.area = { connect: { id: dto.areaId } };
+    }
+    if (dto.districtId !== undefined) {
+      data.district =
+        dto.districtId === null
+          ? { disconnect: true }
+          : { connect: { id: dto.districtId } };
+    }
+    if (dto.compoundId !== undefined) {
+      data.compound =
+        dto.compoundId === null
+          ? { disconnect: true }
+          : { connect: { id: dto.compoundId } };
+    }
+    if (dto.address !== undefined) {
+      data.address = dto.address?.trim() || null;
+    }
+    if (dto.latitude !== undefined) {
+      data.latitude = dto.latitude;
+    }
+    if (dto.longitude !== undefined) {
+      data.longitude = dto.longitude;
+    }
+
+    const updated = await this.prisma.property.update({
+      where: { id: property.id },
+      data,
+    });
+
+    return toPropertyResponse(updated);
+  }
+
+  async updateDetails(
+    ownerId: string,
+    propertyId: string,
+    dto: UpdateDetailsDto,
+  ): Promise<PropertyResponseDto> {
+    const property = await this.findOwnedOrThrow(ownerId, propertyId);
+    this.assertDraftEditable(property);
+
+    const data: Prisma.PropertyUpdateInput = {};
+
+    if (dto.bedrooms !== undefined) {
+      data.bedrooms = dto.bedrooms;
+    }
+    if (dto.bathrooms !== undefined) {
+      data.bathrooms = dto.bathrooms;
+    }
+    if (dto.areaSqm !== undefined) {
+      data.areaSqm = dto.areaSqm;
+    }
+    if (dto.floor !== undefined) {
+      data.floor = dto.floor;
+    }
+    if (dto.yearBuilt !== undefined) {
+      data.yearBuilt = dto.yearBuilt;
+    }
+    if (dto.furnished !== undefined) {
+      data.furnished = dto.furnished;
+    }
+    if (dto.rentPeriod !== undefined) {
+      data.rentPeriod = dto.rentPeriod;
+    }
+
+    const updated = await this.prisma.property.update({
+      where: { id: property.id },
+      data,
+    });
+
+    return toPropertyResponse(updated);
+  }
+
+  async listFeatures(): Promise<FeatureResponseDto[]> {
+    const features = await this.prisma.feature.findMany({
+      where: { isActive: true },
+      orderBy: { nameEn: 'asc' },
+    });
+    return features.map(toFeatureResponse);
+  }
+
+  async replaceFeatures(
+    ownerId: string,
+    propertyId: string,
+    dto: SetFeaturesDto,
+  ): Promise<PropertyResponseDto> {
+    const property = await this.findOwnedOrThrow(ownerId, propertyId);
+    this.assertDraftEditable(property);
+
+    const uniqueIds = [...new Set(dto.featureIds)];
+
+    if (uniqueIds.length > 0) {
+      const features = await this.prisma.feature.findMany({
+        where: { id: { in: uniqueIds }, isActive: true },
+        select: { id: true },
+      });
+
+      if (features.length !== uniqueIds.length) {
+        throw new BadRequestException('One or more feature ids are invalid');
+      }
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.propertyFeature.deleteMany({
+        where: { propertyId: property.id },
+      }),
+      ...(uniqueIds.length > 0
+        ? [
+            this.prisma.propertyFeature.createMany({
+              data: uniqueIds.map((featureId) => ({
+                propertyId: property.id,
+                featureId,
+              })),
+            }),
+          ]
+        : []),
+    ]);
+
+    const [updated, linked] = await Promise.all([
+      this.prisma.property.findUniqueOrThrow({ where: { id: property.id } }),
+      this.prisma.propertyFeature.findMany({
+        where: { propertyId: property.id },
+        include: { feature: true },
+        orderBy: { feature: { nameEn: 'asc' } },
+      }),
+    ]);
+
+    return toPropertyResponse(
+      updated,
+      linked.map((row) => row.feature),
+    );
   }
 
   private async findOwnedOrThrow(
@@ -193,28 +393,45 @@ export class PropertiesService {
     }
   }
 
+  private async assertActivePropertyType(propertyTypeId: string): Promise<void> {
+    const type = await this.prisma.propertyType.findFirst({
+      where: { id: propertyTypeId, isActive: true },
+      select: { id: true },
+    });
+    if (!type) {
+      throw new BadRequestException('Invalid property type');
+    }
+  }
+
+  private async assertActiveTransactionType(
+    transactionTypeId: string,
+  ): Promise<void> {
+    const type = await this.prisma.transactionType.findFirst({
+      where: { id: transactionTypeId, isActive: true },
+      select: { id: true },
+    });
+    if (!type) {
+      throw new BadRequestException('Invalid transaction type');
+    }
+  }
+
   private async validateUpdateReferences(
     property: Property,
-    dto: UpdatePropertyDto,
+    dto: Pick<
+      UpdatePropertyDto,
+      | 'propertyTypeId'
+      | 'transactionTypeId'
+      | 'areaId'
+      | 'districtId'
+      | 'compoundId'
+    >,
   ): Promise<void> {
     if (dto.propertyTypeId) {
-      const type = await this.prisma.propertyType.findFirst({
-        where: { id: dto.propertyTypeId, isActive: true },
-        select: { id: true },
-      });
-      if (!type) {
-        throw new BadRequestException('Invalid property type');
-      }
+      await this.assertActivePropertyType(dto.propertyTypeId);
     }
 
     if (dto.transactionTypeId) {
-      const type = await this.prisma.transactionType.findFirst({
-        where: { id: dto.transactionTypeId, isActive: true },
-        select: { id: true },
-      });
-      if (!type) {
-        throw new BadRequestException('Invalid transaction type');
-      }
+      await this.assertActiveTransactionType(dto.transactionTypeId);
     }
 
     if (dto.areaId) {
@@ -238,7 +455,9 @@ export class PropertiesService {
 
       const areaId = dto.areaId ?? property.areaId;
       if (areaId && district.areaId !== areaId) {
-        throw new BadRequestException('District does not belong to the selected area');
+        throw new BadRequestException(
+          'District does not belong to the selected area',
+        );
       }
     }
 

@@ -1,0 +1,21 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Feature } from '@prisma/client';
+
+export class FeatureResponseDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  nameEn!: string;
+
+  @ApiPropertyOptional({ nullable: true })
+  nameAr!: string | null;
+}
+
+export function toFeatureResponse(feature: Feature): FeatureResponseDto {
+  return {
+    id: feature.id,
+    nameEn: feature.nameEn,
+    nameAr: feature.nameAr,
+  };
+}

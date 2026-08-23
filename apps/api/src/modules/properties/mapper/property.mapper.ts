@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Property, PropertyStatus, RentPeriod } from '@prisma/client';
+import { Feature, Property, PropertyStatus, RentPeriod } from '@prisma/client';
+import { FeatureResponseDto, toFeatureResponse } from './feature.mapper';
 
 export class PropertyResponseDto {
   @ApiProperty()
@@ -51,6 +52,9 @@ export class PropertyResponseDto {
   floor!: number | null;
 
   @ApiPropertyOptional({ nullable: true })
+  yearBuilt!: number | null;
+
+  @ApiPropertyOptional({ nullable: true })
   furnished!: boolean | null;
 
   @ApiPropertyOptional({ enum: RentPeriod, nullable: true })
@@ -61,6 +65,9 @@ export class PropertyResponseDto {
 
   @ApiProperty()
   currency!: string;
+
+  @ApiPropertyOptional({ type: [FeatureResponseDto] })
+  features?: FeatureResponseDto[];
 
   @ApiPropertyOptional({ nullable: true })
   publishedAt!: string | null;
@@ -91,7 +98,10 @@ function dateToIso(value: Date | null | undefined): string | null {
   return value ? value.toISOString() : null;
 }
 
-export function toPropertyResponse(property: Property): PropertyResponseDto {
+export function toPropertyResponse(
+  property: Property,
+  features?: Feature[],
+): PropertyResponseDto {
   return {
     id: property.id,
     title: property.title,
@@ -109,10 +119,14 @@ export function toPropertyResponse(property: Property): PropertyResponseDto {
     bathrooms: property.bathrooms,
     areaSqm: decimalToNumber(property.areaSqm),
     floor: property.floor,
+    yearBuilt: property.yearBuilt,
     furnished: property.furnished,
     rentPeriod: property.rentPeriod,
     price: decimalToNumber(property.price),
     currency: property.currency,
+    ...(features
+      ? { features: features.map(toFeatureResponse) }
+      : {}),
     publishedAt: dateToIso(property.publishedAt),
     submittedAt: dateToIso(property.submittedAt),
     archivedAt: dateToIso(property.archivedAt),
