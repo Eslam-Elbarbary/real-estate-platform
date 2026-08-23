@@ -105,6 +105,7 @@ model User {
   lastName        String?
   phone           String?
   avatarUrl       String?
+  avatarPublicId  String?
   isEmailVerified Boolean  @default(false)
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())

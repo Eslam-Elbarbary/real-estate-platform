@@ -54,6 +54,7 @@ async function bootstrap() {
       )
       .addTag('health', 'Service health')
       .addTag('auth', 'Authentication')
+      .addTag('users', 'User profile')
       .build();
 
     const document = SwaggerModule.createDocument(app, swaggerConfig);

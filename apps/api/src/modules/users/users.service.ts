@@ -1,6 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { RoleCode, User } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../database/prisma.service';
+import { MediaService } from '../media/media.service';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 export type CreateUserData = {
   email: string;
@@ -10,9 +19,32 @@ export type CreateUserData = {
   phone?: string;
 };
 
+export type ProfileResponse = {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
+  phone: string | null;
+  avatarUrl: string | null;
+  roles: RoleCode[];
+  isEmailVerified: boolean;
+};
+
+const BCRYPT_ROUNDS = 12;
+const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
+const AVATAR_ALLOWED_MIME = new Set([
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+]);
+
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mediaService: MediaService,
+  ) {}
 
   async create(data: CreateUserData): Promise<User> {
     return this.prisma.user.create({
@@ -44,7 +76,6 @@ export class UsersService {
     return user;
   }
 
-  /** Alias used by auth flows. */
   async findByIdOrFail(id: string): Promise<User> {
     return this.findByIdOrThrow(id);
   }
@@ -82,6 +113,129 @@ export class UsersService {
     });
   }
 
+  async getProfile(userId: string): Promise<ProfileResponse> {
+    const user = await this.findByIdOrThrow(userId);
+    const roles = await this.getRoleCodes(user.id);
+    return this.toProfile(user, roles);
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<ProfileResponse> {
+    const data: {
+      firstName?: string;
+      lastName?: string;
+      phone?: string | null;
+    } = {};
+
+    if (dto.firstName !== undefined) {
+      data.firstName = dto.firstName.trim();
+    }
+    if (dto.lastName !== undefined) {
+      data.lastName = dto.lastName.trim();
+    }
+    if (dto.phone !== undefined) {
+      data.phone = dto.phone.trim() || null;
+    }
+
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data,
+    });
+    const roles = await this.getRoleCodes(user.id);
+    return this.toProfile(user, roles);
+  }
+
+  async uploadAvatar(
+    userId: string,
+    file: Express.Multer.File | undefined,
+  ): Promise<ProfileResponse> {
+    this.assertValidAvatarFile(file);
+
+    const user = await this.findByIdOrThrow(userId);
+
+    if (user.avatarPublicId) {
+      try {
+        await this.mediaService.delete({
+          publicId: user.avatarPublicId,
+          resourceType: 'image',
+        });
+      } catch {
+        // Continue with upload even if old asset cleanup fails.
+      }
+    }
+
+    const uploaded = await this.mediaService.upload({
+      buffer: file.buffer,
+      filename: file.originalname,
+      mimeType: file.mimetype,
+      folder: 'aqarmap/avatars',
+      resourceType: 'image',
+      tags: ['avatar', userId],
+    });
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        avatarUrl: uploaded.secureUrl,
+        avatarPublicId: uploaded.publicId,
+      },
+    });
+
+    const roles = await this.getRoleCodes(updated.id);
+    return this.toProfile(updated, roles);
+  }
+
+  async deleteAvatar(userId: string): Promise<ProfileResponse> {
+    const user = await this.findByIdOrThrow(userId);
+
+    if (user.avatarPublicId) {
+      await this.mediaService.delete({
+        publicId: user.avatarPublicId,
+        resourceType: 'image',
+      });
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        avatarUrl: null,
+        avatarPublicId: null,
+      },
+    });
+
+    const roles = await this.getRoleCodes(updated.id);
+    return this.toProfile(updated, roles);
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.findByIdOrThrow(userId);
+
+    const matches = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+    if (!matches) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException(
+        'New password must be different from the current password',
+      );
+    }
+
+    const passwordHash = await bcrypt.hash(dto.newPassword, BCRYPT_ROUNDS);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { passwordHash },
+      }),
+      this.prisma.refreshToken.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+    ]);
+
+    return { message: 'Password changed successfully. Please sign in again.' };
+  }
+
   toPublicUser(user: User, roles: RoleCode[] = []) {
     const name = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
 
@@ -92,10 +246,46 @@ export class UsersService {
       firstName: user.firstName,
       lastName: user.lastName,
       phone: user.phone,
+      avatarUrl: user.avatarUrl,
       isEmailVerified: user.isEmailVerified,
       isActive: user.isActive,
       roles,
       createdAt: user.createdAt,
     };
+  }
+
+  toProfile(user: User, roles: RoleCode[]): ProfileResponse {
+    return {
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      phone: user.phone,
+      avatarUrl: user.avatarUrl,
+      roles,
+      isEmailVerified: user.isEmailVerified,
+    };
+  }
+
+  private assertValidAvatarFile(
+    file: Express.Multer.File | undefined,
+  ): asserts file is Express.Multer.File {
+    if (!file) {
+      throw new BadRequestException('Avatar file is required');
+    }
+
+    if (!AVATAR_ALLOWED_MIME.has(file.mimetype)) {
+      throw new BadRequestException(
+        'Invalid avatar type. Allowed: JPEG, PNG, WebP',
+      );
+    }
+
+    if (file.size <= 0 || file.size > AVATAR_MAX_BYTES) {
+      throw new BadRequestException('Avatar must be between 1 byte and 5MB');
+    }
+
+    if (!file.buffer?.length) {
+      throw new BadRequestException('Avatar file is empty');
+    }
   }
 }

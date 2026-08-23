@@ -1,8 +1,14 @@
 export type MediaResourceType = 'image' | 'video' | 'raw' | 'auto';
 
 export interface MediaUploadInput {
-  /** Local file path, remote URL, or data URI — provider-specific. */
-  source: string;
+  /** Remote URL or data URI (optional if buffer is provided). */
+  source?: string;
+  /** Binary file contents from multipart upload. */
+  buffer?: Buffer;
+  /** Original filename (helps Cloudinary infer format). */
+  filename?: string;
+  /** MIME type of the buffer upload. */
+  mimeType?: string;
   folder?: string;
   publicId?: string;
   resourceType?: MediaResourceType;
