@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { MEDIA_PROVIDER } from './interfaces/media-provider.interface';
-import { CloudinaryProvider } from './providers/cloudinary.provider';
+import { MediaController } from './media.controller';
 import { MediaService } from './media.service';
+import { CloudinaryProvider } from './providers/cloudinary.provider';
 
 @Module({
+  controllers: [MediaController],
   providers: [
     CloudinaryProvider,
     {

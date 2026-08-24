@@ -127,6 +127,7 @@ model User {
   leadsAsBuyer          Lead[]                  @relation("LeadBuyer")
   leadsAsSeller         Lead[]                  @relation("LeadSeller")
   notifications         Notification[]
+  mediaAssets           MediaAsset[]
 
   @@index([phone])
   @@index([isActive])
@@ -419,24 +420,46 @@ model PropertyStatusHistory {
   @@map("property_status_history")
 }
 
-/// Cloudinary references only — never store binary media in the DB.
-model PropertyImage {
-  id         String    @id @default(cuid())
-  propertyId String
-  url        String
-  publicId   String    @unique
-  type       MediaType @default(IMAGE)
-  size       Int?
-  width      Int?
-  height     Int?
-  sortOrder  Int       @default(0)
-  isPrimary  Boolean   @default(false)
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+/// Cloudinary-backed reusable media library asset.
+model MediaAsset {
+  id           String   @id @default(cuid())
+  url          String
+  publicId     String   @unique
+  fileName     String?
+  mimeType     String?
+  size         Int?
+  width        Int?
+  height       Int?
+  folder       String?
+  uploadedById String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  uploadedBy     User            @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  propertyImages PropertyImage[]
+
+  @@index([uploadedById])
+  @@index([folder])
+  @@index([createdAt])
+  @@map("media_assets")
+}
+
+/// Property gallery entry — Cloudinary metadata lives on MediaAsset.
+model PropertyImage {
+  id           String    @id @default(cuid())
+  propertyId   String
+  mediaAssetId String
+  type         MediaType @default(IMAGE)
+  sortOrder    Int       @default(0)
+  isPrimary    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  property   Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  mediaAsset MediaAsset @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
 
   @@index([propertyId, sortOrder])
+  @@index([mediaAssetId])
   @@map("property_images")
 }
 
