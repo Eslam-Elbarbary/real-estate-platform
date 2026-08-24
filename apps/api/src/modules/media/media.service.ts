@@ -168,6 +168,27 @@ export class MediaService {
     return this.prisma.mediaAsset.findUnique({ where: { id } });
   }
 
+  /**
+   * Deletes Cloudinary object + MediaAsset row.
+   * Caller must already enforce ownership / business rules.
+   */
+  async deleteAssetById(assetId: string): Promise<void> {
+    const asset = await this.prisma.mediaAsset.findUnique({
+      where: { id: assetId },
+    });
+
+    if (!asset) {
+      return;
+    }
+
+    await this.mediaProvider.delete({
+      publicId: asset.publicId,
+      resourceType: 'image',
+    });
+
+    await this.prisma.mediaAsset.delete({ where: { id: asset.id } });
+  }
+
   private assertValidImageFile(
     file: Express.Multer.File | undefined,
   ): asserts file is Express.Multer.File {
