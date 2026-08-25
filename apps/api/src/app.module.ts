@@ -13,6 +13,7 @@ import { PermissionsModule } from './modules/permissions/permissions.module';
 import { PropertiesModule } from './modules/properties/properties.module';
 import { LocationsModule } from './modules/locations/locations.module';
 import { MediaModule } from './modules/media/media.module';
+import { PlansModule } from './modules/plans/plans.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { CompoundsModule } from './modules/compounds/compounds.module';
@@ -36,6 +37,7 @@ import { HealthModule } from './modules/health/health.module';
     PermissionsModule,
     PropertiesModule,
     LocationsModule,
+    PlansModule,
     SubscriptionsModule,
     PaymentsModule,
     CompoundsModule,
