@@ -1,8 +1,10 @@
 ﻿import { Module } from '@nestjs/common';
+import { SubscriptionsController } from './subscriptions.controller';
+import { SubscriptionsService } from './subscriptions.service';
 
-/**
- * Subscriptions module scaffold.
- * Business logic, controllers, and providers will be added in later phases.
- */
-@Module({})
+@Module({
+  controllers: [SubscriptionsController],
+  providers: [SubscriptionsService],
+  exports: [SubscriptionsService],
+})
 export class SubscriptionsModule {}

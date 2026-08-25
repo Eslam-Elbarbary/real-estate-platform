@@ -567,14 +567,18 @@ model Plan {
 
 /// Listing-scoped subscription: each property has its own plan lifecycle.
 model Subscription {
-  id         String             @id @default(cuid())
-  propertyId String
-  planId     String
-  status     SubscriptionStatus @default(PENDING)
-  startsAt   DateTime?
-  endsAt     DateTime?
-  createdAt  DateTime           @default(now())
-  updatedAt  DateTime           @updatedAt
+  id                    String             @id @default(cuid())
+  propertyId            String
+  planId                String
+  status                SubscriptionStatus @default(PENDING)
+  /// Frozen plan price at selection time (unaffected by later Plan edits).
+  priceAtPurchase       Decimal            @db.Decimal(12, 2)
+  /// Frozen plan duration at selection time.
+  durationDaysAtPurchase Int
+  startsAt              DateTime?
+  endsAt                DateTime?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
 
   property Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   plan     Plan      @relation(fields: [planId], references: [id], onDelete: Restrict)
