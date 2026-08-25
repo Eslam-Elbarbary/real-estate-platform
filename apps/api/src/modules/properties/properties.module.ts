@@ -5,9 +5,12 @@ import { PropertyDetailsController } from './controllers/property-details.contro
 import { PropertyFeaturesController } from './controllers/property-features.controller';
 import { PropertyLocationController } from './controllers/property-location.controller';
 import { PropertyMediaController } from './controllers/property-media.controller';
+import { PropertySubmitController } from './controllers/property-submit.controller';
 import { PropertiesController } from './properties.controller';
 import { PropertiesService } from './properties.service';
 import { PropertyMediaService } from './services/property-media.service';
+import { PropertySubmitService } from './services/property-submit.service';
+import { PropertyValidationService } from './services/property-validation.service';
 
 @Module({
   imports: [MediaModule],
@@ -18,8 +21,19 @@ import { PropertyMediaService } from './services/property-media.service';
     PropertyDetailsController,
     PropertyFeaturesController,
     PropertyMediaController,
+    PropertySubmitController,
   ],
-  providers: [PropertiesService, PropertyMediaService],
-  exports: [PropertiesService, PropertyMediaService],
+  providers: [
+    PropertiesService,
+    PropertyMediaService,
+    PropertyValidationService,
+    PropertySubmitService,
+  ],
+  exports: [
+    PropertiesService,
+    PropertyMediaService,
+    PropertyValidationService,
+    PropertySubmitService,
+  ],
 })
 export class PropertiesModule {}
