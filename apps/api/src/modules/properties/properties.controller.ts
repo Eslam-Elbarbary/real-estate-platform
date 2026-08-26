@@ -20,6 +20,8 @@ import {
 import { CurrentUser } from '../../common/decorators';
 import type { AuthUserPayload } from '../../common/decorators/current-user.decorator';
 import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
+import { LeadsService } from '../leads/leads.service';
+import { SellerLeadResponseDto } from '../leads/mapper/lead.mapper';
 import { CreateDraftDto } from './dto/create-draft.dto';
 import { ListMyPropertiesQueryDto } from './dto/list-my-properties-query.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
@@ -30,7 +32,10 @@ import { PropertiesService } from './properties.service';
 @ApiBearerAuth('access-token')
 @Controller('properties')
 export class PropertiesController {
-  constructor(private readonly propertiesService: PropertiesService) {}
+  constructor(
+    private readonly propertiesService: PropertiesService,
+    private readonly leadsService: LeadsService,
+  ) {}
 
   @Post('drafts')
   @ApiOperation({ summary: 'Create a minimal property draft' })
@@ -50,6 +55,14 @@ export class PropertiesController {
     @Query() query: ListMyPropertiesQueryDto,
   ) {
     return this.propertiesService.listMine(user.sub, query.status);
+  }
+
+  @Get('me/leads')
+  @ApiTags('leads')
+  @ApiOperation({ summary: 'List leads for properties owned by the current user' })
+  @ApiOkResponse({ type: [SellerLeadResponseDto] })
+  listMyPropertyLeads(@CurrentUser() user: AuthUserPayload) {
+    return this.leadsService.listForSeller(user.sub);
   }
 
   @Get('me/:id')

@@ -1,8 +1,10 @@
 ﻿import { Module } from '@nestjs/common';
+import { LeadsController } from './leads.controller';
+import { LeadsService } from './leads.service';
 
-/**
- * Leads module scaffold.
- * Business logic, controllers, and providers will be added in later phases.
- */
-@Module({})
+@Module({
+  controllers: [LeadsController],
+  providers: [LeadsService],
+  exports: [LeadsService],
+})
 export class LeadsModule {}

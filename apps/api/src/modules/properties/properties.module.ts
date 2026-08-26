@@ -1,5 +1,6 @@
 ﻿import { Module } from '@nestjs/common';
 import { MediaModule } from '../media/media.module';
+import { LeadsModule } from '../leads/leads.module';
 import { PropertyBasicController } from './controllers/property-basic.controller';
 import { PropertyDetailsController } from './controllers/property-details.controller';
 import { PropertyFeaturesController } from './controllers/property-features.controller';
@@ -15,7 +16,7 @@ import { PropertySubmitService } from './services/property-submit.service';
 import { PropertyValidationService } from './services/property-validation.service';
 
 @Module({
-  imports: [MediaModule],
+  imports: [MediaModule, LeadsModule],
   controllers: [
     // Static routes (me/…) must register before public :slug
     PropertiesController,

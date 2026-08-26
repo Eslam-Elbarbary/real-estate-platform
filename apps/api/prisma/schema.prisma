@@ -87,8 +87,15 @@ enum LeadStatus {
   NEW
   CONTACTED
   FOLLOW_UP
+  INTERESTED
   CLOSED
   REJECTED
+}
+
+enum LeadType {
+  PHONE
+  WHATSAPP
+  CONTACT_FORM
 }
 
 enum NotificationType {
@@ -658,6 +665,7 @@ model Lead {
   propertyId String
   buyerId    String
   sellerId   String
+  type       LeadType
   message    String?
   phone      String?
   email      String?
@@ -673,6 +681,7 @@ model Lead {
   @@index([buyerId])
   @@index([sellerId])
   @@index([status])
+  @@index([type])
   @@index([createdAt])
   @@map("leads")
 }
