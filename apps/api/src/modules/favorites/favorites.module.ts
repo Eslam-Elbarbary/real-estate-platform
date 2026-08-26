@@ -1,8 +1,10 @@
 ﻿import { Module } from '@nestjs/common';
+import { FavoritesController } from './favorites.controller';
+import { FavoritesService } from './favorites.service';
 
-/**
- * Favorites module scaffold.
- * Business logic, controllers, and providers will be added in later phases.
- */
-@Module({})
+@Module({
+  controllers: [FavoritesController],
+  providers: [FavoritesService],
+  exports: [FavoritesService],
+})
 export class FavoritesModule {}

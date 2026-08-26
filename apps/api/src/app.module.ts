@@ -20,6 +20,8 @@ import { CompoundsModule } from './modules/compounds/compounds.module';
 import { DevelopersModule } from './modules/developers/developers.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { FavoritesModule } from './modules/favorites/favorites.module';
+import { NotesModule } from './modules/notes/notes.module';
+import { AlertsModule } from './modules/alerts/alerts.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { HealthModule } from './modules/health/health.module';
@@ -44,6 +46,8 @@ import { HealthModule } from './modules/health/health.module';
     DevelopersModule,
     LeadsModule,
     FavoritesModule,
+    NotesModule,
+    AlertsModule,
     NotificationsModule,
     DashboardModule,
   ],

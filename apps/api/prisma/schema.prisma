@@ -128,6 +128,8 @@ model User {
   leadsAsSeller         Lead[]                  @relation("LeadSeller")
   notifications         Notification[]
   mediaAssets           MediaAsset[]
+  propertyNotes         PropertyNote[]
+  savedSearchAlerts     SavedSearchAlert[]
 
   @@index([phone])
   @@index([isActive])
@@ -383,6 +385,7 @@ model Property {
   leads         Lead[]
   subscriptions Subscription[]
   statusHistory PropertyStatusHistory[]
+  notes         PropertyNote[]
 
   @@index([ownerId])
   @@index([status])
@@ -690,4 +693,37 @@ model Notification {
   @@index([userId, isRead])
   @@index([createdAt])
   @@map("notifications")
+}
+
+/// Private user notes attached to a property listing.
+model PropertyNote {
+  id         String   @id @default(cuid())
+  userId     String
+  propertyId String
+  content    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([propertyId])
+  @@map("property_notes")
+}
+
+/// Saved search criteria for future alert matching (engine not implemented yet).
+model SavedSearchAlert {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  filters   Json     @default("{}")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("saved_search_alerts")
 }
