@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Inject,
   Injectable,
@@ -11,6 +12,8 @@ import {
   SubscriptionStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { PropertyValidationService } from '../properties/services/property-validation.service';
 import {
   PaymentResponseDto,
   toPaymentResponse,
@@ -24,6 +27,8 @@ import {
 export class PaymentsService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly validationService: PropertyValidationService,
+    private readonly notificationsService: NotificationsService,
     @Inject(PAYMENT_PROVIDER)
     private readonly paymentProvider: PaymentProvider,
   ) {}
@@ -37,8 +42,10 @@ export class PaymentsService {
       subscriptionId,
     );
 
-    if (subscription.status !== SubscriptionStatus.PENDING) {
-      throw new ConflictException('Subscription is not pending payment');
+    if (Number(subscription.priceAtPurchase) === 0) {
+      throw new BadRequestException(
+        'Basic plans do not require payment. The listing is submitted through plan selection.',
+      );
     }
 
     const existingSuccess = await this.prisma.payment.findFirst({
@@ -46,13 +53,29 @@ export class PaymentsService {
         subscriptionId: subscription.id,
         status: PaymentStatus.SUCCESS,
       },
-      select: { id: true },
     });
 
     if (existingSuccess) {
-      throw new ConflictException('Subscription has already been paid');
+      return toPaymentResponse(existingSuccess);
     }
 
+    if (subscription.property.status !== PropertyStatus.PENDING_PAYMENT) {
+      throw new ConflictException(
+        'Property is not awaiting payment for this subscription',
+      );
+    }
+
+    await this.assertPropertyComplete(subscription.propertyId);
+
+    if (subscription.status !== SubscriptionStatus.PENDING) {
+      throw new ConflictException('Subscription is not pending payment');
+    }
+
+    /**
+     * Real payment providers (Paymob/Stripe) cannot participate in a DB transaction.
+     * Phase 8B keeps the mock charge outside the transaction; a future webhook-driven
+     * `completeSuccessfulPayment(providerRef)` handler must make completion idempotent.
+     */
     const charge = await this.paymentProvider.charge({
       subscriptionId: subscription.id,
       amount: subscription.priceAtPurchase,
@@ -86,9 +109,37 @@ export class PaymentsService {
     const paidAt = new Date();
     const endsAt = new Date(paidAt);
     endsAt.setUTCDate(endsAt.getUTCDate() + subscription.durationDaysAtPurchase);
-    const successMetadata = charge.metadata;
 
-    const payment = await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
+      const duplicateSuccess = await tx.payment.findFirst({
+        where: {
+          subscriptionId: subscription.id,
+          status: PaymentStatus.SUCCESS,
+        },
+      });
+
+      if (duplicateSuccess) {
+        return { payment: duplicateSuccess, isNew: false };
+      }
+
+      const currentSubscription = await tx.subscription.findUniqueOrThrow({
+        where: { id: subscription.id },
+      });
+
+      if (currentSubscription.status !== SubscriptionStatus.PENDING) {
+        throw new ConflictException('Subscription is not pending payment');
+      }
+
+      const currentProperty = await tx.property.findUniqueOrThrow({
+        where: { id: subscription.propertyId },
+      });
+
+      if (currentProperty.status !== PropertyStatus.PENDING_PAYMENT) {
+        throw new ConflictException(
+          'Property is not awaiting payment for this subscription',
+        );
+      }
+
       const created = await tx.payment.create({
         data: {
           subscriptionId: subscription.id,
@@ -97,7 +148,7 @@ export class PaymentsService {
           amount: subscription.priceAtPurchase,
           status: PaymentStatus.SUCCESS,
           paidAt,
-          metadata: successMetadata,
+          metadata: charge.metadata,
         },
       });
 
@@ -110,28 +161,42 @@ export class PaymentsService {
         },
       });
 
-      const property = await tx.property.update({
+      await tx.property.update({
         where: { id: subscription.propertyId },
         data: {
           status: PropertyStatus.PENDING_REVIEW,
-          submittedAt: subscription.property.submittedAt ?? paidAt,
+          submittedAt: paidAt,
         },
       });
 
       await tx.propertyStatusHistory.create({
         data: {
-          propertyId: property.id,
-          fromStatus: subscription.property.status,
+          propertyId: subscription.propertyId,
+          fromStatus: PropertyStatus.PENDING_PAYMENT,
           toStatus: PropertyStatus.PENDING_REVIEW,
           changedById: ownerId,
           reason: 'Subscription payment completed',
         },
       });
 
-      return created;
+      return { payment: created, isNew: true };
     });
 
-    return toPaymentResponse(payment);
+    if (result.isNew) {
+      const property = await this.prisma.property.findUniqueOrThrow({
+        where: { id: subscription.propertyId },
+        select: { id: true, slug: true, ownerId: true },
+      });
+
+      await this.notificationsService.notifyPaymentSuccess({
+        ownerId: property.ownerId,
+        propertyId: property.id,
+        propertySlug: property.slug,
+        paymentId: result.payment.id,
+      });
+    }
+
+    return toPaymentResponse(result.payment);
   }
 
   async listForSubscription(
@@ -146,6 +211,23 @@ export class PaymentsService {
     });
 
     return payments.map(toPaymentResponse);
+  }
+
+  private async assertPropertyComplete(propertyId: string): Promise<void> {
+    const property = await this.prisma.property.findUniqueOrThrow({
+      where: { id: propertyId },
+    });
+    const imageCount = await this.prisma.propertyImage.count({
+      where: { propertyId },
+    });
+    const completion = this.validationService.evaluate(property, imageCount);
+
+    if (!completion.completed) {
+      throw new BadRequestException({
+        message: 'Property is incomplete',
+        missingFields: completion.missingFields,
+      });
+    }
   }
 
   private async findOwnedSubscriptionOrThrow(

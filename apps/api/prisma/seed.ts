@@ -152,6 +152,193 @@ async function seedFeatures() {
   }
 }
 
+const SEED_COUNTRY = {
+  code: 'EG',
+  nameEn: 'Egypt',
+  nameAr: 'مصر',
+};
+
+const SEED_CITY = {
+  slug: 'cairo',
+  nameEn: 'Cairo',
+  nameAr: 'القاهرة',
+};
+
+const SEED_AREA = {
+  slug: 'new-cairo',
+  nameEn: 'New Cairo',
+  nameAr: 'القاهرة الجديدة',
+};
+
+const SEED_DEVELOPERS = [
+  {
+    slug: 'prime-urban',
+    nameEn: 'Prime Urban Developments',
+    nameAr: 'Prime Urban',
+    description: 'Seed developer for local development.',
+    logoUrl: 'https://cdn.example.com/developers/prime-urban.svg',
+    website: 'https://prime-urban.example.com',
+    isActive: true,
+  },
+  {
+    slug: 'nile-horizon',
+    nameEn: 'Nile Horizon',
+    nameAr: 'Nile Horizon',
+    description: 'Secondary seed developer.',
+    logoUrl: 'https://cdn.example.com/developers/nile-horizon.svg',
+    website: 'https://nile-horizon.example.com',
+    isActive: true,
+  },
+  {
+    slug: 'inactive-dev-seed',
+    nameEn: 'Inactive Dev Seed',
+    nameAr: 'Inactive Dev',
+    description: 'Inactive developer for API testing.',
+    isActive: false,
+  },
+] as const;
+
+const SEED_COMPOUNDS = [
+  {
+    slug: 'mountain-view-icity',
+    nameEn: 'Mountain View iCity',
+    nameAr: 'Mountain View iCity',
+    description: 'Flagship compound in New Cairo.',
+    developerSlug: 'prime-urban',
+    coverUrl: 'https://cdn.example.com/compounds/mountain-view-icity.jpg',
+    isActive: true,
+  },
+  {
+    slug: 'madinaty',
+    nameEn: 'Madinaty',
+    nameAr: 'مدينتي',
+    description: 'Large integrated community compound.',
+    developerSlug: 'nile-horizon',
+    coverUrl: 'https://cdn.example.com/compounds/madinaty.jpg',
+    isActive: true,
+  },
+  {
+    slug: 'inactive-compound-seed',
+    nameEn: 'Inactive Compound Seed',
+    nameAr: 'Inactive Compound',
+    description: 'Inactive compound for API testing.',
+    developerSlug: 'prime-urban',
+    isActive: false,
+  },
+] as const;
+
+async function seedLocationsForCompounds() {
+  const country = await prisma.country.upsert({
+    where: { code: SEED_COUNTRY.code },
+    update: {
+      nameEn: SEED_COUNTRY.nameEn,
+      nameAr: SEED_COUNTRY.nameAr,
+      isActive: true,
+    },
+    create: {
+      ...SEED_COUNTRY,
+      isActive: true,
+    },
+  });
+
+  const city = await prisma.city.upsert({
+    where: {
+      countryId_slug: {
+        countryId: country.id,
+        slug: SEED_CITY.slug,
+      },
+    },
+    update: {
+      nameEn: SEED_CITY.nameEn,
+      nameAr: SEED_CITY.nameAr,
+      isActive: true,
+    },
+    create: {
+      countryId: country.id,
+      ...SEED_CITY,
+      isActive: true,
+    },
+  });
+
+  const area = await prisma.area.upsert({
+    where: {
+      cityId_slug: {
+        cityId: city.id,
+        slug: SEED_AREA.slug,
+      },
+    },
+    update: {
+      nameEn: SEED_AREA.nameEn,
+      nameAr: SEED_AREA.nameAr,
+      isActive: true,
+    },
+    create: {
+      cityId: city.id,
+      ...SEED_AREA,
+      isActive: true,
+    },
+  });
+
+  return { country, city, area };
+}
+
+async function seedDevelopersAndCompounds() {
+  const { area } = await seedLocationsForCompounds();
+
+  const developerIds = new Map<string, string>();
+
+  for (const developer of SEED_DEVELOPERS) {
+    const row = await prisma.developer.upsert({
+      where: { slug: developer.slug },
+      update: {
+        nameEn: developer.nameEn,
+        nameAr: developer.nameAr,
+        description: developer.description,
+        logoUrl: 'logoUrl' in developer ? developer.logoUrl : null,
+        website: 'website' in developer ? developer.website : null,
+        isActive: developer.isActive,
+      },
+      create: {
+        slug: developer.slug,
+        nameEn: developer.nameEn,
+        nameAr: developer.nameAr,
+        description: developer.description,
+        logoUrl: 'logoUrl' in developer ? developer.logoUrl : null,
+        website: 'website' in developer ? developer.website : null,
+        isActive: developer.isActive,
+      },
+    });
+    developerIds.set(developer.slug, row.id);
+  }
+
+  for (const compound of SEED_COMPOUNDS) {
+    const developerId = developerIds.get(compound.developerSlug) ?? null;
+
+    await prisma.compound.upsert({
+      where: { slug: compound.slug },
+      update: {
+        nameEn: compound.nameEn,
+        nameAr: compound.nameAr,
+        description: compound.description,
+        developerId,
+        areaId: area.id,
+        coverUrl: 'coverUrl' in compound ? compound.coverUrl : null,
+        isActive: compound.isActive,
+      },
+      create: {
+        slug: compound.slug,
+        nameEn: compound.nameEn,
+        nameAr: compound.nameAr,
+        description: compound.description,
+        developerId,
+        areaId: area.id,
+        coverUrl: 'coverUrl' in compound ? compound.coverUrl : null,
+        isActive: compound.isActive,
+      },
+    });
+  }
+}
+
 async function main() {
   console.log('Seeding reference data…');
   await seedRoles();
@@ -159,8 +346,9 @@ async function main() {
   await seedPropertyTypes();
   await seedFeatures();
   await seedPlans();
+  await seedDevelopersAndCompounds();
   console.log(
-    'Seed complete (roles, transaction types, property types, features, plans).',
+    'Seed complete (roles, transaction types, property types, features, plans, developers, compounds).',
   );
 }
 

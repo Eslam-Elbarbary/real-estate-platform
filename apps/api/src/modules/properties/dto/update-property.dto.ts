@@ -21,6 +21,14 @@ export class UpdatePropertyDto {
   @MaxLength(200)
   title?: string;
 
+  @ApiPropertyOptional({
+    example: 'Luxury apartment in New Cairo with modern finishing',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  description?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

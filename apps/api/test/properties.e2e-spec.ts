@@ -164,6 +164,28 @@ describe('Properties draft (e2e)', () => {
     expect(res.body.data.areaSqm).toBe(140);
   });
 
+  it('updates a draft property description', async () => {
+    const { accessToken } = await registerAndLogin();
+
+    const created = await request(app.getHttpServer())
+      .post('/api/v1/properties/drafts')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({})
+      .expect(201);
+
+    const id = created.body.data.id as string;
+    const description =
+      'Luxury apartment in New Cairo with modern finishing';
+
+    const res = await request(app.getHttpServer())
+      .patch(`/api/v1/properties/me/${id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ description })
+      .expect(200);
+
+    expect(res.body.data.description).toBe(description);
+  });
+
   it('cannot access another user property', async () => {
     const owner = await registerAndLogin();
     const other = await registerAndLogin();

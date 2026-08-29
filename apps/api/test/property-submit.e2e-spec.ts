@@ -1,6 +1,11 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { PropertyStatus, RoleCode } from '@prisma/client';
+import {
+  PlanStatus,
+  PropertyStatus,
+  RoleCode,
+  SubscriptionStatus,
+} from '@prisma/client';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
@@ -18,6 +23,7 @@ describe('Property submit lifecycle (e2e)', () => {
   let propertyTypeId: string;
   let transactionTypeId: string;
   let areaId: string;
+  let basicPlanId: string;
 
   const providerMock = {
     name: 'mock-cloudinary',
@@ -107,6 +113,14 @@ describe('Property submit lifecycle (e2e)', () => {
       .expect(201);
   };
 
+  const subscribeBasic = async (accessToken: string, propertyId: string) => {
+    return request(app.getHttpServer())
+      .post(`/api/v1/properties/me/${propertyId}/subscription`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ planId: basicPlanId })
+      .expect(201);
+  };
+
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -176,15 +190,38 @@ describe('Property submit lifecycle (e2e)', () => {
       },
     });
     areaId = area.id;
+
+    const basicPlan = await prisma.plan.upsert({
+      where: { code: 'BASIC' },
+      update: {
+        price: 0,
+        durationDays: 30,
+        status: PlanStatus.ACTIVE,
+      },
+      create: {
+        code: 'BASIC',
+        name: 'Basic',
+        price: 0,
+        durationDays: 30,
+        status: PlanStatus.ACTIVE,
+        features: { listingLimit: 1 },
+      },
+    });
+    basicPlanId = basicPlan.id;
   });
 
   afterAll(async () => {
     await app.close();
   });
 
-  it('rejects incomplete property submit', async () => {
+  it('rejects incomplete property submit on rejected property', async () => {
     const { accessToken } = await registerAndLogin();
     const propertyId = await createDraft(accessToken);
+
+    await prisma.property.update({
+      where: { id: propertyId },
+      data: { status: PropertyStatus.REJECTED },
+    });
 
     const res = await request(app.getHttpServer())
       .post(`/api/v1/properties/me/${propertyId}/submit`)
@@ -204,19 +241,27 @@ describe('Property submit lifecycle (e2e)', () => {
     );
   });
 
-  it('submits a complete property and changes status correctly', async () => {
+  it('blocks draft submit without an active subscription', async () => {
     const { accessToken } = await registerAndLogin();
     const propertyId = await createDraft(accessToken);
     await completeDraft(accessToken, propertyId);
 
-    const res = await request(app.getHttpServer())
+    await request(app.getHttpServer())
       .post(`/api/v1/properties/me/${propertyId}/submit`)
       .set('Authorization', `Bearer ${accessToken}`)
-      .expect(201);
+      .expect(403);
+  });
+
+  it('submits via Basic plan selection and reaches pending review', async () => {
+    const { accessToken } = await registerAndLogin();
+    const propertyId = await createDraft(accessToken);
+    await completeDraft(accessToken, propertyId);
+
+    const res = await subscribeBasic(accessToken, propertyId);
 
     expect(res.body.success).toBe(true);
-    expect(res.body.data.status).toBe(PropertyStatus.PENDING_REVIEW);
-    expect(res.body.data.submittedAt).toBeTruthy();
+    expect(res.body.data.status).toBe(SubscriptionStatus.ACTIVE);
+    expect(res.body.data.nextAction).toBe('await_review');
 
     const stored = await prisma.property.findUniqueOrThrow({
       where: { id: propertyId },
@@ -225,21 +270,12 @@ describe('Property submit lifecycle (e2e)', () => {
     expect(stored.submittedAt).toBeTruthy();
   });
 
-  it('creates status history on successful submit', async () => {
+  it('creates status history on Basic plan activation', async () => {
     const { accessToken } = await registerAndLogin();
     const propertyId = await createDraft(accessToken);
     await completeDraft(accessToken, propertyId);
 
-    const login = await request(app.getHttpServer())
-      .get('/api/v1/auth/me')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .expect(200);
-    const userId = login.body.data.id as string;
-
-    await request(app.getHttpServer())
-      .post(`/api/v1/properties/me/${propertyId}/submit`)
-      .set('Authorization', `Bearer ${accessToken}`)
-      .expect(201);
+    await subscribeBasic(accessToken, propertyId);
 
     const history = await prisma.propertyStatusHistory.findMany({
       where: { propertyId },
@@ -249,7 +285,72 @@ describe('Property submit lifecycle (e2e)', () => {
     expect(history.length).toBeGreaterThanOrEqual(1);
     expect(history[0].fromStatus).toBe(PropertyStatus.DRAFT);
     expect(history[0].toStatus).toBe(PropertyStatus.PENDING_REVIEW);
-    expect(history[0].changedById).toBe(userId);
+  });
+
+  it('resubmits a rejected property with an active subscription', async () => {
+    const { accessToken } = await registerAndLogin();
+    const propertyId = await createDraft(accessToken);
+    await completeDraft(accessToken, propertyId);
+    await subscribeBasic(accessToken, propertyId);
+
+    await prisma.property.update({
+      where: { id: propertyId },
+      data: {
+        status: PropertyStatus.REJECTED,
+        rejectedReason: 'Needs clearer photos',
+      },
+    });
+
+    await request(app.getHttpServer())
+      .patch(`/api/v1/properties/me/${propertyId}/basic`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        title: 'Updated Rejected Flat',
+        propertyTypeId,
+        transactionTypeId,
+      })
+      .expect(200);
+
+    const res = await request(app.getHttpServer())
+      .post(`/api/v1/properties/me/${propertyId}/submit`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(201);
+
+    expect(res.body.data.status).toBe(PropertyStatus.PENDING_REVIEW);
+
+    const history = await prisma.propertyStatusHistory.findFirst({
+      where: {
+        propertyId,
+        fromStatus: PropertyStatus.REJECTED,
+        toStatus: PropertyStatus.PENDING_REVIEW,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    expect(history).toBeTruthy();
+  });
+
+  it('requires a new plan when resubmitting with an expired subscription', async () => {
+    const { accessToken } = await registerAndLogin();
+    const propertyId = await createDraft(accessToken);
+    await completeDraft(accessToken, propertyId);
+    await subscribeBasic(accessToken, propertyId);
+
+    await prisma.property.update({
+      where: { id: propertyId },
+      data: { status: PropertyStatus.REJECTED },
+    });
+
+    await prisma.subscription.updateMany({
+      where: { propertyId },
+      data: {
+        endsAt: new Date(Date.now() - 86_400_000),
+      },
+    });
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/properties/me/${propertyId}/submit`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(409);
   });
 
   it('returns completion percentage', async () => {

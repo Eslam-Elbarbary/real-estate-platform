@@ -1,9 +1,10 @@
 import {
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PropertyStatus } from '@prisma/client';
+import { PropertyStatus, SubscriptionStatus } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import {
   PropertyResponseDto,
@@ -45,8 +46,10 @@ export class PropertySubmitService {
       throw new NotFoundException('Property not found');
     }
 
-    if (property.status !== PropertyStatus.DRAFT) {
-      throw new ForbiddenException('Only draft properties can be submitted');
+    if (property.status !== PropertyStatus.REJECTED) {
+      throw new ForbiddenException(
+        'Only rejected properties can be resubmitted. Select a listing plan to submit a new property.',
+      );
     }
 
     const imageCount = await this.prisma.propertyImage.count({
@@ -61,22 +64,52 @@ export class PropertySubmitService {
       };
     }
 
+    const subscription = await this.prisma.subscription.findFirst({
+      where: {
+        propertyId: property.id,
+        status: SubscriptionStatus.ACTIVE,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!subscription) {
+      throw new ConflictException(
+        'A valid active listing plan is required. Select a new plan before resubmitting.',
+      );
+    }
+
+    const now = new Date();
+    if (!subscription.endsAt || subscription.endsAt.getTime() <= now.getTime()) {
+      throw new ConflictException(
+        'The listing plan has expired. Select a new plan before resubmitting.',
+      );
+    }
+
     const updated = await this.prisma.$transaction(async (tx) => {
+      const current = await tx.property.findUniqueOrThrow({
+        where: { id: property.id },
+      });
+
+      if (current.status !== PropertyStatus.REJECTED) {
+        throw new ConflictException('Property is no longer rejected');
+      }
+
       const next = await tx.property.update({
         where: { id: property.id },
         data: {
           status: PropertyStatus.PENDING_REVIEW,
-          submittedAt: new Date(),
+          submittedAt: now,
+          rejectedReason: null,
         },
       });
 
       await tx.propertyStatusHistory.create({
         data: {
           propertyId: property.id,
-          fromStatus: PropertyStatus.DRAFT,
+          fromStatus: PropertyStatus.REJECTED,
           toStatus: PropertyStatus.PENDING_REVIEW,
           changedById: ownerId,
-          reason: 'Submitted for review',
+          reason: 'Resubmitted for review',
         },
       });
 

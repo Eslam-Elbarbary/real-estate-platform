@@ -90,8 +90,10 @@ describe('Notifications (e2e)', () => {
     expect(res.body.data[0]).toMatchObject({
       title: 'Welcome',
       message: 'Thanks for joining Aqarmap',
+      type: NotificationType.SYSTEM,
       read: false,
     });
+    expect(res.body.data[0]).toHaveProperty('data');
     expect(res.body.data[0]).not.toHaveProperty('isRead');
     expect(res.body.data[0]).not.toHaveProperty('body');
   });

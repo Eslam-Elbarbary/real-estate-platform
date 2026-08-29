@@ -9,6 +9,9 @@ export class PropertyResponseDto {
   @ApiPropertyOptional({ nullable: true })
   title!: string | null;
 
+  @ApiPropertyOptional({ nullable: true })
+  description!: string | null;
+
   @ApiProperty()
   slug!: string;
 
@@ -105,6 +108,7 @@ export function toPropertyResponse(
   return {
     id: property.id,
     title: property.title,
+    description: property.description,
     slug: property.slug,
     status: property.status,
     propertyTypeId: property.propertyTypeId,

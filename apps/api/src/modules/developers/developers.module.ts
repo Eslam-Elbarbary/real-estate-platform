@@ -1,8 +1,10 @@
 ﻿import { Module } from '@nestjs/common';
+import { DevelopersController } from './developers.controller';
+import { DevelopersService } from './developers.service';
 
-/**
- * Developers module scaffold.
- * Business logic, controllers, and providers will be added in later phases.
- */
-@Module({})
+@Module({
+  controllers: [DevelopersController],
+  providers: [DevelopersService],
+  exports: [DevelopersService],
+})
 export class DevelopersModule {}

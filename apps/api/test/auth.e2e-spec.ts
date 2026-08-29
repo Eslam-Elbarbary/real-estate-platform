@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { RoleCode, VerificationTokenType } from '@prisma/client';
+import { RoleCode } from '@prisma/client';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
@@ -62,6 +62,8 @@ describe('Auth (e2e)', () => {
     expect(res.body.data.user.email).toBe(email);
     expect(res.body.data.user.passwordHash).toBeUndefined();
     expect(res.body.data.user.roles).toContain('USER');
+    expect(res.body.data.verificationToken).toBeDefined();
+    expect(typeof res.body.data.verificationToken).toBe('string');
   });
 
   it('rejects duplicate email', async () => {
@@ -129,22 +131,14 @@ describe('Auth (e2e)', () => {
 
   it('verifies email with valid token', async () => {
     const email = uniqueEmail();
-    await request(app.getHttpServer())
+    const register = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
       .send({ firstName: 'A', lastName: 'B', email, password })
       .expect(201);
 
-    const user = await prisma.user.findUniqueOrThrow({ where: { email } });
-    const tokenRow = await prisma.verificationToken.findFirstOrThrow({
-      where: {
-        userId: user.id,
-        type: VerificationTokenType.EMAIL_VERIFICATION,
-      },
-    });
-
     const res = await request(app.getHttpServer())
       .post('/api/v1/auth/verify-email')
-      .send({ token: tokenRow.token })
+      .send({ token: register.body.data.verificationToken })
       .expect(200);
 
     expect(res.body.data.message).toMatch(/verified/i);

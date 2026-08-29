@@ -25,7 +25,7 @@ export class PropertyMediaService {
     propertyId: string,
     file: Express.Multer.File | undefined,
   ): Promise<PropertyImageResponseDto> {
-    const property = await this.findOwnedDraftOrThrow(ownerId, propertyId);
+    const property = await this.findOwnedEditableOrThrow(ownerId, propertyId);
 
     const asset = await this.mediaService.uploadLibraryAsset(
       ownerId,
@@ -79,7 +79,7 @@ export class PropertyMediaService {
     propertyId: string,
     imageId: string,
   ): Promise<{ message: string }> {
-    const property = await this.findOwnedDraftOrThrow(ownerId, propertyId);
+    const property = await this.findOwnedEditableOrThrow(ownerId, propertyId);
 
     const image = await this.prisma.propertyImage.findFirst({
       where: { id: imageId, propertyId: property.id },
@@ -125,7 +125,7 @@ export class PropertyMediaService {
     propertyId: string,
     dto: ReorderMediaDto,
   ): Promise<PropertyImageResponseDto[]> {
-    const property = await this.findOwnedDraftOrThrow(ownerId, propertyId);
+    const property = await this.findOwnedEditableOrThrow(ownerId, propertyId);
 
     const imageIds = dto.images.map((item) => item.id);
     const uniqueIds = new Set(imageIds);
@@ -161,7 +161,7 @@ export class PropertyMediaService {
     propertyId: string,
     imageId: string,
   ): Promise<PropertyImageResponseDto> {
-    const property = await this.findOwnedDraftOrThrow(ownerId, propertyId);
+    const property = await this.findOwnedEditableOrThrow(ownerId, propertyId);
 
     const image = await this.prisma.propertyImage.findFirst({
       where: { id: imageId, propertyId: property.id },
@@ -205,15 +205,18 @@ export class PropertyMediaService {
     return property;
   }
 
-  private async findOwnedDraftOrThrow(
+  private async findOwnedEditableOrThrow(
     ownerId: string,
     propertyId: string,
   ): Promise<Property> {
     const property = await this.findOwnedOrThrow(ownerId, propertyId);
 
-    if (property.status !== PropertyStatus.DRAFT) {
+    if (
+      property.status !== PropertyStatus.DRAFT &&
+      property.status !== PropertyStatus.REJECTED
+    ) {
       throw new ForbiddenException(
-        'Only draft properties can manage media',
+        'Only draft or rejected properties can manage media',
       );
     }
 

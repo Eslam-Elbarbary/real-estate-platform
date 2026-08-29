@@ -77,7 +77,7 @@ export class PropertiesService {
     dto: UpdatePropertyDto,
   ): Promise<PropertyResponseDto> {
     const property = await this.findOwnedOrThrow(ownerId, propertyId);
-    this.assertDraftEditable(property);
+    this.assertOwnerEditable(property);
 
     await this.validateUpdateReferences(property, dto);
 
@@ -87,6 +87,10 @@ export class PropertiesService {
       const title = dto.title.trim();
       data.title = title;
       data.slug = await this.ensureUniqueSlug(slugifyTitle(title), property.id);
+    }
+
+    if (dto.description !== undefined) {
+      data.description = dto.description?.trim() || null;
     }
 
     if (dto.propertyTypeId !== undefined) {
@@ -170,7 +174,7 @@ export class PropertiesService {
     dto: UpdateBasicDto,
   ): Promise<PropertyResponseDto> {
     const property = await this.findOwnedOrThrow(ownerId, propertyId);
-    this.assertDraftEditable(property);
+    this.assertOwnerEditable(property);
 
     if (dto.propertyTypeId) {
       await this.assertActivePropertyType(dto.propertyTypeId);
@@ -207,7 +211,7 @@ export class PropertiesService {
     dto: UpdateLocationDto,
   ): Promise<PropertyResponseDto> {
     const property = await this.findOwnedOrThrow(ownerId, propertyId);
-    this.assertDraftEditable(property);
+    this.assertOwnerEditable(property);
 
     await this.validateUpdateReferences(property, {
       areaId: dto.areaId,
@@ -256,7 +260,7 @@ export class PropertiesService {
     dto: UpdateDetailsDto,
   ): Promise<PropertyResponseDto> {
     const property = await this.findOwnedOrThrow(ownerId, propertyId);
-    this.assertDraftEditable(property);
+    this.assertOwnerEditable(property);
 
     const data: Prisma.PropertyUpdateInput = {};
 
@@ -304,7 +308,7 @@ export class PropertiesService {
     dto: SetFeaturesDto,
   ): Promise<PropertyResponseDto> {
     const property = await this.findOwnedOrThrow(ownerId, propertyId);
-    this.assertDraftEditable(property);
+    this.assertOwnerEditable(property);
 
     const uniqueIds = [...new Set(dto.featureIds)];
 
@@ -365,9 +369,14 @@ export class PropertiesService {
     return property;
   }
 
-  private assertDraftEditable(property: Property): void {
-    if (property.status !== PropertyStatus.DRAFT) {
-      throw new ForbiddenException('Only draft properties can be updated');
+  private assertOwnerEditable(property: Property): void {
+    if (
+      property.status !== PropertyStatus.DRAFT &&
+      property.status !== PropertyStatus.REJECTED
+    ) {
+      throw new ForbiddenException(
+        'Only draft or rejected properties can be updated',
+      );
     }
   }
 

@@ -1,10 +1,13 @@
-﻿import { Module } from '@nestjs/common';
+﻿import { Module, forwardRef } from '@nestjs/common';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { PropertiesModule } from '../properties/properties.module';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
 import { MockPaymentProvider } from './providers/mock-payment.provider';
 import { PAYMENT_PROVIDER } from './providers/payment-provider.interface';
 
 @Module({
+  imports: [forwardRef(() => PropertiesModule), NotificationsModule],
   controllers: [PaymentsController],
   providers: [
     MockPaymentProvider,

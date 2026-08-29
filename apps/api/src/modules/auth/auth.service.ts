@@ -3,6 +3,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { RoleCode, VerificationTokenType } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { AppLoggerService } from '../../common/logger/app-logger.service';
@@ -29,6 +30,7 @@ export class AuthService {
     private readonly tokenService: AuthTokenService,
     private readonly prisma: PrismaService,
     private readonly logger: AppLoggerService,
+    private readonly configService: ConfigService,
   ) {
     this.logger.setContext(AuthService.name);
   }
@@ -50,7 +52,7 @@ export class AuthService {
     });
 
     await this.usersService.assignRole(user.id, RoleCode.USER);
-    await this.createVerificationToken(
+    const verificationToken = await this.createVerificationToken(
       user.id,
       VerificationTokenType.EMAIL_VERIFICATION,
       EMAIL_VERIFICATION_TTL_MS,
@@ -59,10 +61,20 @@ export class AuthService {
     const roles = await this.usersService.getRoleCodes(user.id);
     this.logger.log(`Registered user ${user.id}`);
 
-    return {
+    const response: {
+      user: ReturnType<UsersService['toPublicUser']>;
+      message: string;
+      verificationToken?: string;
+    } = {
       user: this.usersService.toPublicUser(user, roles),
       message: 'Registration successful. Please verify your email.',
     };
+
+    if (!this.isProductionEnvironment()) {
+      response.verificationToken = verificationToken;
+    }
+
+    return response;
   }
 
   async login(dto: LoginDto, meta: RequestMeta = {}) {
@@ -293,6 +305,10 @@ export class AuthService {
       },
     });
     return token;
+  }
+
+  private isProductionEnvironment(): boolean {
+    return this.configService.get<string>('app.appEnv', 'development') === 'production';
   }
 
   private configServiceAccessLabel(): string {

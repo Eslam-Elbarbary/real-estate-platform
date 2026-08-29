@@ -12,7 +12,7 @@ async function bootstrap() {
     bufferLogs: true,
   });
 
-  const logger = app.get(AppLoggerService);
+  const logger = await app.resolve(AppLoggerService);
   logger.setContext('Bootstrap');
   app.useLogger(logger);
 
@@ -40,9 +40,9 @@ async function bootstrap() {
     const swaggerConfig = new DocumentBuilder()
       .setTitle('Aqarmap API')
       .setDescription(
-        'Real estate marketplace backend API. Foundation phase — business endpoints coming soon.',
+        'Real estate marketplace backend API — properties, subscriptions, payments, leads, and admin tools.',
       )
-      .setVersion('0.1.0')
+      .setVersion('1.0.0')
       .addBearerAuth(
         {
           type: 'http',
@@ -55,6 +55,15 @@ async function bootstrap() {
       .addTag('health', 'Service health')
       .addTag('auth', 'Authentication')
       .addTag('users', 'User profile')
+      .addTag('properties', 'Property listings')
+      .addTag('plans', 'Listing plans')
+      .addTag('subscriptions', 'Property subscriptions')
+      .addTag('payments', 'Subscription payments')
+      .addTag('leads', 'Buyer inquiries')
+      .addTag('notifications', 'User notifications')
+      .addTag('alerts', 'Saved search alerts')
+      .addTag('catalogs', 'Property creation catalogs')
+      .addTag('Admin', 'Administrator operations')
       .build();
 
     const document = SwaggerModule.createDocument(app, swaggerConfig);

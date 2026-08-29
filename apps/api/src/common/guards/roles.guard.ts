@@ -1,11 +1,15 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
 export const ROLES_KEY = 'roles';
 
 /**
- * RBAC roles guard placeholder.
- * Use with a @Roles(...) decorator once role metadata is wired.
+ * Role-based access guard — enforces @Roles() metadata after JWT authentication.
  */
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -17,13 +21,18 @@ export class RolesGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    if (!requiredRoles || requiredRoles.length === 0) {
+    if (!requiredRoles?.length) {
       return true;
     }
 
     const request = context.switchToHttp().getRequest<{ user?: { roles?: string[] } }>();
     const userRoles = request.user?.roles ?? [];
 
-    return requiredRoles.some((role) => userRoles.includes(role));
+    const allowed = requiredRoles.some((role) => userRoles.includes(role));
+    if (!allowed) {
+      throw new ForbiddenException('Insufficient permissions');
+    }
+
+    return true;
   }
 }

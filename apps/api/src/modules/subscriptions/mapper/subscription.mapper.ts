@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Plan, Subscription, SubscriptionStatus } from '@prisma/client';
 import {
   PlanResponseDto,
@@ -6,6 +6,8 @@ import {
 } from '../../plans/mapper/plan.mapper';
 
 export type SubscriptionWithPlan = Subscription & { plan: Plan };
+
+export type SubscriptionNextAction = 'pay' | 'await_review';
 
 export class SubscriptionResponseDto {
   @ApiProperty()
@@ -29,12 +31,35 @@ export class SubscriptionResponseDto {
   })
   duration!: number;
 
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Subscription start time when active',
+  })
+  startsAt!: string | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Subscription end time when active',
+  })
+  endsAt!: string | null;
+
   @ApiProperty()
   createdAt!: Date;
+
+  @ApiPropertyOptional({
+    enum: ['pay', 'await_review'],
+    description: 'Suggested client next step after plan selection',
+  })
+  nextAction?: SubscriptionNextAction;
+}
+
+function dateToIso(value: Date | null | undefined): string | null {
+  return value ? value.toISOString() : null;
 }
 
 export function toSubscriptionResponse(
   subscription: SubscriptionWithPlan,
+  options?: { nextAction?: SubscriptionNextAction },
 ): SubscriptionResponseDto {
   return {
     id: subscription.id,
@@ -42,6 +67,9 @@ export function toSubscriptionResponse(
     status: subscription.status,
     price: Number(subscription.priceAtPurchase),
     duration: subscription.durationDaysAtPurchase,
+    startsAt: dateToIso(subscription.startsAt),
+    endsAt: dateToIso(subscription.endsAt),
     createdAt: subscription.createdAt,
+    ...(options?.nextAction ? { nextAction: options.nextAction } : {}),
   };
 }

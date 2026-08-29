@@ -1,9 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Notification } from '@prisma/client';
+import { Notification, NotificationType } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 export class NotificationResponseDto {
   @ApiProperty()
   id!: string;
+
+  @ApiProperty({ enum: NotificationType })
+  type!: NotificationType;
 
   @ApiProperty()
   title!: string;
@@ -11,7 +15,13 @@ export class NotificationResponseDto {
   @ApiPropertyOptional({ nullable: true })
   message!: string | null;
 
-  @ApiProperty()
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Safe client metadata (propertyId, actionUrl, etc.)',
+  })
+  data!: Prisma.JsonValue | null;
+
+  @ApiProperty({ description: 'Whether the notification has been read' })
   read!: boolean;
 
   @ApiProperty()
@@ -23,8 +33,10 @@ export function toNotificationResponse(
 ): NotificationResponseDto {
   return {
     id: notification.id,
+    type: notification.type,
     title: notification.title,
     message: notification.body,
+    data: notification.data,
     read: notification.isRead,
     createdAt: notification.createdAt,
   };

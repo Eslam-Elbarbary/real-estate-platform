@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PropertyStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadStatusDto } from './dto/update-lead-status.dto';
 import {
@@ -26,7 +27,10 @@ const propertyImageInclude = {
 
 @Injectable()
 export class LeadsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async create(
     buyerId: string,
@@ -39,6 +43,7 @@ export class LeadsService {
         id: true,
         status: true,
         ownerId: true,
+        slug: true,
       },
     });
 
@@ -69,6 +74,13 @@ export class LeadsService {
         phone: buyer?.phone ?? null,
         email: buyer?.email ?? null,
       },
+    });
+
+    await this.notificationsService.notifyNewLead({
+      ownerId: property.ownerId,
+      propertyId: property.id,
+      propertySlug: property.slug,
+      leadId: lead.id,
     });
 
     return toLeadCreatedResponse(lead);

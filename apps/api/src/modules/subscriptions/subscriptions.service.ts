@@ -9,8 +9,11 @@ import {
   PlanStatus,
   PropertyStatus,
   SubscriptionStatus,
+  type Plan,
+  type Property,
 } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { PropertyValidationService } from '../properties/services/property-validation.service';
 import {
   SubscriptionResponseDto,
   toSubscriptionResponse,
@@ -31,7 +34,10 @@ const OPEN_SUBSCRIPTION_STATUSES: SubscriptionStatus[] = [
 
 @Injectable()
 export class SubscriptionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly validationService: PropertyValidationService,
+  ) {}
 
   async createForProperty(
     ownerId: string,
@@ -45,6 +51,8 @@ export class SubscriptionsService {
         'Property is not eligible for plan selection',
       );
     }
+
+    await this.assertPropertyComplete(property);
 
     const plan = await this.prisma.plan.findUnique({
       where: { id: planId },
@@ -64,22 +72,31 @@ export class SubscriptionsService {
 
     if (existingOpen) {
       throw new ConflictException(
-        'Property already has an active subscription',
+        'Property already has an open subscription',
       );
     }
 
-    const created = await this.prisma.subscription.create({
-      data: {
-        propertyId: property.id,
-        planId: plan.id,
-        status: SubscriptionStatus.PENDING,
-        priceAtPurchase: plan.price,
-        durationDaysAtPurchase: plan.durationDays,
-      },
-      include: { plan: true },
-    });
+    const priceAtPurchase = plan.price;
+    const durationDaysAtPurchase = plan.durationDays;
+    const isBasicPlan = Number(priceAtPurchase) === 0;
 
-    return toSubscriptionResponse(created);
+    if (isBasicPlan) {
+      return this.activateBasicPlan(
+        ownerId,
+        property,
+        plan.id,
+        priceAtPurchase,
+        durationDaysAtPurchase,
+      );
+    }
+
+    return this.createPaidPlanPending(
+      ownerId,
+      property,
+      plan.id,
+      priceAtPurchase,
+      durationDaysAtPurchase,
+    );
   }
 
   async getForProperty(
@@ -104,10 +121,140 @@ export class SubscriptionsService {
     return toSubscriptionResponse(subscription);
   }
 
+  private async activateBasicPlan(
+    ownerId: string,
+    property: Property,
+    planId: string,
+    priceAtPurchase: Plan['price'],
+    durationDaysAtPurchase: number,
+  ): Promise<SubscriptionResponseDto> {
+    const now = new Date();
+    const endsAt = new Date(now);
+    endsAt.setUTCDate(endsAt.getUTCDate() + durationDaysAtPurchase);
+
+    const created = await this.prisma.$transaction(async (tx) => {
+      const open = await tx.subscription.findFirst({
+        where: {
+          propertyId: property.id,
+          status: { in: OPEN_SUBSCRIPTION_STATUSES },
+        },
+        select: { id: true },
+      });
+
+      if (open) {
+        throw new ConflictException(
+          'Property already has an open subscription',
+        );
+      }
+
+      const subscription = await tx.subscription.create({
+        data: {
+          propertyId: property.id,
+          planId,
+          status: SubscriptionStatus.ACTIVE,
+          priceAtPurchase,
+          durationDaysAtPurchase,
+          startsAt: now,
+          endsAt,
+        },
+        include: { plan: true },
+      });
+
+      await tx.property.update({
+        where: { id: property.id },
+        data: {
+          status: PropertyStatus.PENDING_REVIEW,
+          submittedAt: now,
+        },
+      });
+
+      await tx.propertyStatusHistory.create({
+        data: {
+          propertyId: property.id,
+          fromStatus: property.status,
+          toStatus: PropertyStatus.PENDING_REVIEW,
+          changedById: ownerId,
+          reason: 'Basic plan activated — submitted for review',
+        },
+      });
+
+      return subscription;
+    });
+
+    return toSubscriptionResponse(created, { nextAction: 'await_review' });
+  }
+
+  private async createPaidPlanPending(
+    ownerId: string,
+    property: Property,
+    planId: string,
+    priceAtPurchase: Plan['price'],
+    durationDaysAtPurchase: number,
+  ): Promise<SubscriptionResponseDto> {
+    const created = await this.prisma.$transaction(async (tx) => {
+      const open = await tx.subscription.findFirst({
+        where: {
+          propertyId: property.id,
+          status: { in: OPEN_SUBSCRIPTION_STATUSES },
+        },
+        select: { id: true },
+      });
+
+      if (open) {
+        throw new ConflictException(
+          'Property already has an open subscription',
+        );
+      }
+
+      const subscription = await tx.subscription.create({
+        data: {
+          propertyId: property.id,
+          planId,
+          status: SubscriptionStatus.PENDING,
+          priceAtPurchase,
+          durationDaysAtPurchase,
+        },
+        include: { plan: true },
+      });
+
+      await tx.property.update({
+        where: { id: property.id },
+        data: { status: PropertyStatus.PENDING_PAYMENT },
+      });
+
+      await tx.propertyStatusHistory.create({
+        data: {
+          propertyId: property.id,
+          fromStatus: property.status,
+          toStatus: PropertyStatus.PENDING_PAYMENT,
+          changedById: ownerId,
+          reason: 'Paid plan selected — awaiting payment',
+        },
+      });
+
+      return subscription;
+    });
+
+    return toSubscriptionResponse(created, { nextAction: 'pay' });
+  }
+
+  private async assertPropertyComplete(property: Property): Promise<void> {
+    const imageCount = await this.prisma.propertyImage.count({
+      where: { propertyId: property.id },
+    });
+    const completion = this.validationService.evaluate(property, imageCount);
+
+    if (!completion.completed) {
+      throw new BadRequestException({
+        message: 'Property is incomplete',
+        missingFields: completion.missingFields,
+      });
+    }
+  }
+
   private async findOwnedPropertyOrThrow(ownerId: string, propertyId: string) {
     const property = await this.prisma.property.findFirst({
       where: { id: propertyId, ownerId },
-      select: { id: true, status: true, ownerId: true },
     });
 
     if (!property) {
