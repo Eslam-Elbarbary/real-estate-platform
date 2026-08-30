@@ -1,15 +1,17 @@
 # Postman Manual Testing Guide
 
-This folder contains the complete API collection for the Aqarmap real-estate platform backend MVP.
+This folder contains the complete API collection for the Aqarmap real-estate platform backend.
+
+The collection is **auto-generated from NestJS controllers** in `apps/api/src`. Do not edit the JSON by hand.
 
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `real-estate-platform.postman_collection.json` | Full API collection (89 endpoints) |
+| `real-estate-platform.postman_collection.json` | Full API collection (91 endpoints, 30 controllers) |
 | `real-estate-platform.postman_environment.json` | Local environment variables |
-| `ENDPOINT_INVENTORY.md` | Complete endpoint reference |
-| `generate-collection.mjs` | Regenerates collection/environment JSON |
+| `ENDPOINT_INVENTORY.md` | Endpoint reference (may lag behind; generator is source of truth) |
+| `generate-collection.mjs` | Scans controllers/DTOs and regenerates collection + environment |
 
 ## Setup
 
@@ -24,131 +26,94 @@ This folder contains the complete API collection for the Aqarmap real-estate pla
 
 | Variable | Description |
 |----------|-------------|
+| `serverUrl` | Default `http://localhost:4000` (used by Health; excluded from API prefix) |
 | `baseUrl` | Default `http://localhost:4000/api/v1` |
 | `accessToken` | Set automatically after Login |
 | `refreshToken` | Set automatically after Login |
 | `adminAccessToken` | Set manually after admin login |
 | `verificationToken` | Set automatically after Register (development only) |
-| `propertyId`, `subscriptionId`, etc. | Set by collection test scripts or manually |
+| `userId`, `propertyId`, `imageId` | Set by collection test scripts or manually |
+| `subscriptionId`, `planId`, `propertyTypeId`, etc. | Set by test scripts or manually |
 
 **Never commit real tokens or passwords.** Placeholders only.
 
+IDs in requests use Postman variables (`{{propertyId}}`, `{{imageId}}`, …), never hardcoded database IDs.
+
+## Collection folders
+
+```
+Real Estate Platform API
+├── Health
+├── Auth
+├── Users
+├── Properties
+│   ├── Draft Creation
+│   ├── Basic Info
+│   ├── Location
+│   ├── Details
+│   ├── Features
+│   ├── Media          ← multipart upload + list/reorder/primary/delete
+│   ├── Submit
+│   └── Public Search
+├── Catalogs
+├── Locations
+├── Compounds
+├── Developers
+├── Plans
+├── Subscriptions
+├── Payments
+├── Leads
+├── Favorites
+├── Notes
+├── Notifications
+├── Alerts
+├── Media              ← media library (not property images)
+└── Admin
+    ├── Dashboard
+    ├── Properties
+    ├── Users
+    ├── Plans
+    ├── Developers
+    └── Compounds
+```
+
+## Property media
+
+All of these are in **Properties → Media**:
+
+| Method | Path | Body |
+|--------|------|------|
+| POST | `/api/v1/properties/me/{{propertyId}}/media` | `multipart/form-data` field `file` |
+| GET | `/api/v1/properties/me/{{propertyId}}/media` | — |
+| PATCH | `/api/v1/properties/me/{{propertyId}}/media/reorder` | JSON `{ images: [{ id, sortOrder }] }` |
+| PATCH | `/api/v1/properties/me/{{propertyId}}/media/{{imageId}}/primary` | — |
+| DELETE | `/api/v1/properties/me/{{propertyId}}/media/{{imageId}}` | — |
+
+Upload also exists for **Users** (avatar) and **Media** (library) as multipart `file`.
+
+## Auth
+
+- Public routes use Postman `noauth` (no bearer token).
+- Owner/user routes use `Authorization: Bearer {{accessToken}}`.
+- Admin routes use `Authorization: Bearer {{adminAccessToken}}`.
+
+Health is public at `{{serverUrl}}/health` (not under `/api/v1`).
+
 ## Recommended manual test sequence
 
-### 1. Health & auth
-
-1. **01 - Health → Health Check** — expect `200`, status `ok`
-2. **02 - Auth → Register** — unique email; saves `userId`, `verificationToken` (dev)
-3. **02 - Auth → Verify Email** — uses `{{verificationToken}}`
-4. **02 - Auth → Login** — saves `accessToken`, `refreshToken`
-5. **02 - Auth → Me** — verify authenticated user
-
-### 2. Reference data
-
-6. **04 - Locations → Location Tree** — copy `countryId`, `cityId`, `areaId` to environment
-7. **08 - Plans → List Active Plans** — saves first `planId` (Basic or Premium)
-8. **19 - Features → List Features** — optional feature IDs for wizard
-
-Set wizard IDs in environment before property creation:
-
-- `propertyTypeId` — from seed or GET `/features` / DB
-- `transactionTypeId` — from seed
-
-### 3. Property wizard
-
-9. **05 - Properties → Create Draft** — saves `propertyId`
-10. **05 - Properties → Update Basic** — title, types
-11. **05 - Properties → Update Location** — areaId
-12. **05 - Properties → Update Details** — bedrooms, price via Update Property
-13. **06 - Property Media → List Media** — upload via API client if needed (multipart)
-14. **05 - Properties → Get Completion** — verify `completed: true`
-
-### 4. Monetization path
-
-**Basic (free):**
-
-15. **09 - Subscriptions → Create Subscription** — use Basic plan (`price: 0`)
-16. Verify property status → `PENDING_REVIEW` (via GET property)
-
-**Premium (paid):**
-
-15. **09 - Subscriptions → Create Subscription** — use Premium plan
-16. Verify property status → `PENDING_PAYMENT`
-17. **10 - Payments → Pay Subscription**
-18. Verify property status → `PENDING_REVIEW`
-
-### 5. Admin moderation
-
-19. Login as admin; set `adminAccessToken` in environment
-20. **20 - Admin → List Properties** — filter pending review
-21. **20 - Admin → Approve Property** — property → `PUBLISHED`
-22. Copy `propertySlug` from property response for public tests
-
-### 6. Engagement features
-
-23. **12 - Favorites → Add Favorite**
-24. **13 - Notes → Create Note**
-25. **14 - Alerts → Create Alert**
-26. **11 - Leads → Create Lead** (different user as buyer)
-27. **15 - Notifications → List Notifications** — verify event notifications
-
-### 7. Rejection & resubmit flow
-
-28. **20 - Admin → Reject Property** (another listing)
-29. **05 - Properties → Update Property** — edit rejected listing
-30. **05 - Properties → Resubmit** — only if REJECTED + active subscription
-31. **15 - Notifications** — verify rejection/resubmit notifications
-
-### 8. Public discovery
-
-32. **18 - Public Properties → Search Published**
-33. **18 - Public Properties → Property by Slug**
-34. **16 - Compounds → List / Detail**
-35. **17 - Developers → List / Detail**
-
-## Expected status transitions
-
-| Action | From | To |
-|--------|------|-----|
-| Create draft | — | DRAFT |
-| Select Basic plan | DRAFT | PENDING_REVIEW |
-| Select Paid plan | DRAFT | PENDING_PAYMENT |
-| Pay subscription | PENDING_PAYMENT | PENDING_REVIEW |
-| Admin approve | PENDING_REVIEW | PUBLISHED |
-| Admin reject | PENDING_REVIEW | REJECTED |
-| Resubmit | REJECTED | PENDING_REVIEW |
-| Subscription expires | PUBLISHED | EXPIRED |
-
-## Invalid operations (should fail)
-
-| Operation | Expected |
-|-----------|----------|
-| POST `/submit` on DRAFT | 403 |
-| POST `/pay` on Basic plan | 400 |
-| POST `/pay` while property DRAFT | 409 |
-| Admin approve without subscription | 400 |
-| Edit PUBLISHED property | 403 |
-| Edit PENDING_PAYMENT property | 403 |
-| Duplicate subscription | 409 |
-| Duplicate payment | 201 idempotent (same payment) |
-| USER on `/admin/*` | 403 |
-| MODERATOR on archive | 403 |
-| Mark another user's notification read | 404 |
-
-## Auth automation
-
-The collection includes Postman test scripts that:
-
-- Save `accessToken`, `refreshToken`, `userId` after **Login**
-- Save `verificationToken` after **Register** (development only)
-- Save `propertyId`, `subscriptionId`, `planId`, `leadId`, etc. after create operations
-- Assert `{ success: true }` wrapper on successful responses
-
-Admin requests use `{{adminAccessToken}}`. Log in as an admin user and paste the token manually, or duplicate the Login request with admin credentials.
-
-## Swagger
-
-Interactive docs: `http://localhost:4000/docs` (when `swaggerEnabled=true`)
+1. **Health → API health check** — expect `200`, status `ok`
+2. **Auth → Register** — unique email; saves `userId`, `verificationToken` (dev)
+3. **Auth → Verify Email** — uses `{{verificationToken}}`
+4. **Auth → Login** — saves `accessToken`, `refreshToken`
+5. **Auth → Get the current authenticated user**
+6. **Catalogs / Locations / Plans** — copy IDs into the environment
+7. **Properties → Draft Creation → Create a minimal property draft** — saves `propertyId`
+8. Fill wizard steps (Basic, Location, Details, Features)
+9. **Properties → Media → Upload** — select a local image for `file`; saves `imageId`
+10. **Subscriptions → Select an active plan**
+11. **Payments → Pay** (paid plans only)
+12. Login as admin; set `adminAccessToken`
+13. **Admin → Properties → Approve**
 
 ## Regenerating the collection
 
@@ -156,9 +121,20 @@ Interactive docs: `http://localhost:4000/docs` (when `swaggerEnabled=true`)
 node docs/postman/generate-collection.mjs
 ```
 
+The generator:
+
+- Walks every `*.controller.ts` under `apps/api/src`
+- Reads DTO classes for JSON bodies and query parameters
+- Detects `@Public()`, `@Roles()`, and `FileInterceptor` / multipart
+- Fails if generated requests do not match the controller inventory
+
+## Swagger
+
+Interactive docs: `http://localhost:4000/docs` (when `swaggerEnabled=true`)
+
 ## Limitations
 
-- File upload requests (avatar, property media, media library) require Postman form-data; templates are documented but not fully automated
+- Multipart requests need a file selected in Postman (`file` form field)
 - Password reset token is not returned in API responses (check server logs in development)
 - Production never exposes `verificationToken` in register response
 - Mock payment provider only — no real payment gateway
