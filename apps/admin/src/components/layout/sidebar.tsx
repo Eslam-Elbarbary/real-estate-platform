@@ -2,9 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { mainNav } from '@/config/navigation';
+import {
+  filterNavByPermissions,
+  filterNavByRoles,
+  mainNav,
+} from '@/config/navigation';
 import { siteConfig } from '@/config/site';
 import { cn } from '@/lib/utils/cn';
+import type { UserRole } from '@/types';
 
 function isActivePath(pathname: string, href: string) {
   if (href === '/') {
@@ -14,8 +19,13 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  roles: UserRole[];
+}
+
+export function Sidebar({ roles }: SidebarProps) {
   const pathname = usePathname();
+  const navItems = filterNavByPermissions(filterNavByRoles(mainNav, roles), roles);
 
   return (
     <aside className="fixed inset-y-0 start-0 z-30 hidden w-sidebar flex-col border-e border-border bg-white lg:flex">
@@ -29,7 +39,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-3" aria-label="القائمة الرئيسية">
-        {mainNav.map((item) => {
+        {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActivePath(pathname, item.href);
 

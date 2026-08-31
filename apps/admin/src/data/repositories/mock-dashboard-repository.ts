@@ -1,59 +1,45 @@
-import type { DashboardOverview } from '@/types';
+import type { AdminDashboardStats } from '@/types';
 import type { DashboardRepository } from './dashboard-repository';
 
-const mockOverview: DashboardOverview = {
-  pendingApprovals: 12,
-  stats: [
-    {
-      id: 'users',
-      label: 'المستخدمون',
-      value: 1284,
-      hint: 'إجمالي الحسابات',
-    },
-    {
-      id: 'properties',
-      label: 'العقارات',
-      value: 642,
-      hint: 'منشورة ومسودات',
-    },
-    {
-      id: 'pending',
-      label: 'بانتظار المراجعة',
-      value: 12,
-      hint: 'تحتاج موافقة الإدارة',
-    },
-    {
-      id: 'payments',
-      label: 'المدفوعات',
-      value: 89,
-      hint: 'هذا الشهر',
-    },
-  ],
-  recentActivity: [
-    {
-      id: '1',
-      title: 'عقار جديد بانتظار المراجعة',
-      description: 'شقة للبيع في القاهرة الجديدة — مقدم من وسيط',
-      createdAt: '2026-08-23T10:15:00.000Z',
-    },
-    {
-      id: '2',
-      title: 'اشتراك Premium',
-      description: 'دفع ناجح عبر مزود الدفع التجريبي',
-      createdAt: '2026-08-23T09:40:00.000Z',
-    },
-    {
-      id: '3',
-      title: 'مطور جديد',
-      description: 'تم إنشاء ملف مطور بانتظار التحقق',
-      createdAt: '2026-08-22T18:05:00.000Z',
-    },
-  ],
+const mockStats: AdminDashboardStats = {
+  users: {
+    total: 1284,
+    active: 1102,
+    inactive: 182,
+  },
+  properties: {
+    total: 642,
+    draft: 84,
+    pendingReview: 12,
+    published: 480,
+    rejected: 28,
+    archived: 30,
+    expired: 8,
+  },
+  subscriptions: {
+    total: 210,
+    pending: 18,
+    active: 192,
+  },
+  payments: {
+    total: 120,
+    successful: 89,
+    pending: 21,
+    failed: 10,
+    totalRevenue: 44500,
+  },
+  leads: {
+    total: 356,
+    new: 44,
+    contacted: 120,
+    interested: 98,
+    closed: 94,
+  },
 };
 
 class MockDashboardRepository implements DashboardRepository {
-  async getOverview(): Promise<DashboardOverview> {
-    return mockOverview;
+  async getOverview(): Promise<AdminDashboardStats> {
+    return mockStats;
   }
 }
 

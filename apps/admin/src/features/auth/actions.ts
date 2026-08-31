@@ -1,6 +1,7 @@
 'use server';
 
 import { getUserFacingErrorMessage } from '@/lib/errors';
+import { refreshAdminSession } from './refresh';
 import { getAuthService } from './service';
 import type { AdminAuthSession, AdminLoginInput, AuthActionResult } from './types';
 
@@ -26,4 +27,8 @@ export async function logoutAction(): Promise<AuthActionResult> {
   } catch (error) {
     return { ok: false, error: getUserFacingErrorMessage(error) };
   }
+}
+
+export async function refreshAdminSessionAction(): Promise<string | false> {
+  return refreshAdminSession();
 }

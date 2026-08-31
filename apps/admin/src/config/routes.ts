@@ -1,6 +1,7 @@
 export const routes = {
   home: '/',
   login: '/login',
+  forbidden: '/forbidden',
   users: {
     root: '/users',
     details: (id: string) => `/users/${id}`,
@@ -17,6 +18,10 @@ export const routes = {
   payments: {
     root: '/payments',
     details: (id: string) => `/payments/${id}`,
+  },
+  leads: {
+    root: '/leads',
+    details: (id: string) => `/leads/${id}`,
   },
   developers: {
     root: '/developers',

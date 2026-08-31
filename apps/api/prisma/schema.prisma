@@ -22,6 +22,7 @@ enum RoleCode {
   DEVELOPER
   ADMIN
   MODERATOR
+  SUPER_ADMIN
 }
 
 enum VerificationTokenType {

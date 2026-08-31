@@ -1,5 +1,5 @@
-import type { DashboardOverview } from '@/types';
+import type { AdminDashboardStats } from '@/types';
 
 export interface DashboardRepository {
-  getOverview(): Promise<DashboardOverview>;
+  getOverview(): Promise<AdminDashboardStats>;
 }

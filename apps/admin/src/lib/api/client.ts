@@ -1,5 +1,6 @@
 import { env } from '@/config/env';
 import {
+  AdminError,
   createAdminError,
   mapHttpStatusToErrorCode,
   toAdminError,
@@ -18,6 +19,10 @@ export interface ApiRequestOptions {
   signal?: AbortSignal;
   /** Request timeout in milliseconds. Defaults to 30s. */
   timeoutMs?: number;
+  /** Skip automatic access-token refresh on 401. */
+  skipRefresh?: boolean;
+  /** @internal Ensures a failed request is retried at most once after refresh. */
+  _retried?: boolean;
 }
 
 export interface ApiSuccess<T> {
@@ -86,11 +91,7 @@ async function parseBody(response: Response): Promise<unknown> {
   return text.length > 0 ? text : null;
 }
 
-/**
- * Low-level HTTP client for the NestJS API.
- * Repositories should call this — UI must not.
- */
-export async function apiRequest<T>(
+async function performApiRequest<T>(
   options: ApiRequestOptions,
 ): Promise<ApiSuccess<T>> {
   const {
@@ -174,6 +175,60 @@ export async function apiRequest<T>(
   } finally {
     clearTimeout(timeoutId);
     signal?.removeEventListener('abort', onAbort);
+  }
+}
+
+function shouldAttemptRefresh(
+  error: unknown,
+  options: ApiRequestOptions,
+): boolean {
+  if (options.skipRefresh || options._retried) {
+    return false;
+  }
+
+  if (!(error instanceof AdminError) || error.code !== 'UNAUTHORIZED') {
+    return false;
+  }
+
+  return Boolean(options.accessToken);
+}
+
+async function retryWithRefreshedToken<T>(
+  options: ApiRequestOptions,
+): Promise<ApiSuccess<T>> {
+  if (typeof window !== 'undefined') {
+    throw createAdminError('UNAUTHORIZED');
+  }
+
+  const { refreshAdminSessionAction } = await import('@/features/auth/actions');
+  const accessToken = await refreshAdminSessionAction();
+
+  if (!accessToken) {
+    throw createAdminError('UNAUTHORIZED');
+  }
+
+  return performApiRequest<T>({
+    ...options,
+    accessToken,
+    _retried: true,
+  });
+}
+
+/**
+ * Low-level HTTP client for the NestJS API.
+ * Repositories should call this — UI must not.
+ */
+export async function apiRequest<T>(
+  options: ApiRequestOptions,
+): Promise<ApiSuccess<T>> {
+  try {
+    return await performApiRequest<T>(options);
+  } catch (error) {
+    if (shouldAttemptRefresh(error, options)) {
+      return retryWithRefreshedToken<T>(options);
+    }
+
+    throw error;
   }
 }
 

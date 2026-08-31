@@ -4,7 +4,8 @@ export type UserRole =
   | 'BROKER'
   | 'DEVELOPER'
   | 'ADMIN'
-  | 'MODERATOR';
+  | 'MODERATOR'
+  | 'SUPER_ADMIN';
 
 /** Aligned with apps/api Prisma PropertyStatus. */
 export type PropertyStatus =
@@ -40,6 +41,61 @@ export type SubscriptionStatus =
   | 'EXPIRED'
   | 'CANCELLED';
 
+/** Matches NestJS AdminDashboardUsersStatsDto. */
+export interface AdminDashboardUsersStats {
+  total: number;
+  active: number;
+  inactive: number;
+}
+
+/** Matches NestJS AdminDashboardPropertiesStatsDto. */
+export interface AdminDashboardPropertiesStats {
+  total: number;
+  draft: number;
+  pendingReview: number;
+  published: number;
+  rejected: number;
+  archived: number;
+  expired: number;
+}
+
+/** Matches NestJS AdminDashboardSubscriptionsStatsDto. */
+export interface AdminDashboardSubscriptionsStats {
+  total: number;
+  pending: number;
+  active: number;
+}
+
+/** Matches NestJS AdminDashboardPaymentsStatsDto. */
+export interface AdminDashboardPaymentsStats {
+  total: number;
+  successful: number;
+  pending: number;
+  failed: number;
+  totalRevenue: number;
+}
+
+/** Matches NestJS AdminDashboardLeadsStatsDto. */
+export interface AdminDashboardLeadsStats {
+  total: number;
+  new: number;
+  contacted: number;
+  interested: number;
+  closed: number;
+}
+
+/**
+ * Full admin dashboard payload from GET /api/v1/admin/dashboard.
+ * Matches NestJS AdminDashboardStatsDto.
+ */
+export interface AdminDashboardStats {
+  users: AdminDashboardUsersStats;
+  properties: AdminDashboardPropertiesStats;
+  subscriptions: AdminDashboardSubscriptionsStats;
+  payments: AdminDashboardPaymentsStats;
+  leads: AdminDashboardLeadsStats;
+}
+
 export interface DashboardStat {
   id: string;
   label: string;
@@ -47,17 +103,19 @@ export interface DashboardStat {
   hint?: string;
 }
 
-export interface DashboardOverview {
-  stats: DashboardStat[];
-  pendingApprovals: number;
-  recentActivity: DashboardActivityItem[];
-}
-
 export interface DashboardActivityItem {
   id: string;
   title: string;
   description: string;
   createdAt: string;
+}
+
+/**
+ * Dashboard view model: complete backend stats plus UI-only activity rows.
+ */
+export interface DashboardOverview {
+  data: AdminDashboardStats;
+  recentActivity: DashboardActivityItem[];
 }
 
 export interface AdminSectionMeta {

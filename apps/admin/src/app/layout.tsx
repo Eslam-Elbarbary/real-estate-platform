@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Cairo } from 'next/font/google';
+import { ToastProvider } from '@/components/providers/toast-provider';
 import { siteConfig } from '@/config/site';
 import { createRootMetadata } from '@/lib/seo/metadata';
 import './globals.css';
@@ -19,7 +20,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       dir={siteConfig.direction}
       className={`${cairo.variable} h-full antialiased`}
     >
-      <body className="min-h-full font-sans">{children}</body>
+      <body className="min-h-full font-sans">
+        {children}
+        <ToastProvider />
+      </body>
     </html>
   );
 }

@@ -1,4 +1,7 @@
-import { AdminSectionPlaceholder } from '@/components/layout/admin-section-placeholder';
+import { CompoundsList } from '@/features/compounds/components/compounds-list';
+import { getAdminCompounds } from '@/features/compounds';
+import { getAdminDevelopers } from '@/features/developers';
+import { getAdminSession } from '@/features/auth/service';
 import { createPageMetadata } from '@/lib/seo/metadata';
 
 export const metadata = createPageMetadata({
@@ -7,11 +10,77 @@ export const metadata = createPageMetadata({
   path: '/compounds',
 });
 
-export default function CompoundsPage() {
+function parsePositiveInt(
+  value: string | string[] | undefined,
+  fallback: number,
+): number {
+  const raw = Array.isArray(value) ? value[0] : value;
+  const parsed = Number.parseInt(raw ?? '', 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function parseString(value: string | string[] | undefined): string {
+  const raw = Array.isArray(value) ? value[0] : value;
+  return raw?.trim() ?? '';
+}
+
+function parseIsActiveFilter(
+  value: string | string[] | undefined,
+): boolean | undefined {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (raw === 'true') {
+    return true;
+  }
+  if (raw === 'false') {
+    return false;
+  }
+  return undefined;
+}
+
+export default async function CompoundsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const page = parsePositiveInt(params.page, 1);
+  const limit = Math.min(parsePositiveInt(params.limit, 20), 100);
+  const search = parseString(params.search);
+  const developerId = parseString(params.developerId);
+  const areaId = parseString(params.areaId);
+  const isActiveRaw = Array.isArray(params.isActive)
+    ? params.isActive[0]
+    : params.isActive;
+  const isActiveFilter =
+    isActiveRaw === 'true' || isActiveRaw === 'false' ? isActiveRaw : '';
+
+  const [result, developersResult, session] = await Promise.all([
+    getAdminCompounds({
+      page,
+      limit,
+      search,
+      developerId: developerId || undefined,
+      areaId: areaId || undefined,
+      isActive: parseIsActiveFilter(params.isActive),
+    }),
+    getAdminDevelopers({ limit: 100 }),
+    getAdminSession(),
+  ]);
+  const roles = session?.user.roles ?? [];
+
   return (
-    <AdminSectionPlaceholder
-      title="المشاريع"
-      description="إدارة الكمبوندات والوحدات المرتبطة بها."
+    <CompoundsList
+      result={result}
+      developers={developersResult.items}
+      roles={roles}
+      filters={{
+        page,
+        limit,
+        search,
+        developerId,
+        areaId,
+        isActive: isActiveFilter,
+      }}
     />
   );
 }

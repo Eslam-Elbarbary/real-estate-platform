@@ -1,6 +1,17 @@
 import { PlanStatus, PrismaClient, RoleCode } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
+
+/** Same cost factor as AuthService password hashing. */
+const BCRYPT_ROUNDS = 12;
+
+const SUPER_ADMIN_SEED = {
+  email: 'admin@dashboard.com',
+  password: 'Admin@123456',
+  firstName: 'Super',
+  lastName: 'Admin',
+} as const;
 
 const ROLES: Array<{ code: RoleCode; name: string; description: string }> = [
   { code: RoleCode.USER, name: 'User', description: 'Standard marketplace user' },
@@ -8,6 +19,11 @@ const ROLES: Array<{ code: RoleCode; name: string; description: string }> = [
   { code: RoleCode.DEVELOPER, name: 'Developer', description: 'Real estate developer account' },
   { code: RoleCode.ADMIN, name: 'Admin', description: 'Platform administrator' },
   { code: RoleCode.MODERATOR, name: 'Moderator', description: 'Content and listing moderator' },
+  {
+    code: RoleCode.SUPER_ADMIN,
+    name: 'Super Admin',
+    description: 'Full platform administrator',
+  },
 ];
 
 const TRANSACTION_TYPES = [
@@ -95,6 +111,47 @@ async function seedRoles() {
       create: role,
     });
   }
+}
+
+async function seedSuperAdmin() {
+  const passwordHash = await bcrypt.hash(SUPER_ADMIN_SEED.password, BCRYPT_ROUNDS);
+
+  const user = await prisma.user.upsert({
+    where: { email: SUPER_ADMIN_SEED.email },
+    update: {
+      passwordHash,
+      firstName: SUPER_ADMIN_SEED.firstName,
+      lastName: SUPER_ADMIN_SEED.lastName,
+      isEmailVerified: true,
+      isActive: true,
+    },
+    create: {
+      email: SUPER_ADMIN_SEED.email,
+      passwordHash,
+      firstName: SUPER_ADMIN_SEED.firstName,
+      lastName: SUPER_ADMIN_SEED.lastName,
+      isEmailVerified: true,
+      isActive: true,
+    },
+  });
+
+  const role = await prisma.role.findUniqueOrThrow({
+    where: { code: RoleCode.SUPER_ADMIN },
+  });
+
+  await prisma.userRole.upsert({
+    where: {
+      userId_roleId: {
+        userId: user.id,
+        roleId: role.id,
+      },
+    },
+    update: {},
+    create: {
+      userId: user.id,
+      roleId: role.id,
+    },
+  });
 }
 
 async function seedTransactionTypes() {
@@ -342,13 +399,14 @@ async function seedDevelopersAndCompounds() {
 async function main() {
   console.log('Seeding reference data…');
   await seedRoles();
+  await seedSuperAdmin();
   await seedTransactionTypes();
   await seedPropertyTypes();
   await seedFeatures();
   await seedPlans();
   await seedDevelopersAndCompounds();
   console.log(
-    'Seed complete (roles, transaction types, property types, features, plans, developers, compounds).',
+    'Seed complete (roles, super admin, transaction types, property types, features, plans, developers, compounds).',
   );
 }
 

@@ -2,13 +2,19 @@
 
 import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { mainNav } from '@/config/navigation';
+import {
+  filterNavByPermissions,
+  filterNavByRoles,
+  mainNav,
+} from '@/config/navigation';
 import { routes } from '@/config/routes';
 import { siteConfig } from '@/config/site';
+import { logoutAction } from '@/features/auth/actions';
 import { cn } from '@/lib/utils/cn';
+import type { UserRole } from '@/types';
 
 function isActivePath(pathname: string, href: string) {
   if (href === '/') {
@@ -18,9 +24,31 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function Topbar() {
+interface TopbarProps {
+  roles: UserRole[];
+}
+
+export function Topbar({ roles }: TopbarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const navItems = filterNavByPermissions(filterNavByRoles(mainNav, roles), roles);
+
+  async function handleLogout() {
+    setLoggingOut(true);
+
+    const result = await logoutAction();
+
+    if (result.ok) {
+      router.push(routes.login);
+      router.refresh();
+      setLoggingOut(false);
+      return;
+    }
+
+    setLoggingOut(false);
+  }
 
   return (
     <>
@@ -54,15 +82,17 @@ export function Topbar() {
           <span className="hidden rounded-md bg-surface-100 px-2.5 py-1 text-xs font-medium text-ink-700 sm:inline">
             ADMIN
           </span>
-          <Link
-            href={routes.login}
-            className={cn(
-              'inline-flex h-8 items-center justify-center rounded-md border border-border px-3 text-xs font-medium text-ink-900 transition-colors',
-              'hover:bg-surface-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
-            )}
+          <Button
+            type="button"
+            variant="outline"
+            size="small"
+            disabled={loggingOut}
+            onClick={() => {
+              void handleLogout();
+            }}
           >
-            تسجيل الدخول
-          </Link>
+            {loggingOut ? 'جاري تسجيل الخروج…' : 'تسجيل الخروج'}
+          </Button>
         </div>
       </header>
 
@@ -85,7 +115,7 @@ export function Topbar() {
               <p className="text-xs text-ink-500">{siteConfig.name}</p>
             </div>
             <div className="space-y-1">
-              {mainNav.map((item) => {
+              {navItems.map((item) => {
                 const Icon = item.icon;
                 const active = isActivePath(pathname, item.href);
 
