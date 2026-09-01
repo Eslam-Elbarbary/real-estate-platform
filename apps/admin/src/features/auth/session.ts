@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { cookies } from 'next/headers';
 import type { AdminAuthUser } from './types';
 
@@ -42,6 +44,10 @@ export async function getStoredAdminSession(): Promise<StoredAdminSession | null
   try {
     const user = JSON.parse(userRaw) as AdminAuthUser;
     if (!user?.id || !user?.email) {
+      return null;
+    }
+
+    if (!Array.isArray(user.roles) || user.roles.length === 0) {
       return null;
     }
 

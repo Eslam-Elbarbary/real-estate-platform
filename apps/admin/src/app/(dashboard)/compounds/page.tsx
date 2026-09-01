@@ -1,7 +1,9 @@
 import { CompoundsList } from '@/features/compounds/components/compounds-list';
+import { buildAreaLabelMap } from '@/features/compounds/format';
 import { getAdminCompounds } from '@/features/compounds';
 import { getAdminDevelopers } from '@/features/developers';
 import { getAdminSession } from '@/features/auth/service';
+import { getLocationTree } from '@/features/locations';
 import { createPageMetadata } from '@/lib/seo/metadata';
 
 export const metadata = createPageMetadata({
@@ -37,6 +39,22 @@ function parseIsActiveFilter(
   return undefined;
 }
 
+function flattenAreas(
+  tree: Awaited<ReturnType<typeof getLocationTree>>,
+): Array<{ id: string; nameAr: string | null; nameEn: string }> {
+  const areas: Array<{ id: string; nameAr: string | null; nameEn: string }> = [];
+
+  for (const country of tree) {
+    for (const city of country.cities) {
+      for (const area of city.areas) {
+        areas.push(area);
+      }
+    }
+  }
+
+  return areas;
+}
+
 export default async function CompoundsPage({
   searchParams,
 }: {
@@ -54,7 +72,7 @@ export default async function CompoundsPage({
   const isActiveFilter =
     isActiveRaw === 'true' || isActiveRaw === 'false' ? isActiveRaw : '';
 
-  const [result, developersResult, session] = await Promise.all([
+  const [result, developersResult, locationTree, session] = await Promise.all([
     getAdminCompounds({
       page,
       limit,
@@ -64,14 +82,17 @@ export default async function CompoundsPage({
       isActive: parseIsActiveFilter(params.isActive),
     }),
     getAdminDevelopers({ limit: 100 }),
+    getLocationTree(),
     getAdminSession(),
   ]);
   const roles = session?.user.roles ?? [];
+  const areaLabelsById = buildAreaLabelMap(flattenAreas(locationTree));
 
   return (
     <CompoundsList
       result={result}
       developers={developersResult.items}
+      areaLabelsById={areaLabelsById}
       roles={roles}
       filters={{
         page,

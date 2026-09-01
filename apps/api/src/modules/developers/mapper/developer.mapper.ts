@@ -93,6 +93,11 @@ export class AdminDeveloperDto {
   compoundCount!: number;
 }
 
+export class AdminDeveloperDetailsDto extends AdminDeveloperDto {
+  @ApiProperty({ type: [PublicDeveloperCompoundSummaryDto] })
+  compounds!: PublicDeveloperCompoundSummaryDto[];
+}
+
 type DeveloperWithCompoundCount = Developer & {
   _count: { compounds: number };
 };
@@ -161,6 +166,16 @@ export function toAdminDeveloper(
     createdAt: developer.createdAt.toISOString(),
     updatedAt: developer.updatedAt.toISOString(),
     compoundCount: developer._count.compounds,
+  };
+}
+
+export function toAdminDeveloperDetails(
+  developer: DeveloperWithCompoundCount,
+  compounds: PublicDeveloperCompoundSummaryDto[],
+): AdminDeveloperDetailsDto {
+  return {
+    ...toAdminDeveloper(developer),
+    compounds,
   };
 }
 

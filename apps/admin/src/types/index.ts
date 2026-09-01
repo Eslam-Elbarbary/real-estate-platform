@@ -25,6 +25,7 @@ export type LeadStatus =
   | 'NEW'
   | 'CONTACTED'
   | 'FOLLOW_UP'
+  | 'INTERESTED'
   | 'CLOSED'
   | 'REJECTED';
 
@@ -46,6 +47,7 @@ export interface AdminDashboardUsersStats {
   total: number;
   active: number;
   inactive: number;
+  recent: number;
 }
 
 /** Matches NestJS AdminDashboardPropertiesStatsDto. */
@@ -57,6 +59,7 @@ export interface AdminDashboardPropertiesStats {
   rejected: number;
   archived: number;
   expired: number;
+  recent: number;
 }
 
 /** Matches NestJS AdminDashboardSubscriptionsStatsDto. */
@@ -80,8 +83,100 @@ export interface AdminDashboardLeadsStats {
   total: number;
   new: number;
   contacted: number;
+  followUp: number;
   interested: number;
   closed: number;
+}
+
+export interface AdminDashboardPortfolio {
+  total: number;
+  published: number;
+  pendingReview: number;
+  rejected: number;
+  archived: number;
+}
+
+export interface AdminDashboardInventoryItem {
+  propertyTypeId: string;
+  nameEn: string;
+  nameAr: string | null;
+  count: number;
+  percentage: number;
+}
+
+export interface AdminDashboardMonthlyRevenue {
+  month: string;
+  revenue: number;
+}
+
+export interface AdminDashboardRevenueAnalytics {
+  totalRevenue: number;
+  currentMonthRevenue: number;
+  monthly: AdminDashboardMonthlyRevenue[];
+}
+
+export interface AdminDashboardExecutiveSummary {
+  totalProperties: number;
+  totalDevelopers: number;
+  totalCompounds: number;
+  leadsToday: number;
+}
+
+export interface AdminDashboardMonthlyCount {
+  month: string;
+  count: number;
+}
+
+export interface AdminDashboardPropertyGrowth {
+  monthly: AdminDashboardMonthlyCount[];
+}
+
+export interface AdminDashboardTopDeveloper {
+  id: string;
+  nameEn: string;
+  nameAr: string | null;
+  logoUrl: string | null;
+  compoundCount: number;
+  publishedPropertyCount: number;
+  totalPropertyCount: number;
+}
+
+export interface AdminDashboardTopCompound {
+  id: string;
+  nameEn: string;
+  nameAr: string | null;
+  developerName: string | null;
+  locationName: string | null;
+  publishedPropertyCount: number;
+  totalListings: number;
+}
+
+export interface AdminDashboardRecentLead {
+  id: string;
+  customerName: string;
+  propertyTitle: string;
+  status: string;
+  statusLabel: string;
+  createdAt: string;
+}
+
+export interface AdminDashboardLeadFunnelStage {
+  status: string;
+  label: string;
+  count: number;
+  conversionPercentage: number;
+}
+
+export interface AdminDashboardLeadsIntelligence {
+  total: number;
+  conversionRate: number;
+  funnel: AdminDashboardLeadFunnelStage[];
+}
+
+export interface AdminDashboardModeration {
+  pendingProperties: number;
+  pendingPayments: number;
+  newLeads: number;
 }
 
 /**
@@ -94,6 +189,17 @@ export interface AdminDashboardStats {
   subscriptions: AdminDashboardSubscriptionsStats;
   payments: AdminDashboardPaymentsStats;
   leads: AdminDashboardLeadsStats;
+  portfolio: AdminDashboardPortfolio;
+  inventory: AdminDashboardInventoryItem[];
+  revenue: AdminDashboardRevenueAnalytics;
+  developers: AdminDashboardTopDeveloper[];
+  compounds: AdminDashboardTopCompound[];
+  leadsIntelligence: AdminDashboardLeadsIntelligence;
+  moderation: AdminDashboardModeration;
+  executive: AdminDashboardExecutiveSummary;
+  propertyGrowth: AdminDashboardPropertyGrowth;
+  recentLeads: AdminDashboardRecentLead[];
+  activity: DashboardActivityItem[];
 }
 
 export interface DashboardStat {
@@ -105,6 +211,7 @@ export interface DashboardStat {
 
 export interface DashboardActivityItem {
   id: string;
+  type?: string;
   title: string;
   description: string;
   createdAt: string;

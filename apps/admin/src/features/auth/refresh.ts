@@ -1,10 +1,6 @@
 import { apiClient } from '@/lib/api/client';
+import { logAdminErrorInDev } from '@/lib/dev/admin-log';
 import type { UserRole } from '@/types';
-import {
-  clearAdminSession,
-  getStoredAdminSession,
-  saveAdminSession,
-} from './session';
 import type { AdminAuthUser } from './types';
 
 interface ApiEnvelope<T> {
@@ -26,6 +22,12 @@ interface RefreshResponseData {
 
 const REFRESH_PATH = '/api/v1/auth/refresh';
 
+export interface RefreshedAdminTokens {
+  accessToken: string;
+  refreshToken: string;
+  user: AdminAuthUser;
+}
+
 function mapAuthUser(user: RefreshResponseData['user']): AdminAuthUser {
   return {
     id: user.id,
@@ -44,38 +46,37 @@ function isValidRefreshData(data: RefreshResponseData | undefined): data is Refr
   );
 }
 
-export async function refreshAdminSession(): Promise<string | false> {
-  const session = await getStoredAdminSession();
-
-  if (!session?.refreshToken) {
-    return false;
-  }
-
+/**
+ * Calls the NestJS refresh endpoint and returns validated tokens.
+ * Does not read or write cookies.
+ */
+export async function refreshAccessToken(
+  refreshToken: string,
+): Promise<RefreshedAdminTokens | null> {
   try {
     const response = await apiClient.post<ApiEnvelope<RefreshResponseData>>(
       REFRESH_PATH,
-      { refreshToken: session.refreshToken },
+      { refreshToken },
       { skipRefresh: true },
     );
 
     const payload = response.data;
 
     if (!payload.success || !isValidRefreshData(payload.data)) {
-      await clearAdminSession();
-      return false;
+      logAdminErrorInDev('auth:refresh-api', new Error('Invalid refresh response payload'), {
+        success: payload.success,
+        message: payload.message,
+      });
+      return null;
     }
 
-    const accessToken = payload.data.accessToken;
-
-    await saveAdminSession({
-      accessToken,
+    return {
+      accessToken: payload.data.accessToken,
       refreshToken: payload.data.refreshToken,
       user: mapAuthUser(payload.data.user),
-    });
-
-    return accessToken;
-  } catch {
-    await clearAdminSession();
-    return false;
+    };
+  } catch (error) {
+    logAdminErrorInDev('auth:refresh-api', error);
+    return null;
   }
 }

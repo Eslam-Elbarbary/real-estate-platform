@@ -1,14 +1,23 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { Pagination } from '@/components/data';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { PageHeader } from '@/components/layout/page-header';
-import type { PropertyStatus } from '@/types';
-import type { AdminPropertiesListResult } from '../types';
+import { hasPermission } from '@/features/auth/permissions';
+import type { PropertyStatus, UserRole } from '@/types';
+import type { AdminPropertiesListResult, PropertyFormCatalogs } from '../types';
 import { PropertiesFilters } from './properties-filters';
 import { PropertiesTable } from './properties-table';
+import { PropertyCreateDialog } from './property-create-dialog';
 
 interface PropertiesListProps {
   result: AdminPropertiesListResult;
+  catalogs: PropertyFormCatalogs;
+  roles: UserRole[];
   filters: {
     status: PropertyStatus;
     page: number;
@@ -17,8 +26,20 @@ interface PropertiesListProps {
   };
 }
 
-export function PropertiesList({ result, filters }: PropertiesListProps) {
+export function PropertiesList({
+  result,
+  catalogs,
+  roles,
+  filters,
+}: PropertiesListProps) {
+  const router = useRouter();
   const { items, meta } = result;
+  const [createOpen, setCreateOpen] = useState(false);
+  const canCreate = hasPermission(roles, 'properties.create');
+
+  async function handleCreateSuccess() {
+    await router.refresh();
+  }
 
   return (
     <div>
@@ -26,9 +47,16 @@ export function PropertiesList({ result, filters }: PropertiesListProps) {
         title="العقارات"
         description="مراجعة واعتماد الإعلانات وفق مسار المسودة → الاشتراك → الدفع → المراجعة → النشر."
         actions={
-          <Badge variant="brand">
-            {meta.total.toLocaleString('ar-EG')} عقار
-          </Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="brand">
+              {meta.total.toLocaleString('ar-EG')} عقار
+            </Badge>
+            {canCreate ? (
+              <Button type="button" size="small" onClick={() => setCreateOpen(true)}>
+                إضافة عقار
+              </Button>
+            ) : null}
+          </div>
         }
       />
 
@@ -50,6 +78,16 @@ export function PropertiesList({ result, filters }: PropertiesListProps) {
           ) : null}
         </CardContent>
       </Card>
+
+      <PropertyCreateDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        catalogs={catalogs}
+        roles={roles}
+        onSuccess={() => {
+          void handleCreateSuccess();
+        }}
+      />
     </div>
   );
 }

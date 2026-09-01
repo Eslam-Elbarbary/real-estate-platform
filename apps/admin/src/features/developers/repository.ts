@@ -1,9 +1,11 @@
-import { getStoredAdminSession } from '@/features/auth/session';
-import { apiClient } from '@/lib/api/client';
+import 'server-only';
+
+import { authenticatedApiClient } from '@/lib/api/authenticated-request';
 import { createAdminError } from '@/lib/errors';
 import type {
   CreateDeveloperInput,
   Developer,
+  DeveloperDetails,
   DeveloperFilters,
   DeveloperListResult,
   UpdateDeveloperInput,
@@ -22,17 +24,6 @@ interface ApiEnvelope<T> {
 }
 
 const DEVELOPERS_PATH = '/api/v1/admin/developers';
-
-async function requireSessionAccessToken(): Promise<string> {
-  const session = await getStoredAdminSession();
-  if (!session?.accessToken) {
-    throw createAdminError('UNAUTHORIZED', {
-      message: 'Admin session required for developers',
-      userMessage: 'يجب تسجيل الدخول لإدارة المطورين.',
-    });
-  }
-  return session.accessToken;
-}
 
 function parseListMeta(response: ApiEnvelope<Developer[]>): DeveloperListResult['meta'] {
   const meta = response.meta;
@@ -75,10 +66,7 @@ function parseDeveloperResponse(
 export async function getDevelopers(
   filters: DeveloperFilters,
 ): Promise<DeveloperListResult> {
-  const accessToken = await requireSessionAccessToken();
-
-  const response = await apiClient.get<ApiEnvelope<Developer[]>>(DEVELOPERS_PATH, {
-    accessToken,
+  const response = await authenticatedApiClient.get<ApiEnvelope<Developer[]>>(DEVELOPERS_PATH, {
     query: {
       page: filters.page,
       limit: filters.limit,
@@ -100,15 +88,28 @@ export async function getDevelopers(
   };
 }
 
+export async function getDeveloper(id: string): Promise<DeveloperDetails> {
+  const response = await authenticatedApiClient.get<ApiEnvelope<DeveloperDetails>>(
+    `${DEVELOPERS_PATH}/${id}`,
+  );
+
+  if (!response.data.success || !response.data.data?.id) {
+    throw createAdminError('UNKNOWN', {
+      message: 'Invalid developer details response',
+      userMessage: 'تعذر تحميل تفاصيل المطور.',
+      details: response.data,
+    });
+  }
+
+  return response.data.data;
+}
+
 export async function createDeveloper(
   data: CreateDeveloperInput,
 ): Promise<Developer> {
-  const accessToken = await requireSessionAccessToken();
-
-  const response = await apiClient.post<ApiEnvelope<Developer>>(
+  const response = await authenticatedApiClient.post<ApiEnvelope<Developer>>(
     DEVELOPERS_PATH,
     data,
-    { accessToken },
   );
 
   return parseDeveloperResponse(response.data, 'تعذر إنشاء المطور.');
@@ -118,12 +119,9 @@ export async function updateDeveloper(
   id: string,
   data: UpdateDeveloperInput,
 ): Promise<Developer> {
-  const accessToken = await requireSessionAccessToken();
-
-  const response = await apiClient.patch<ApiEnvelope<Developer>>(
+  const response = await authenticatedApiClient.patch<ApiEnvelope<Developer>>(
     `${DEVELOPERS_PATH}/${id}`,
     data,
-    { accessToken },
   );
 
   return parseDeveloperResponse(response.data, 'تعذر تحديث المطور.');

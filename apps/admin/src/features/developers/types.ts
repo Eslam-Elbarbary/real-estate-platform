@@ -14,6 +14,19 @@ export interface Developer {
   compoundCount: number;
 }
 
+export interface DeveloperCompoundSummary {
+  id: string;
+  slug: string;
+  nameEn: string;
+  nameAr: string | null;
+  coverUrl: string | null;
+  publishedPropertyCount: number;
+}
+
+export interface DeveloperDetails extends Developer {
+  compounds: DeveloperCompoundSummary[];
+}
+
 export interface DeveloperFilters {
   page?: number;
   limit?: number;
@@ -38,6 +51,7 @@ export interface CreateDeveloperInput {
   nameAr?: string;
   description?: string;
   logoUrl?: string;
+  logoPublicId?: string;
   website?: string;
   isActive?: boolean;
 }
@@ -48,6 +62,7 @@ export interface UpdateDeveloperInput {
   nameAr?: string | null;
   description?: string | null;
   logoUrl?: string | null;
+  logoPublicId?: string | null;
   website?: string | null;
   isActive?: boolean;
 }

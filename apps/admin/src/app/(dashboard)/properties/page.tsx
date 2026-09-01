@@ -1,5 +1,6 @@
 import { PropertiesList } from '@/features/properties/components/properties-list';
-import { getAdminProperties } from '@/features/properties';
+import { getAdminProperties, getPropertyFormCatalogs } from '@/features/properties';
+import { getAdminSession } from '@/features/auth/service';
 import { createPageMetadata } from '@/lib/seo/metadata';
 import type { PropertyStatus } from '@/types';
 
@@ -48,11 +49,18 @@ export default async function PropertiesPage({
   const searchRaw = Array.isArray(params.search) ? params.search[0] : params.search;
   const search = searchRaw?.trim() ?? '';
 
-  const result = await getAdminProperties({ status, page, limit, search });
+  const [result, catalogs, session] = await Promise.all([
+    getAdminProperties({ status, page, limit, search }),
+    getPropertyFormCatalogs(),
+    getAdminSession(),
+  ]);
+  const roles = session?.user.roles ?? [];
 
   return (
     <PropertiesList
       result={result}
+      catalogs={catalogs}
+      roles={roles}
       filters={{ status, page, limit, search }}
     />
   );

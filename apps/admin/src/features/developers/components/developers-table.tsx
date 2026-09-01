@@ -67,7 +67,7 @@ export function DevelopersTable({ items, roles, onEdit }: DevelopersTableProps) 
     },
     {
       key: 'compoundCount',
-      label: 'المشاريع',
+      label: 'عدد المشاريع',
       render: (developer) => developer.compoundCount.toLocaleString('ar-EG'),
     },
     {
@@ -84,7 +84,7 @@ export function DevelopersTable({ items, roles, onEdit }: DevelopersTableProps) 
     },
     {
       key: 'actions',
-      label: 'إجراء',
+      label: 'الإجراءات',
       render: (developer) =>
         canUpdate ? (
           <Button

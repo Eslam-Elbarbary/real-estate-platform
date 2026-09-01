@@ -3,6 +3,7 @@ import {
   Building2,
   CreditCard,
   Home,
+  Image,
   Layers,
   LayoutDashboard,
   MessageSquare,
@@ -80,6 +81,13 @@ export const mainNav: NavItem[] = [
     icon: Layers,
     allowedRoles: ['SUPER_ADMIN', 'ADMIN'],
     allowedPermissions: ['compounds.view'],
+  },
+  {
+    label: 'الوسائط',
+    href: routes.media.root,
+    icon: Image,
+    allowedRoles: ['SUPER_ADMIN', 'ADMIN'],
+    allowedPermissions: ['media.view'],
   },
 ];
 

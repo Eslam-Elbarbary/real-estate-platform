@@ -1,5 +1,6 @@
-import { getStoredAdminSession } from '@/features/auth/session';
-import { apiClient } from '@/lib/api/client';
+import 'server-only';
+
+import { authenticatedApiClient } from '@/lib/api/authenticated-request';
 import { createAdminError } from '@/lib/errors';
 import type {
   AdminLead,
@@ -21,17 +22,6 @@ interface ApiEnvelope<T> {
 }
 
 const LEADS_PATH = '/api/v1/admin/leads';
-
-async function requireSessionAccessToken(): Promise<string> {
-  const session = await getStoredAdminSession();
-  if (!session?.accessToken) {
-    throw createAdminError('UNAUTHORIZED', {
-      message: 'Admin session required for leads',
-      userMessage: 'يجب تسجيل الدخول لإدارة الطلبات.',
-    });
-  }
-  return session.accessToken;
-}
 
 function parseListMeta(
   response: ApiEnvelope<AdminLead[]>,
@@ -74,10 +64,7 @@ function parseLeadResponse(
 }
 
 export async function getLeads(filters: LeadFilters): Promise<LeadListResult> {
-  const accessToken = await requireSessionAccessToken();
-
-  const response = await apiClient.get<ApiEnvelope<AdminLead[]>>(LEADS_PATH, {
-    accessToken,
+  const response = await authenticatedApiClient.get<ApiEnvelope<AdminLead[]>>(LEADS_PATH, {
     query: {
       search: filters.search,
       status: filters.status,
@@ -101,11 +88,8 @@ export async function getLeads(filters: LeadFilters): Promise<LeadListResult> {
 }
 
 export async function getLeadDetails(id: string): Promise<AdminLead> {
-  const accessToken = await requireSessionAccessToken();
-
-  const response = await apiClient.get<ApiEnvelope<AdminLead>>(
+  const response = await authenticatedApiClient.get<ApiEnvelope<AdminLead>>(
     `${LEADS_PATH}/${id}`,
-    { accessToken },
   );
 
   return parseLeadResponse(response.data, 'تعذر تحميل تفاصيل الطلب.');
@@ -115,12 +99,9 @@ export async function updateLeadStatus(
   id: string,
   status: LeadStatus,
 ): Promise<AdminLead> {
-  const accessToken = await requireSessionAccessToken();
-
-  const response = await apiClient.patch<ApiEnvelope<AdminLead>>(
+  const response = await authenticatedApiClient.patch<ApiEnvelope<AdminLead>>(
     `${LEADS_PATH}/${id}/status`,
     { status },
-    { accessToken },
   );
 
   return parseLeadResponse(response.data, 'تعذر تحديث حالة الطلب.');

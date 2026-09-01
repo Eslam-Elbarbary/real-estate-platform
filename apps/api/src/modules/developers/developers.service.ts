@@ -10,12 +10,14 @@ import { CreateDeveloperDto } from './dto/create-developer.dto';
 import { ListDevelopersQueryDto } from './dto/list-developers-query.dto';
 import { UpdateDeveloperDto } from './dto/update-developer.dto';
 import {
+  AdminDeveloperDetailsDto,
   AdminDeveloperDto,
   PublicDeveloperCardDto,
   PublicDeveloperCompoundSummaryDto,
   PublicDeveloperDetailsDto,
   buildDeveloperSearchWhere,
   toAdminDeveloper,
+  toAdminDeveloperDetails,
   toPublicDeveloperCard,
   toPublicDeveloperCompoundSummary,
   toPublicDeveloperDetails,
@@ -137,6 +139,42 @@ export class DevelopersService {
         totalPages: total === 0 ? 0 : Math.ceil(total / limit),
       },
     };
+  }
+
+  async getAdminById(id: string): Promise<AdminDeveloperDetailsDto> {
+    const developer = await this.prisma.developer.findUnique({
+      where: { id },
+      include: { _count: { select: { compounds: true } } },
+    });
+
+    if (!developer) {
+      throw new NotFoundException('Developer not found');
+    }
+
+    const compounds = await this.prisma.compound.findMany({
+      where: { developerId: developer.id },
+      orderBy: [{ nameEn: 'asc' }, { createdAt: 'desc' }],
+      select: {
+        id: true,
+        slug: true,
+        nameEn: true,
+        nameAr: true,
+        coverUrl: true,
+      },
+    });
+
+    const propertyCountByCompound = await this.loadPublishedPropertyCountsByCompound(
+      compounds.map((compound) => compound.id),
+    );
+
+    const compoundSummaries = compounds.map((compound) =>
+      toPublicDeveloperCompoundSummary({
+        ...compound,
+        publishedPropertyCount: propertyCountByCompound.get(compound.id) ?? 0,
+      }),
+    );
+
+    return toAdminDeveloperDetails(developer, compoundSummaries);
   }
 
   async createAdmin(dto: CreateDeveloperDto): Promise<AdminDeveloperDto> {

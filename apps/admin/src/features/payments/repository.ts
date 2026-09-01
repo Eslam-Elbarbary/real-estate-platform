@@ -1,5 +1,6 @@
-import { getStoredAdminSession } from '@/features/auth/session';
-import { apiClient } from '@/lib/api/client';
+import 'server-only';
+
+import { authenticatedApiClient } from '@/lib/api/authenticated-request';
 import { createAdminError } from '@/lib/errors';
 import type {
   AdminPayment,
@@ -20,17 +21,6 @@ interface ApiEnvelope<T> {
 }
 
 const PAYMENTS_PATH = '/api/v1/admin/payments';
-
-async function requireSessionAccessToken(): Promise<string> {
-  const session = await getStoredAdminSession();
-  if (!session?.accessToken) {
-    throw createAdminError('UNAUTHORIZED', {
-      message: 'Admin session required for payments',
-      userMessage: 'يجب تسجيل الدخول لإدارة المدفوعات.',
-    });
-  }
-  return session.accessToken;
-}
 
 function parseListMeta(
   response: ApiEnvelope<AdminPayment[]>,
@@ -75,12 +65,9 @@ function parsePaymentResponse(
 export async function getPayments(
   filters: PaymentFilters,
 ): Promise<PaymentListResult> {
-  const accessToken = await requireSessionAccessToken();
-
-  const response = await apiClient.get<ApiEnvelope<AdminPayment[]>>(
+  const response = await authenticatedApiClient.get<ApiEnvelope<AdminPayment[]>>(
     PAYMENTS_PATH,
     {
-      accessToken,
       query: {
         search: filters.search,
         status: filters.status,
@@ -105,11 +92,8 @@ export async function getPayments(
 }
 
 export async function getPaymentDetails(id: string): Promise<AdminPayment> {
-  const accessToken = await requireSessionAccessToken();
-
-  const response = await apiClient.get<ApiEnvelope<AdminPayment>>(
+  const response = await authenticatedApiClient.get<ApiEnvelope<AdminPayment>>(
     `${PAYMENTS_PATH}/${id}`,
-    { accessToken },
   );
 
   return parsePaymentResponse(response.data, 'تعذر تحميل تفاصيل الدفع.');

@@ -1,10 +1,12 @@
 import {
   createCompound,
+  getCompound,
   getCompounds,
   updateCompound,
 } from './repository';
 import type {
   Compound,
+  CompoundDetails,
   CompoundFilters,
   CompoundListResult,
   CreateCompoundInput,
@@ -24,6 +26,12 @@ export async function getAdminCompounds(
   });
 }
 
+export async function getAdminCompoundDetails(
+  id: string,
+): Promise<CompoundDetails> {
+  return getCompound(id);
+}
+
 export async function createAdminCompound(
   input: CreateCompoundInput,
 ): Promise<Compound> {
@@ -37,6 +45,7 @@ export async function createAdminCompound(
     latitude: input.latitude,
     longitude: input.longitude,
     coverUrl: input.coverUrl?.trim() || undefined,
+    coverPublicId: input.coverPublicId?.trim() || undefined,
     isActive: input.isActive ?? true,
   });
 }
@@ -59,6 +68,10 @@ export async function updateAdminCompound(
     latitude: input.latitude,
     longitude: input.longitude,
     coverUrl: input.coverUrl === undefined ? undefined : input.coverUrl?.trim() || null,
+    coverPublicId:
+      input.coverPublicId === undefined
+        ? undefined
+        : input.coverPublicId?.trim() || null,
     isActive: input.isActive,
   });
 }

@@ -1,15 +1,21 @@
 import {
   approveProperty,
   archiveProperty,
+  createProperty,
   fetchAdminProperties,
   getPropertyDetails,
   rejectProperty,
+  updateProperty,
 } from './repository';
+import { fetchPropertyFormCatalogs } from './catalogs';
 import type {
   AdminPropertiesFilters,
   AdminPropertiesListResult,
   AdminPropertyActionResult,
   AdminPropertyDetails,
+  CreatePropertyInput,
+  PropertyFormCatalogs,
+  UpdatePropertyInput,
 } from './types';
 
 export async function getAdminProperties(
@@ -46,4 +52,21 @@ export async function archiveAdminProperty(
   id: string,
 ): Promise<AdminPropertyActionResult> {
   return archiveProperty(id);
+}
+
+export async function getPropertyFormCatalogs(): Promise<PropertyFormCatalogs> {
+  return fetchPropertyFormCatalogs();
+}
+
+export async function createAdminProperty(
+  input: CreatePropertyInput,
+): Promise<AdminPropertyDetails> {
+  return createProperty(input);
+}
+
+export async function updateAdminProperty(
+  id: string,
+  input: UpdatePropertyInput,
+): Promise<AdminPropertyDetails> {
+  return updateProperty(id, input);
 }

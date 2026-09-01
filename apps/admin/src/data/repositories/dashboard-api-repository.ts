@@ -1,5 +1,6 @@
-import { apiClient } from '@/lib/api/client';
-import { getStoredAdminSession } from '@/features/auth/session';
+import 'server-only';
+
+import { authenticatedApiClient } from '@/lib/api/authenticated-request';
 import { createAdminError } from '@/lib/errors';
 import type { AdminDashboardStats } from '@/types';
 import type { DashboardRepository } from './dashboard-repository';
@@ -14,17 +15,8 @@ const DASHBOARD_PATH = '/api/v1/admin/dashboard';
 
 class ApiDashboardRepository implements DashboardRepository {
   async getOverview(): Promise<AdminDashboardStats> {
-    const session = await getStoredAdminSession();
-    if (!session?.accessToken) {
-      throw createAdminError('UNAUTHORIZED', {
-        message: 'Admin session required for dashboard',
-        userMessage: 'يجب تسجيل الدخول لعرض لوحة التحكم.',
-      });
-    }
-
-    const response = await apiClient.get<ApiEnvelope<AdminDashboardStats>>(
+    const response = await authenticatedApiClient.get<ApiEnvelope<AdminDashboardStats>>(
       DASHBOARD_PATH,
-      { accessToken: session.accessToken },
     );
 
     if (!response.data.success || !response.data.data) {

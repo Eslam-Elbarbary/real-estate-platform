@@ -35,6 +35,20 @@ export class AdminUserDetailsDto extends AdminUserListItemDto {
   updatedAt!: string;
 }
 
+export class AdminUserSelectItemDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiPropertyOptional({ nullable: true })
+  name!: string | null;
+
+  @ApiProperty()
+  email!: string;
+
+  @ApiPropertyOptional({ nullable: true })
+  phone!: string | null;
+}
+
 export type SafeUserWithRoles = Pick<
   User,
   | 'id'
@@ -73,6 +87,28 @@ export function toAdminUserDetails(user: SafeUserWithRoles): AdminUserDetailsDto
   return {
     ...toAdminUserListItem(user),
     updatedAt: user.updatedAt.toISOString(),
+  };
+}
+
+export type SafeUserSelectRow = Pick<
+  User,
+  'id' | 'email' | 'firstName' | 'lastName' | 'phone'
+>;
+
+export const ADMIN_USER_SELECT_FIELDS = {
+  id: true,
+  email: true,
+  firstName: true,
+  lastName: true,
+  phone: true,
+} as const;
+
+export function toAdminUserSelectItem(user: SafeUserSelectRow): AdminUserSelectItemDto {
+  return {
+    id: user.id,
+    name: toDisplayName(user),
+    email: user.email,
+    phone: user.phone,
   };
 }
 

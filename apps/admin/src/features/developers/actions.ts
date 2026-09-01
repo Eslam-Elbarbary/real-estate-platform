@@ -1,12 +1,32 @@
 'use server';
 
 import { getUserFacingErrorMessage } from '@/lib/errors';
-import { createAdminDeveloper, updateAdminDeveloper } from './service';
-import type { CreateDeveloperInput, UpdateDeveloperInput } from './types';
+import { createAdminDeveloper, getAdminDevelopers, updateAdminDeveloper } from './service';
+import type { CreateDeveloperInput, Developer, UpdateDeveloperInput } from './types';
 
 export type DeveloperActionResult =
   | { ok: true }
   | { ok: false; error: string };
+
+export type DeveloperSearchActionResult =
+  | { ok: true; items: Developer[] }
+  | { ok: false; error: string };
+
+export async function searchDevelopersAction(
+  search?: string,
+  limit = 20,
+): Promise<DeveloperSearchActionResult> {
+  try {
+    const result = await getAdminDevelopers({
+      search,
+      limit,
+      page: 1,
+    });
+    return { ok: true, items: result.items };
+  } catch (error) {
+    return { ok: false, error: getUserFacingErrorMessage(error) };
+  }
+}
 
 export async function createDeveloperAction(
   data: CreateDeveloperInput,

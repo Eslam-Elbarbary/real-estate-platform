@@ -1,8 +1,10 @@
-import { getStoredAdminSession } from '@/features/auth/session';
-import { apiClient } from '@/lib/api/client';
+import 'server-only';
+
+import { authenticatedApiClient } from '@/lib/api/authenticated-request';
 import { createAdminError } from '@/lib/errors';
 import type {
   Compound,
+  CompoundDetails,
   CompoundFilters,
   CompoundListResult,
   CreateCompoundInput,
@@ -22,17 +24,6 @@ interface ApiEnvelope<T> {
 }
 
 const COMPOUNDS_PATH = '/api/v1/admin/compounds';
-
-async function requireSessionAccessToken(): Promise<string> {
-  const session = await getStoredAdminSession();
-  if (!session?.accessToken) {
-    throw createAdminError('UNAUTHORIZED', {
-      message: 'Admin session required for compounds',
-      userMessage: 'يجب تسجيل الدخول لإدارة المشاريع.',
-    });
-  }
-  return session.accessToken;
-}
 
 function parseListMeta(response: ApiEnvelope<Compound[]>): CompoundListResult['meta'] {
   const meta = response.meta;
@@ -75,10 +66,7 @@ function parseCompoundResponse(
 export async function getCompounds(
   filters: CompoundFilters,
 ): Promise<CompoundListResult> {
-  const accessToken = await requireSessionAccessToken();
-
-  const response = await apiClient.get<ApiEnvelope<Compound[]>>(COMPOUNDS_PATH, {
-    accessToken,
+  const response = await authenticatedApiClient.get<ApiEnvelope<Compound[]>>(COMPOUNDS_PATH, {
     query: {
       page: filters.page,
       limit: filters.limit,
@@ -103,15 +91,28 @@ export async function getCompounds(
   };
 }
 
+export async function getCompound(id: string): Promise<CompoundDetails> {
+  const response = await authenticatedApiClient.get<ApiEnvelope<CompoundDetails>>(
+    `${COMPOUNDS_PATH}/${id}`,
+  );
+
+  if (!response.data.success || !response.data.data?.id) {
+    throw createAdminError('UNKNOWN', {
+      message: 'Invalid compound details response',
+      userMessage: 'تعذر تحميل تفاصيل المشروع.',
+      details: response.data,
+    });
+  }
+
+  return response.data.data;
+}
+
 export async function createCompound(
   input: CreateCompoundInput,
 ): Promise<Compound> {
-  const accessToken = await requireSessionAccessToken();
-
-  const response = await apiClient.post<ApiEnvelope<Compound>>(
+  const response = await authenticatedApiClient.post<ApiEnvelope<Compound>>(
     COMPOUNDS_PATH,
     input,
-    { accessToken },
   );
 
   return parseCompoundResponse(response.data, 'تعذر إنشاء المشروع.');
@@ -121,12 +122,9 @@ export async function updateCompound(
   id: string,
   input: UpdateCompoundInput,
 ): Promise<Compound> {
-  const accessToken = await requireSessionAccessToken();
-
-  const response = await apiClient.patch<ApiEnvelope<Compound>>(
+  const response = await authenticatedApiClient.patch<ApiEnvelope<Compound>>(
     `${COMPOUNDS_PATH}/${id}`,
     input,
-    { accessToken },
   );
 
   return parseCompoundResponse(response.data, 'تعذر تحديث المشروع.');

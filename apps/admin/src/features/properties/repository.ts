@@ -1,12 +1,15 @@
-import { getStoredAdminSession } from '@/features/auth/session';
-import { apiClient } from '@/lib/api/client';
+import 'server-only';
+
+import { authenticatedApiClient } from '@/lib/api/authenticated-request';
 import { createAdminError } from '@/lib/errors';
 import type {
   AdminPropertiesFilters,
   AdminPropertiesListResult,
   AdminPropertyActionResult,
   AdminPropertyDetails,
+  CreatePropertyInput,
   Property,
+  UpdatePropertyInput,
 } from './types';
 
 interface ApiEnvelope<T> {
@@ -26,16 +29,7 @@ const PROPERTIES_PATH = '/api/v1/admin/properties';
 export async function fetchAdminProperties(
   filters: AdminPropertiesFilters,
 ): Promise<AdminPropertiesListResult> {
-  const session = await getStoredAdminSession();
-  if (!session?.accessToken) {
-    throw createAdminError('UNAUTHORIZED', {
-      message: 'Admin session required for properties list',
-      userMessage: 'يجب تسجيل الدخول لعرض العقارات.',
-    });
-  }
-
-  const response = await apiClient.get<ApiEnvelope<Property[]>>(PROPERTIES_PATH, {
-    accessToken: session.accessToken,
+  const response = await authenticatedApiClient.get<ApiEnvelope<Property[]>>(PROPERTIES_PATH, {
     query: {
       status: filters.status,
       page: filters.page,
@@ -81,17 +75,8 @@ export async function fetchAdminProperties(
 export async function getPropertyDetails(
   id: string,
 ): Promise<AdminPropertyDetails> {
-  const session = await getStoredAdminSession();
-  if (!session?.accessToken) {
-    throw createAdminError('UNAUTHORIZED', {
-      message: 'Admin session required for property details',
-      userMessage: 'يجب تسجيل الدخول لعرض تفاصيل العقار.',
-    });
-  }
-
-  const response = await apiClient.get<ApiEnvelope<AdminPropertyDetails>>(
+  const response = await authenticatedApiClient.get<ApiEnvelope<AdminPropertyDetails>>(
     `${PROPERTIES_PATH}/${id}`,
-    { accessToken: session.accessToken },
   );
 
   if (!response.data.success || !response.data.data?.id) {
@@ -103,17 +88,6 @@ export async function getPropertyDetails(
   }
 
   return response.data.data;
-}
-
-async function requireSessionAccessToken(): Promise<string> {
-  const session = await getStoredAdminSession();
-  if (!session?.accessToken) {
-    throw createAdminError('UNAUTHORIZED', {
-      message: 'Admin session required for property action',
-      userMessage: 'يجب تسجيل الدخول لتنفيذ هذا الإجراء.',
-    });
-  }
-  return session.accessToken;
 }
 
 function parseActionResponse(
@@ -133,12 +107,9 @@ function parseActionResponse(
 export async function approveProperty(
   id: string,
 ): Promise<AdminPropertyActionResult> {
-  const accessToken = await requireSessionAccessToken();
-
-  const response = await apiClient.post<ApiEnvelope<AdminPropertyActionResult>>(
+  const response = await authenticatedApiClient.post<ApiEnvelope<AdminPropertyActionResult>>(
     `${PROPERTIES_PATH}/${id}/approve`,
     undefined,
-    { accessToken },
   );
 
   return parseActionResponse(
@@ -151,12 +122,9 @@ export async function rejectProperty(
   id: string,
   reason: string,
 ): Promise<AdminPropertyActionResult> {
-  const accessToken = await requireSessionAccessToken();
-
-  const response = await apiClient.post<ApiEnvelope<AdminPropertyActionResult>>(
+  const response = await authenticatedApiClient.post<ApiEnvelope<AdminPropertyActionResult>>(
     `${PROPERTIES_PATH}/${id}/reject`,
     { reason },
-    { accessToken },
   );
 
   return parseActionResponse(
@@ -168,16 +136,51 @@ export async function rejectProperty(
 export async function archiveProperty(
   id: string,
 ): Promise<AdminPropertyActionResult> {
-  const accessToken = await requireSessionAccessToken();
-
-  const response = await apiClient.post<ApiEnvelope<AdminPropertyActionResult>>(
+  const response = await authenticatedApiClient.post<ApiEnvelope<AdminPropertyActionResult>>(
     `${PROPERTIES_PATH}/${id}/archive`,
     undefined,
-    { accessToken },
   );
 
   return parseActionResponse(
     response.data,
     'تعذر أرشفة العقار.',
   );
+}
+
+function parsePropertyDetailsResponse(
+  response: ApiEnvelope<AdminPropertyDetails>,
+  userMessage: string,
+): AdminPropertyDetails {
+  if (!response.success || !response.data?.id) {
+    throw createAdminError('UNKNOWN', {
+      message: 'Invalid property response',
+      userMessage,
+      details: response,
+    });
+  }
+
+  return response.data;
+}
+
+export async function createProperty(
+  input: CreatePropertyInput,
+): Promise<AdminPropertyDetails> {
+  const response = await authenticatedApiClient.post<ApiEnvelope<AdminPropertyDetails>>(
+    PROPERTIES_PATH,
+    input,
+  );
+
+  return parsePropertyDetailsResponse(response.data, 'تعذر إنشاء العقار.');
+}
+
+export async function updateProperty(
+  id: string,
+  input: UpdatePropertyInput,
+): Promise<AdminPropertyDetails> {
+  const response = await authenticatedApiClient.patch<ApiEnvelope<AdminPropertyDetails>>(
+    `${PROPERTIES_PATH}/${id}`,
+    input,
+  );
+
+  return parsePropertyDetailsResponse(response.data, 'تعذر تحديث العقار.');
 }

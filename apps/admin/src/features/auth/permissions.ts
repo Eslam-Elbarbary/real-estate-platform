@@ -8,6 +8,8 @@ export type AdminPermission =
   | 'users.update_status'
   // Properties
   | 'properties.view'
+  | 'properties.create'
+  | 'properties.update'
   | 'properties.approve'
   | 'properties.reject'
   | 'properties.archive'
@@ -27,13 +29,19 @@ export type AdminPermission =
   // Compounds
   | 'compounds.view'
   | 'compounds.create'
-  | 'compounds.update';
+  | 'compounds.update'
+  // Media
+  | 'media.view'
+  | 'media.upload'
+  | 'media.delete';
 
 const ALL_PERMISSIONS: AdminPermission[] = [
   'dashboard.view',
   'users.view',
   'users.update_status',
   'properties.view',
+  'properties.create',
+  'properties.update',
   'properties.approve',
   'properties.reject',
   'properties.archive',
@@ -49,6 +57,9 @@ const ALL_PERMISSIONS: AdminPermission[] = [
   'compounds.view',
   'compounds.create',
   'compounds.update',
+  'media.view',
+  'media.upload',
+  'media.delete',
 ];
 
 const ROLE_PERMISSIONS: Record<

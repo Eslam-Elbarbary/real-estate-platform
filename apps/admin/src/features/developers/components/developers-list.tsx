@@ -11,7 +11,8 @@ import { PageHeader } from '@/components/layout/page-header';
 import { hasPermission } from '@/features/auth/permissions';
 import type { UserRole } from '@/types';
 import type { Developer, DeveloperListResult } from '../types';
-import { DeveloperFormDialog } from './developer-form-dialog';
+import { DeveloperCreateDialog } from './developer-create-dialog';
+import { DeveloperEditDialog } from './developer-edit-dialog';
 import { DevelopersTable } from './developers-table';
 
 interface DevelopersListProps {
@@ -27,18 +28,14 @@ interface DevelopersListProps {
 export function DevelopersList({ result, roles, filters }: DevelopersListProps) {
   const router = useRouter();
   const { items, meta } = result;
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [editingDeveloper, setEditingDeveloper] = useState<Developer | null>(null);
   const canCreate = hasPermission(roles, 'developers.create');
 
-  function handleAdd() {
-    setEditingDeveloper(null);
-    setDialogOpen(true);
-  }
-
   function handleEdit(developer: Developer) {
     setEditingDeveloper(developer);
-    setDialogOpen(true);
+    setEditOpen(true);
   }
 
   async function handleSuccess() {
@@ -57,7 +54,7 @@ export function DevelopersList({ result, roles, filters }: DevelopersListProps) 
               {meta.total.toLocaleString('ar-EG')} مطور
             </Badge>
             {canCreate ? (
-              <Button type="button" size="small" onClick={handleAdd}>
+              <Button type="button" size="small" onClick={() => setCreateOpen(true)}>
                 إضافة مطور
               </Button>
             ) : null}
@@ -103,15 +100,31 @@ export function DevelopersList({ result, roles, filters }: DevelopersListProps) 
         </CardContent>
       </Card>
 
-      <DeveloperFormDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        developer={editingDeveloper}
+      <DeveloperCreateDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
         roles={roles}
         onSuccess={() => {
           void handleSuccess();
         }}
       />
+
+      {editingDeveloper ? (
+        <DeveloperEditDialog
+          open={editOpen}
+          onOpenChange={(nextOpen) => {
+            setEditOpen(nextOpen);
+            if (!nextOpen) {
+              setEditingDeveloper(null);
+            }
+          }}
+          developer={editingDeveloper}
+          roles={roles}
+          onSuccess={() => {
+            void handleSuccess();
+          }}
+        />
+      ) : null}
     </div>
   );
 }

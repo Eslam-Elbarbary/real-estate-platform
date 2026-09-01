@@ -13,12 +13,14 @@ import type { Developer } from '@/features/developers/types';
 import { hasPermission } from '@/features/auth/permissions';
 import type { UserRole } from '@/types';
 import type { Compound, CompoundListResult } from '../types';
-import { CompoundFormDialog } from './compound-form-dialog';
+import { CompoundCreateDialog } from './compound-create-dialog';
+import { CompoundEditDialog } from './compound-edit-dialog';
 import { CompoundsTable } from './compounds-table';
 
 interface CompoundsListProps {
   result: CompoundListResult;
   developers: Developer[];
+  areaLabelsById: Map<string, string>;
   roles: UserRole[];
   filters: {
     page: number;
@@ -33,12 +35,14 @@ interface CompoundsListProps {
 export function CompoundsList({
   result,
   developers,
+  areaLabelsById,
   roles,
   filters,
 }: CompoundsListProps) {
   const router = useRouter();
   const { items, meta } = result;
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [editingCompound, setEditingCompound] = useState<Compound | null>(null);
   const canCreate = hasPermission(roles, 'compounds.create');
 
@@ -56,14 +60,9 @@ export function CompoundsList({
     [developers],
   );
 
-  function handleAdd() {
-    setEditingCompound(null);
-    setDialogOpen(true);
-  }
-
   function handleEdit(compound: Compound) {
     setEditingCompound(compound);
-    setDialogOpen(true);
+    setEditOpen(true);
   }
 
   async function handleSuccess() {
@@ -82,7 +81,7 @@ export function CompoundsList({
               {meta.total.toLocaleString('ar-EG')} مشروع
             </Badge>
             {canCreate ? (
-              <Button type="button" size="small" onClick={handleAdd}>
+              <Button type="button" size="small" onClick={() => setCreateOpen(true)}>
                 إضافة مشروع
               </Button>
             ) : null}
@@ -148,6 +147,7 @@ export function CompoundsList({
           <CompoundsTable
             items={items}
             developersById={developersById}
+            areaLabelsById={areaLabelsById}
             roles={roles}
             onEdit={handleEdit}
           />
@@ -158,16 +158,36 @@ export function CompoundsList({
         </CardContent>
       </Card>
 
-      <CompoundFormDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        compound={editingCompound}
-        developers={developers}
+      <CompoundCreateDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
         roles={roles}
         onSuccess={() => {
           void handleSuccess();
         }}
       />
+
+      {editingCompound ? (
+        <CompoundEditDialog
+          open={editOpen}
+          onOpenChange={(nextOpen) => {
+            setEditOpen(nextOpen);
+            if (!nextOpen) {
+              setEditingCompound(null);
+            }
+          }}
+          compound={editingCompound}
+          initialDeveloper={
+            editingCompound.developerId
+              ? developersById.get(editingCompound.developerId) ?? null
+              : null
+          }
+          roles={roles}
+          onSuccess={() => {
+            void handleSuccess();
+          }}
+        />
+      ) : null}
     </div>
   );
 }

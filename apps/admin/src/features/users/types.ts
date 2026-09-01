@@ -37,3 +37,11 @@ export interface UserListResult {
   items: AdminUser[];
   meta: UserPaginationMeta;
 }
+
+/** Matches NestJS AdminUserSelectItemDto. */
+export interface AdminUserSelectItem {
+  id: string;
+  name: string | null;
+  email: string;
+  phone: string | null;
+}

@@ -1,9 +1,11 @@
-import { getStoredAdminSession } from '@/features/auth/session';
-import { apiClient } from '@/lib/api/client';
+import 'server-only';
+
+import { authenticatedApiClient } from '@/lib/api/authenticated-request';
 import { createAdminError } from '@/lib/errors';
 import type {
   AdminUser,
   AdminUserDetails,
+  AdminUserSelectItem,
   UserFilters,
   UserListResult,
 } from './types';
@@ -21,17 +23,6 @@ interface ApiEnvelope<T> {
 }
 
 const USERS_PATH = '/api/v1/admin/users';
-
-async function requireSessionAccessToken(): Promise<string> {
-  const session = await getStoredAdminSession();
-  if (!session?.accessToken) {
-    throw createAdminError('UNAUTHORIZED', {
-      message: 'Admin session required for users',
-      userMessage: 'يجب تسجيل الدخول لإدارة المستخدمين.',
-    });
-  }
-  return session.accessToken;
-}
 
 function parseListMeta(response: ApiEnvelope<AdminUser[]>): UserListResult['meta'] {
   const meta = response.meta;
@@ -72,10 +63,7 @@ function parseUserResponse(
 }
 
 export async function getUsers(filters: UserFilters): Promise<UserListResult> {
-  const accessToken = await requireSessionAccessToken();
-
-  const response = await apiClient.get<ApiEnvelope<AdminUser[]>>(USERS_PATH, {
-    accessToken,
+  const response = await authenticatedApiClient.get<ApiEnvelope<AdminUser[]>>(USERS_PATH, {
     query: {
       search: filters.search,
       role: filters.role,
@@ -100,11 +88,8 @@ export async function getUsers(filters: UserFilters): Promise<UserListResult> {
 }
 
 export async function getUserDetails(id: string): Promise<AdminUserDetails> {
-  const accessToken = await requireSessionAccessToken();
-
-  const response = await apiClient.get<ApiEnvelope<AdminUserDetails>>(
+  const response = await authenticatedApiClient.get<ApiEnvelope<AdminUserDetails>>(
     `${USERS_PATH}/${id}`,
-    { accessToken },
   );
 
   return parseUserResponse(response.data, 'تعذر تحميل تفاصيل المستخدم.');
@@ -114,13 +99,35 @@ export async function updateUserStatus(
   id: string,
   isActive: boolean,
 ): Promise<AdminUserDetails> {
-  const accessToken = await requireSessionAccessToken();
-
-  const response = await apiClient.patch<ApiEnvelope<AdminUserDetails>>(
+  const response = await authenticatedApiClient.patch<ApiEnvelope<AdminUserDetails>>(
     `${USERS_PATH}/${id}/status`,
     { isActive },
-    { accessToken },
   );
 
   return parseUserResponse(response.data, 'تعذر تحديث حالة المستخدم.');
+}
+
+export async function selectUsers(
+  search?: string,
+  limit = 20,
+): Promise<AdminUserSelectItem[]> {
+  const response = await authenticatedApiClient.get<ApiEnvelope<AdminUserSelectItem[]>>(
+    `${USERS_PATH}/select`,
+    {
+      query: {
+        search: search?.trim() || undefined,
+        limit,
+      },
+    },
+  );
+
+  if (!response.data.success || !Array.isArray(response.data.data)) {
+    throw createAdminError('UNKNOWN', {
+      message: 'Invalid user select response',
+      userMessage: 'تعذر البحث عن المستخدمين.',
+      details: response.data,
+    });
+  }
+
+  return response.data.data;
 }

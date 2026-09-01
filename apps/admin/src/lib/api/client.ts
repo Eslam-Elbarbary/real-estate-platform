@@ -13,6 +13,7 @@ export interface ApiRequestOptions {
   path: string;
   query?: Record<string, string | number | boolean | undefined | null>;
   body?: unknown;
+  formData?: FormData;
   headers?: HeadersInit;
   /** Bearer access token when auth is wired. */
   accessToken?: string | null;
@@ -99,6 +100,7 @@ async function performApiRequest<T>(
     path,
     query,
     body,
+    formData,
     headers,
     accessToken,
     signal,
@@ -113,7 +115,7 @@ async function performApiRequest<T>(
 
   try {
     const requestHeaders = new Headers(headers);
-    if (body !== undefined && !requestHeaders.has('Content-Type')) {
+    if (formData === undefined && body !== undefined && !requestHeaders.has('Content-Type')) {
       requestHeaders.set('Content-Type', 'application/json');
     }
     if (accessToken) {
@@ -126,7 +128,12 @@ async function performApiRequest<T>(
     const response = await fetch(buildUrl(path, query), {
       method,
       headers: requestHeaders,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body:
+        formData !== undefined
+          ? formData
+          : body === undefined
+            ? undefined
+            : JSON.stringify(body),
       signal: controller.signal,
       cache: 'no-store',
     });
@@ -178,42 +185,6 @@ async function performApiRequest<T>(
   }
 }
 
-function shouldAttemptRefresh(
-  error: unknown,
-  options: ApiRequestOptions,
-): boolean {
-  if (options.skipRefresh || options._retried) {
-    return false;
-  }
-
-  if (!(error instanceof AdminError) || error.code !== 'UNAUTHORIZED') {
-    return false;
-  }
-
-  return Boolean(options.accessToken);
-}
-
-async function retryWithRefreshedToken<T>(
-  options: ApiRequestOptions,
-): Promise<ApiSuccess<T>> {
-  if (typeof window !== 'undefined') {
-    throw createAdminError('UNAUTHORIZED');
-  }
-
-  const { refreshAdminSessionAction } = await import('@/features/auth/actions');
-  const accessToken = await refreshAdminSessionAction();
-
-  if (!accessToken) {
-    throw createAdminError('UNAUTHORIZED');
-  }
-
-  return performApiRequest<T>({
-    ...options,
-    accessToken,
-    _retried: true,
-  });
-}
-
 /**
  * Low-level HTTP client for the NestJS API.
  * Repositories should call this — UI must not.
@@ -221,15 +192,7 @@ async function retryWithRefreshedToken<T>(
 export async function apiRequest<T>(
   options: ApiRequestOptions,
 ): Promise<ApiSuccess<T>> {
-  try {
-    return await performApiRequest<T>(options);
-  } catch (error) {
-    if (shouldAttemptRefresh(error, options)) {
-      return retryWithRefreshedToken<T>(options);
-    }
-
-    throw error;
-  }
+  return performApiRequest<T>(options);
 }
 
 export const apiClient = {
@@ -241,8 +204,14 @@ export const apiClient = {
   post: <T>(
     path: string,
     body?: unknown,
-    options?: Omit<ApiRequestOptions, 'method' | 'path' | 'body'>,
+    options?: Omit<ApiRequestOptions, 'method' | 'path' | 'body' | 'formData'>,
   ) => apiRequest<T>({ ...options, method: 'POST', path, body }),
+
+  postForm: <T>(
+    path: string,
+    formData: FormData,
+    options?: Omit<ApiRequestOptions, 'method' | 'path' | 'body' | 'formData'>,
+  ) => apiRequest<T>({ ...options, method: 'POST', path, formData }),
 
   put: <T>(
     path: string,

@@ -31,4 +31,7 @@ export const routes = {
     root: '/compounds',
     details: (id: string) => `/compounds/${id}`,
   },
+  media: {
+    root: '/media',
+  },
 } as const;

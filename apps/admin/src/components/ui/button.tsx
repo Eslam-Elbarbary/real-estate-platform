@@ -3,15 +3,15 @@ import { cn } from '@/lib/utils/cn';
 
 const variantClasses = {
   primary:
-    'bg-brand-600 text-white hover:bg-brand-700 focus-visible:ring-brand-500',
+    'bg-brand-600 text-white shadow-sm hover:bg-brand-700 focus-visible:ring-brand-500',
   secondary:
     'bg-surface-100 text-ink-900 hover:bg-surface-200 focus-visible:ring-brand-500',
   outline:
-    'border border-border bg-transparent text-ink-900 hover:bg-surface-50 focus-visible:ring-brand-500',
+    'border border-border bg-white text-ink-900 hover:bg-surface-50 focus-visible:ring-brand-500',
   ghost:
     'bg-transparent text-ink-800 hover:bg-surface-100 focus-visible:ring-brand-500',
   danger:
-    'bg-danger-600 text-white hover:bg-danger-700 focus-visible:ring-danger-500',
+    'bg-danger-600 text-white shadow-sm hover:bg-danger-700 focus-visible:ring-danger-500',
 } as const;
 
 const sizeClasses = {
@@ -39,7 +39,7 @@ export function Button({
     <button
       type={type}
       className={cn(
-        'inline-flex items-center justify-center gap-1.5 rounded-md font-medium transition-colors',
+        'inline-flex items-center justify-center gap-1.5 rounded-lg font-medium transition-all duration-200',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
         'disabled:pointer-events-none disabled:opacity-50',
         variantClasses[variant],

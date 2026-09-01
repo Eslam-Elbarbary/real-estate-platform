@@ -11,6 +11,7 @@ import { ListAdminCompoundsQueryDto } from './dto/list-admin-compounds-query.dto
 import { ListCompoundsQueryDto } from './dto/list-compounds-query.dto';
 import { UpdateCompoundDto } from './dto/update-compound.dto';
 import {
+  AdminCompoundDetailsDto,
   AdminCompoundDto,
   COMPOUND_CARD_INCLUDE,
   COMPOUND_DETAIL_PROPERTY_LIMIT,
@@ -21,6 +22,7 @@ import {
   buildCompoundAdminWhere,
   buildCompoundPublicWhere,
   toAdminCompound,
+  toAdminCompoundDetails,
   toPublicCompoundCard,
   toPublicCompoundDetails,
 } from './mapper/compound.mapper';
@@ -153,6 +155,29 @@ export class CompoundsService {
         totalPages: total === 0 ? 0 : Math.ceil(total / limit),
       },
     };
+  }
+
+  async getAdminById(id: string): Promise<AdminCompoundDetailsDto> {
+    const compound = await this.prisma.compound.findUnique({
+      where: { id },
+      include: COMPOUND_CARD_INCLUDE,
+    });
+
+    if (!compound) {
+      throw new NotFoundException('Compound not found');
+    }
+
+    const publishedPropertyCount = await this.prisma.property.count({
+      where: {
+        compoundId: compound.id,
+        status: PropertyStatus.PUBLISHED,
+      },
+    });
+
+    return toAdminCompoundDetails(
+      compound as CompoundCardSource,
+      publishedPropertyCount,
+    );
   }
 
   async createAdmin(dto: CreateCompoundDto): Promise<AdminCompoundDto> {

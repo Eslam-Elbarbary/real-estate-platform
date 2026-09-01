@@ -6,9 +6,11 @@ import { Button } from '@/components/ui/button';
 export interface PaginationProps {
   page: number;
   totalPages: number;
+  /** When set, pagination is controlled in-memory instead of via URL query params. */
+  onPageChange?: (page: number) => void;
 }
 
-export function Pagination({ page, totalPages }: PaginationProps) {
+export function Pagination({ page, totalPages, onPageChange }: PaginationProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -18,6 +20,11 @@ export function Pagination({ page, totalPages }: PaginationProps) {
   const hasNext = page < safeTotalPages;
 
   function goToPage(nextPage: number) {
+    if (onPageChange) {
+      onPageChange(nextPage);
+      return;
+    }
+
     const params = new URLSearchParams(searchParams.toString());
     params.set('page', String(nextPage));
     const query = params.toString();

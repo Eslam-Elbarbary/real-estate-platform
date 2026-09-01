@@ -122,6 +122,14 @@ export class AdminCompoundDto {
   publishedPropertyCount!: number;
 }
 
+export class AdminCompoundDetailsDto extends AdminCompoundDto {
+  @ApiPropertyOptional({ type: PublicDeveloperSummaryDto, nullable: true })
+  developer!: PublicDeveloperSummaryDto | null;
+
+  @ApiProperty({ type: PublicCompoundLocationDto })
+  location!: PublicCompoundLocationDto;
+}
+
 type AreaWithCityCountry = Area & {
   city: City & { country: Country };
 };
@@ -229,6 +237,17 @@ export function toAdminCompound(
     createdAt: compound.createdAt.toISOString(),
     updatedAt: compound.updatedAt.toISOString(),
     publishedPropertyCount,
+  };
+}
+
+export function toAdminCompoundDetails(
+  compound: CompoundCardSource,
+  publishedPropertyCount: number,
+): AdminCompoundDetailsDto {
+  return {
+    ...toAdminCompound(compound, publishedPropertyCount),
+    developer: toPublicDeveloperSummary(compound.developer),
+    location: toPublicCompoundLocation(compound.area),
   };
 }
 

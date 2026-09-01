@@ -6,7 +6,7 @@ export function Table({
   ...props
 }: HTMLAttributes<HTMLTableElement>) {
   return (
-    <div className="w-full overflow-x-auto rounded-lg border border-border bg-white shadow-sm">
+    <div className="w-full overflow-x-auto rounded-xl border border-border bg-white shadow-sm">
       <table
         className={cn('w-full min-w-full border-collapse text-sm', className)}
         {...props}
@@ -21,7 +21,7 @@ export function TableHeader({
 }: HTMLAttributes<HTMLTableSectionElement>) {
   return (
     <thead
-      className={cn('border-b border-border bg-surface-50', className)}
+      className={cn('border-b border-border bg-surface-50/80', className)}
       {...props}
     />
   );
@@ -42,7 +42,7 @@ export function TableRow({
 }: HTMLAttributes<HTMLTableRowElement>) {
   return (
     <tr
-      className={cn('transition-colors hover:bg-surface-50/80', className)}
+      className={cn('transition-colors hover:bg-accent-50/40', className)}
       {...props}
     />
   );

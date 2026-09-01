@@ -6,13 +6,18 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { ListAdminUsersQueryDto } from './dto/list-admin-users-query.dto';
+import { AdminUserSelectQueryDto } from './dto/admin-user-select-query.dto';
 import {
   ADMIN_USER_SELECT,
+  ADMIN_USER_SELECT_FIELDS,
   AdminUserDetailsDto,
   AdminUserListItemDto,
+  AdminUserSelectItemDto,
+  SafeUserSelectRow,
   SafeUserWithRoles,
   toAdminUserDetails,
   toAdminUserListItem,
+  toAdminUserSelectItem,
 } from './mapper/admin-user.mapper';
 
 @Injectable()
@@ -84,6 +89,33 @@ export class AdminUsersService {
     }
 
     return toAdminUserDetails(user as SafeUserWithRoles);
+  }
+
+  async selectUsers(query: AdminUserSelectQueryDto): Promise<AdminUserSelectItemDto[]> {
+    const limit = query.limit ?? 20;
+
+    const where: Prisma.UserWhereInput = {
+      isActive: true,
+    };
+
+    if (query.search?.trim()) {
+      const term = query.search.trim();
+      where.OR = [
+        { email: { contains: term, mode: 'insensitive' } },
+        { phone: { contains: term, mode: 'insensitive' } },
+        { firstName: { contains: term, mode: 'insensitive' } },
+        { lastName: { contains: term, mode: 'insensitive' } },
+      ];
+    }
+
+    const rows = await this.prisma.user.findMany({
+      where,
+      select: ADMIN_USER_SELECT_FIELDS,
+      orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }, { email: 'asc' }],
+      take: limit,
+    });
+
+    return rows.map((row) => toAdminUserSelectItem(row as SafeUserSelectRow));
   }
 
   async updateUserStatus(

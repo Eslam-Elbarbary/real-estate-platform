@@ -1,5 +1,6 @@
-import { getStoredAdminSession } from '@/features/auth/session';
-import { apiClient } from '@/lib/api/client';
+import 'server-only';
+
+import { authenticatedApiClient } from '@/lib/api/authenticated-request';
 import { createAdminError } from '@/lib/errors';
 import type {
   AdminPlan,
@@ -22,17 +23,6 @@ interface ApiEnvelope<T> {
 }
 
 const PLANS_PATH = '/api/v1/admin/plans';
-
-async function requireSessionAccessToken(): Promise<string> {
-  const session = await getStoredAdminSession();
-  if (!session?.accessToken) {
-    throw createAdminError('UNAUTHORIZED', {
-      message: 'Admin session required for plans',
-      userMessage: 'يجب تسجيل الدخول لإدارة الخطط.',
-    });
-  }
-  return session.accessToken;
-}
 
 function parseListMeta(response: ApiEnvelope<AdminPlan[]>): PlanListResult['meta'] {
   const meta = response.meta;
@@ -73,10 +63,7 @@ function parsePlanResponse(
 }
 
 export async function getPlans(filters: PlanFilters): Promise<PlanListResult> {
-  const accessToken = await requireSessionAccessToken();
-
-  const response = await apiClient.get<ApiEnvelope<AdminPlan[]>>(PLANS_PATH, {
-    accessToken,
+  const response = await authenticatedApiClient.get<ApiEnvelope<AdminPlan[]>>(PLANS_PATH, {
     query: {
       search: filters.search,
       status: filters.status,
@@ -100,23 +87,17 @@ export async function getPlans(filters: PlanFilters): Promise<PlanListResult> {
 }
 
 export async function getPlanDetails(id: string): Promise<AdminPlan> {
-  const accessToken = await requireSessionAccessToken();
-
-  const response = await apiClient.get<ApiEnvelope<AdminPlan>>(
+  const response = await authenticatedApiClient.get<ApiEnvelope<AdminPlan>>(
     `${PLANS_PATH}/${id}`,
-    { accessToken },
   );
 
   return parsePlanResponse(response.data, 'تعذر تحميل تفاصيل الخطة.');
 }
 
 export async function createPlan(input: CreatePlanInput): Promise<AdminPlan> {
-  const accessToken = await requireSessionAccessToken();
-
-  const response = await apiClient.post<ApiEnvelope<AdminPlan>>(
+  const response = await authenticatedApiClient.post<ApiEnvelope<AdminPlan>>(
     PLANS_PATH,
     input,
-    { accessToken },
   );
 
   return parsePlanResponse(response.data, 'تعذر إنشاء الخطة.');
@@ -126,12 +107,9 @@ export async function updatePlan(
   id: string,
   input: UpdatePlanInput,
 ): Promise<AdminPlan> {
-  const accessToken = await requireSessionAccessToken();
-
-  const response = await apiClient.patch<ApiEnvelope<AdminPlan>>(
+  const response = await authenticatedApiClient.patch<ApiEnvelope<AdminPlan>>(
     `${PLANS_PATH}/${id}`,
     input,
-    { accessToken },
   );
 
   return parsePlanResponse(response.data, 'تعذر تحديث الخطة.');

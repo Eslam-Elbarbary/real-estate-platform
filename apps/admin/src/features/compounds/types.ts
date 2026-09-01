@@ -17,6 +17,32 @@ export interface Compound {
   publishedPropertyCount: number;
 }
 
+export interface PublicNamedRef {
+  id: string;
+  nameEn: string;
+  nameAr: string | null;
+}
+
+export interface CompoundDeveloperSummary {
+  id: string;
+  slug: string;
+  nameEn: string;
+  nameAr: string | null;
+  logoUrl: string | null;
+}
+
+export interface CompoundLocation {
+  country: PublicNamedRef | null;
+  city: PublicNamedRef | null;
+  area: PublicNamedRef;
+}
+
+/** Matches NestJS AdminCompoundDetailsDto. */
+export interface CompoundDetails extends Compound {
+  developer: CompoundDeveloperSummary | null;
+  location: CompoundLocation;
+}
+
 export interface CompoundFilters {
   search?: string;
   developerId?: string;
@@ -48,6 +74,7 @@ export interface CreateCompoundInput {
   latitude?: number;
   longitude?: number;
   coverUrl?: string;
+  coverPublicId?: string;
   isActive?: boolean;
 }
 
@@ -61,5 +88,6 @@ export interface UpdateCompoundInput {
   latitude?: number | null;
   longitude?: number | null;
   coverUrl?: string | null;
+  coverPublicId?: string | null;
   isActive?: boolean;
 }

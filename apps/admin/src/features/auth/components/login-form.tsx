@@ -8,12 +8,14 @@ import { Input } from '@/components/ui/input';
 import { siteConfig } from '@/config/site';
 import { loginAction } from '../actions';
 
-export function LoginForm() {
+export function LoginForm({ sessionExpired = false }: { sessionExpired?: boolean }) {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    sessionExpired ? 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.' : null,
+  );
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

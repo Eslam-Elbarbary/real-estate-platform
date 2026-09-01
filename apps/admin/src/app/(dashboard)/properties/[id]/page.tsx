@@ -1,4 +1,4 @@
-import { getAdminPropertyDetails } from '@/features/properties';
+import { getAdminPropertyDetails, getPropertyFormCatalogs } from '@/features/properties';
 import { PropertyDetails } from '@/features/properties/components/property-details';
 import { getAdminSession } from '@/features/auth/service';
 import { createPageMetadata } from '@/lib/seo/metadata';
@@ -15,11 +15,14 @@ export default async function PropertyDetailsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [property, session] = await Promise.all([
+  const [property, catalogs, session] = await Promise.all([
     getAdminPropertyDetails(id),
+    getPropertyFormCatalogs(),
     getAdminSession(),
   ]);
   const roles = session?.user.roles ?? [];
 
-  return <PropertyDetails property={property} roles={roles} />;
+  return (
+    <PropertyDetails property={property} catalogs={catalogs} roles={roles} />
+  );
 }

@@ -10,6 +10,7 @@ import { CompoundStatusBadge } from './compound-status-badge';
 interface CompoundsTableProps {
   items: Compound[];
   developersById: Map<string, Developer>;
+  areaLabelsById: Map<string, string>;
   roles: UserRole[];
   onEdit: (compound: Compound) => void;
 }
@@ -30,9 +31,17 @@ function formatDeveloperLabel(
   return developer.nameAr ?? developer.nameEn;
 }
 
+function formatAreaLabel(
+  areaId: string,
+  areaLabelsById: Map<string, string>,
+): string {
+  return areaLabelsById.get(areaId) ?? areaId;
+}
+
 export function CompoundsTable({
   items,
   developersById,
+  areaLabelsById,
   roles,
   onEdit,
 }: CompoundsTableProps) {
@@ -72,10 +81,20 @@ export function CompoundsTable({
     {
       key: 'developer',
       label: 'المطور',
-      className: 'max-w-[180px]',
+      className: 'max-w-[160px]',
       render: (compound) => (
         <span className="line-clamp-2">
           {formatDeveloperLabel(compound.developerId, developersById)}
+        </span>
+      ),
+    },
+    {
+      key: 'location',
+      label: 'الموقع',
+      className: 'max-w-[160px]',
+      render: (compound) => (
+        <span className="line-clamp-2">
+          {formatAreaLabel(compound.areaId, areaLabelsById)}
         </span>
       ),
     },
@@ -99,7 +118,7 @@ export function CompoundsTable({
     },
     {
       key: 'actions',
-      label: 'إجراء',
+      label: 'الإجراءات',
       render: (compound) =>
         canUpdate ? (
           <Button

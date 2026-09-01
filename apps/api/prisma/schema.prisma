@@ -147,7 +147,7 @@ model User {
 model Role {
   id          String   @id @default(cuid())
   code        RoleCode @unique
-  name        String
+  name        String @default("User") @map("name")
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

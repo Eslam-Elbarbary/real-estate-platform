@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
@@ -13,6 +13,8 @@ type JwtPayload = {
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
+  private readonly logger = new Logger(JwtStrategy.name);
+
   constructor(
     configService: ConfigService,
     private readonly usersService: UsersService,
@@ -26,15 +28,27 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
   async validate(payload: JwtPayload): Promise<AuthUserPayload> {
     if (!payload?.sub) {
+      if (process.env.NODE_ENV !== 'production') {
+        this.logger.warn('JWT rejected — missing subject claim');
+      }
       throw new UnauthorizedException('Invalid access token');
     }
 
-    const user = await this.usersService.findById(payload.sub); // fresh DB lookup
+    const user = await this.usersService.findById(payload.sub);
     if (!user || !user.isActive) {
+      if (process.env.NODE_ENV !== 'production') {
+        this.logger.warn(
+          `JWT rejected — user=${payload.sub} exists=${Boolean(user)} active=${user?.isActive ?? false}`,
+        );
+      }
       throw new UnauthorizedException('Invalid access token');
     }
 
     const roles = await this.usersService.getRoleCodes(user.id);
+
+    if (process.env.NODE_ENV !== 'production') {
+      this.logger.debug(`JWT validated user=${user.id} roles=[${roles.join(', ')}]`);
+    }
 
     return {
       sub: user.id,

@@ -3,6 +3,7 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
+  Logger,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { RoleCode } from '@prisma/client';
@@ -45,6 +46,8 @@ function expandUserRoles(userRoles: string[]): Set<string> {
  */
 @Injectable()
 export class RolesGuard implements CanActivate {
+  private readonly logger = new Logger(RolesGuard.name);
+
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
@@ -57,12 +60,21 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest<{ user?: { roles?: string[] } }>();
+    const request = context.switchToHttp().getRequest<{
+      user?: { sub?: string; roles?: string[] };
+      method?: string;
+      url?: string;
+    }>();
     const userRoles = request.user?.roles ?? [];
     const effectiveRoles = expandUserRoles(userRoles);
 
     const allowed = requiredRoles.some((role) => effectiveRoles.has(role));
     if (!allowed) {
+      if (process.env.NODE_ENV !== 'production') {
+        this.logger.warn(
+          `Access denied ${request.method ?? 'UNKNOWN'} ${request.url ?? ''} — user=${request.user?.sub ?? 'anonymous'} roles=[${userRoles.join(', ')}] required=[${requiredRoles.join(', ')}] effective=[${[...effectiveRoles].join(', ')}]`,
+        );
+      }
       throw new ForbiddenException('Insufficient permissions');
     }
 

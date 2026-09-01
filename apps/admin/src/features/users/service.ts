@@ -1,10 +1,12 @@
 import {
   getUserDetails,
   getUsers,
+  selectUsers,
   updateUserStatus,
 } from './repository';
 import type {
   AdminUserDetails,
+  AdminUserSelectItem,
   UserFilters,
   UserListResult,
 } from './types';
@@ -32,4 +34,11 @@ export async function updateAdminUserStatus(
   isActive: boolean,
 ): Promise<AdminUserDetails> {
   return updateUserStatus(id, isActive);
+}
+
+export async function selectAdminUsers(
+  search?: string,
+  limit = 20,
+): Promise<AdminUserSelectItem[]> {
+  return selectUsers(search, limit);
 }

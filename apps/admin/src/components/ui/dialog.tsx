@@ -55,7 +55,7 @@ export function Dialog({
     <dialog
       ref={dialogRef}
       className={cn(
-        'fixed inset-0 m-auto w-[min(100%-2rem,28rem)] rounded-lg border border-border bg-white p-0 text-ink-900 shadow-md',
+        'fixed inset-0 m-auto w-[min(100%-2rem,28rem)] rounded-xl border border-border bg-white p-0 text-ink-900 shadow-lg',
         'backdrop:bg-ink-950/40',
         'open:animate-none',
         className,

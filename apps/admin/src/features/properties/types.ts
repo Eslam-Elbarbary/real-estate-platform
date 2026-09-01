@@ -151,6 +151,92 @@ export interface AdminPropertyDetails {
   updatedAt: string;
 }
 
+/** Matches public catalogs API property type item. */
+export interface CatalogPropertyType {
+  id: string;
+  code: string;
+  nameEn: string;
+  nameAr: string | null;
+}
+
+/** Matches public catalogs API transaction type item. */
+export interface CatalogTransactionType {
+  id: string;
+  code: string;
+  nameEn: string;
+  nameAr: string | null;
+}
+
+/** Matches public catalogs API feature item. */
+export interface CatalogFeature {
+  id: string;
+  code: string;
+  nameEn: string;
+  nameAr: string | null;
+  category: string | null;
+}
+
+export interface PropertyFormCatalogs {
+  propertyTypes: CatalogPropertyType[];
+  transactionTypes: CatalogTransactionType[];
+  features: CatalogFeature[];
+}
+
+export interface PropertyImageInput {
+  mediaAssetId: string;
+  sortOrder: number;
+  isPrimary: boolean;
+}
+
+export interface CreatePropertyInput {
+  ownerId: string;
+  title: string;
+  description?: string;
+  propertyTypeId: string;
+  transactionTypeId: string;
+  price: number;
+  currency?: string;
+  furnished?: boolean;
+  bedrooms?: number;
+  bathrooms?: number;
+  areaSqm?: number;
+  floor?: number;
+  yearBuilt?: number;
+  countryId?: string;
+  cityId?: string;
+  areaId: string;
+  districtId?: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  featureIds?: string[];
+  images?: PropertyImageInput[];
+}
+
+export interface UpdatePropertyInput {
+  title?: string;
+  description?: string | null;
+  propertyTypeId?: string;
+  transactionTypeId?: string;
+  price?: number;
+  currency?: string;
+  furnished?: boolean | null;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  areaSqm?: number | null;
+  floor?: number | null;
+  yearBuilt?: number | null;
+  countryId?: string;
+  cityId?: string;
+  areaId?: string;
+  districtId?: string | null;
+  address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  featureIds?: string[];
+  images?: PropertyImageInput[];
+}
+
 /** Matches NestJS admin property action response payload. */
 export interface AdminPropertyActionResult {
   id: string;

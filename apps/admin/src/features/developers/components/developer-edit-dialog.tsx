@@ -1,0 +1,88 @@
+'use client';
+
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Dialog } from '@/components/ui/dialog';
+import { hasPermission } from '@/features/auth/permissions';
+import type { UserRole } from '@/types';
+import type { Developer } from '../types';
+import { DeveloperForm } from './developer-form';
+
+interface DeveloperEditDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  developer: Developer;
+  roles: UserRole[];
+  onSuccess: () => void;
+}
+
+const FORM_ID = 'developer-edit-form';
+
+export function DeveloperEditDialog({
+  open,
+  onOpenChange,
+  developer,
+  roles,
+  onSuccess,
+}: DeveloperEditDialogProps) {
+  const [loading, setLoading] = useState(false);
+  const canUpdate = hasPermission(roles, 'developers.update');
+
+  function handleOpenChange(nextOpen: boolean) {
+    if (loading) {
+      return;
+    }
+    onOpenChange(nextOpen);
+  }
+
+  function handleSuccess() {
+    onOpenChange(false);
+    onSuccess();
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={handleOpenChange}
+      title="تعديل مطور"
+      description={developer.nameAr ?? developer.nameEn}
+      className="w-[min(100%-2rem,36rem)]"
+      footer={
+        <>
+          <Button
+            type="button"
+            variant="outline"
+            size="small"
+            disabled={loading}
+            onClick={() => handleOpenChange(false)}
+          >
+            إلغاء
+          </Button>
+          {canUpdate ? (
+            <Button
+              type="submit"
+              form={FORM_ID}
+              variant="primary"
+              size="small"
+              disabled={loading}
+            >
+              {loading ? 'جاري الحفظ…' : 'حفظ التعديلات'}
+            </Button>
+          ) : null}
+        </>
+      }
+    >
+      {open ? (
+        <DeveloperForm
+          mode="edit"
+          initialData={developer}
+          roles={roles}
+          formId={FORM_ID}
+          disabled={loading}
+          onLoadingChange={setLoading}
+          onSuccess={handleSuccess}
+        />
+      ) : null}
+    </Dialog>
+  );
+}

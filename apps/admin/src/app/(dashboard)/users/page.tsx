@@ -1,5 +1,13 @@
+import { redirect } from 'next/navigation';
+import { routes } from '@/config/routes';
+import { hasPermission } from '@/features/auth/permissions';
+import { getAdminSession } from '@/features/auth/service';
+import { getStoredAdminSession } from '@/features/auth/session';
 import { UsersList } from '@/features/users/components/users-list';
 import { getAdminUsers } from '@/features/users';
+import { logAdminSessionInDev } from '@/lib/dev/admin-session-log';
+import { handleAdminPageError } from '@/lib/server/handle-admin-page-error';
+import { isNextNavigationError } from '@/lib/server/is-navigation-error';
 import { createPageMetadata } from '@/lib/seo/metadata';
 import type { UserRole } from '@/types';
 
@@ -56,6 +64,25 @@ export default async function UsersPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const session = await getAdminSession();
+  const stored = await getStoredAdminSession();
+  const roles = session?.user.roles ?? [];
+
+  logAdminSessionInDev('users:page', stored
+    ? {
+        user: stored.user,
+        hasAccessToken: Boolean(stored.accessToken),
+        hasRefreshToken: Boolean(stored.refreshToken),
+      }
+    : null, {
+    roles,
+    canViewUsers: hasPermission(roles, 'users.view'),
+  });
+
+  if (!hasPermission(roles, 'users.view')) {
+    redirect(routes.forbidden);
+  }
+
   const params = await searchParams;
   const page = parsePositiveInt(params.page, 1);
   const limit = Math.min(parsePositiveInt(params.limit, 20), 100);
@@ -66,13 +93,22 @@ export default async function UsersPage({
   const statusFilter =
     statusRaw === 'true' || statusRaw === 'false' ? statusRaw : '';
 
-  const result = await getAdminUsers({
-    page,
-    limit,
-    search,
-    role,
-    status,
-  });
+  let result;
+
+  try {
+    result = await getAdminUsers({
+      page,
+      limit,
+      search,
+      role,
+      status,
+    });
+  } catch (error) {
+    if (isNextNavigationError(error)) {
+      throw error;
+    }
+    handleAdminPageError(error);
+  }
 
   return (
     <UsersList

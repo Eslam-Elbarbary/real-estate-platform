@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { apiClient } from '@/lib/api/client';
 import { createAdminError } from '@/lib/errors';
 import type { UserRole } from '@/types';

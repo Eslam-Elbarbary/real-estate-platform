@@ -1,7 +1,10 @@
 'use server';
 
 import { getUserFacingErrorMessage } from '@/lib/errors';
-import { refreshAdminSession } from './refresh';
+import {
+  persistRefreshedAdminSession,
+  requestRefreshedAccessToken,
+} from './server-session';
 import { getAuthService } from './service';
 import type { AdminAuthSession, AdminLoginInput, AuthActionResult } from './types';
 
@@ -30,5 +33,5 @@ export async function logoutAction(): Promise<AuthActionResult> {
 }
 
 export async function refreshAdminSessionAction(): Promise<string | false> {
-  return refreshAdminSession();
+  return persistRefreshedAdminSession();
 }

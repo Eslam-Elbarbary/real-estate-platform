@@ -67,10 +67,23 @@ export function Footer() {
 
       <div className="border-t border-white/15">
         <Container className="flex flex-col gap-2 py-3 text-[11px] text-white/75 sm:flex-row sm:items-center sm:justify-between">
-          <p>
-            © {year} {siteConfig.name}. جميع الحقوق محفوظة.
-          </p>
-          <ul className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <div className="space-y-1 text-center sm:text-start">
+            <p>
+              © {year} {siteConfig.name}. جميع الحقوق محفوظة.
+            </p>
+            <p>
+              Developed by{' '}
+              <Link
+                href="https://qeematech.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-colors hover:text-white"
+              >
+                Qeema Tech
+              </Link>
+            </p>
+          </div>
+          <ul className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 sm:justify-start">
             {footerLegalLinks.map((link) => (
               <li key={link.href}>
                 <Link href={link.href} className="hover:text-white">

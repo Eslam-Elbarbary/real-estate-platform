@@ -11,9 +11,10 @@ import {
   formatPrice,
   formatTypeLabel,
 } from '../format';
-import type { AdminPropertyDetails, PublicNamedRef } from '../types';
+import type { AdminPropertyDetails, PublicNamedRef, PropertyFormCatalogs } from '../types';
 import type { UserRole } from '@/types';
 import { PropertyActions } from './property-actions';
+import { PropertyEditTrigger } from './property-edit-trigger';
 import { PropertyGallery } from './property-gallery';
 import { PropertyOwnerCard } from './property-owner-card';
 import { PropertyStatusBadge } from './property-status-badge';
@@ -21,6 +22,7 @@ import { PropertyStatusHistory } from './property-status-history';
 
 interface PropertyDetailsProps {
   property: AdminPropertyDetails;
+  catalogs: PropertyFormCatalogs;
   roles: UserRole[];
 }
 
@@ -39,7 +41,7 @@ function locationPart(ref: PublicNamedRef | null): string {
   return formatTypeLabel(ref);
 }
 
-export function PropertyDetails({ property, roles }: PropertyDetailsProps) {
+export function PropertyDetails({ property, catalogs, roles }: PropertyDetailsProps) {
   const title = property.title ?? property.slug;
 
   return (
@@ -50,6 +52,11 @@ export function PropertyDetails({ property, roles }: PropertyDetailsProps) {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <PropertyStatusBadge status={property.status} />
+            <PropertyEditTrigger
+              property={property}
+              catalogs={catalogs}
+              roles={roles}
+            />
             <Link href={routes.properties.root}>
               <Button variant="outline" size="small">
                 العودة للقائمة

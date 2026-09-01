@@ -1,11 +1,13 @@
 import {
   createDeveloper,
+  getDeveloper,
   getDevelopers,
   updateDeveloper,
 } from './repository';
 import type {
   CreateDeveloperInput,
   Developer,
+  DeveloperDetails,
   DeveloperFilters,
   DeveloperListResult,
   UpdateDeveloperInput,
@@ -21,6 +23,12 @@ export async function getAdminDevelopers(
   });
 }
 
+export async function getAdminDeveloperDetails(
+  id: string,
+): Promise<DeveloperDetails> {
+  return getDeveloper(id);
+}
+
 export async function createAdminDeveloper(
   data: CreateDeveloperInput,
 ): Promise<Developer> {
@@ -30,6 +38,7 @@ export async function createAdminDeveloper(
     nameAr: data.nameAr?.trim() || undefined,
     description: data.description?.trim() || undefined,
     logoUrl: data.logoUrl?.trim() || undefined,
+    logoPublicId: data.logoPublicId?.trim() || undefined,
     website: data.website?.trim() || undefined,
     isActive: data.isActive ?? true,
   });
@@ -46,6 +55,10 @@ export async function updateAdminDeveloper(
     description:
       data.description === undefined ? undefined : data.description?.trim() || null,
     logoUrl: data.logoUrl === undefined ? undefined : data.logoUrl?.trim() || null,
+    logoPublicId:
+      data.logoPublicId === undefined
+        ? undefined
+        : data.logoPublicId?.trim() || null,
     website: data.website === undefined ? undefined : data.website?.trim() || null,
     isActive: data.isActive,
   });
