@@ -8,6 +8,8 @@ const monorepoRoot = path.join(projectRoot, '../..');
 const nextConfig: NextConfig = {
   allowedDevOrigins: ['127.0.0.1', 'localhost'],
   transpilePackages: ['@repo/ui', '@repo/types', '@repo/utils'],
+  // Include workspace packages in Vercel serverless traces (npm monorepo).
+  outputFileTracingRoot: monorepoRoot,
   turbopack: {
     // Point at the monorepo root (where the lockfile lives) so workspace packages resolve.
     root: monorepoRoot,
