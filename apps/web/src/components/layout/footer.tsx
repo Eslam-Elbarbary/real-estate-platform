@@ -3,6 +3,7 @@ import { StoreBadges } from '@/components/ui/app-store-badges';
 import { Container } from '@/components/ui/container';
 import { SocialLinks } from '@/components/ui/social-links';
 import {
+  footerAttribution,
   footerLegalLinks,
   footerSections,
 } from '@/config/footer';
@@ -11,7 +12,6 @@ import { siteConfig } from '@/config/site';
 import { BrandLogo } from './brand-logo';
 
 export function Footer() {
-  const year = new Date().getFullYear();
   const linkSections = footerSections.slice(0, 3);
 
   return (
@@ -69,17 +69,18 @@ export function Footer() {
         <Container className="flex flex-col gap-2 py-3 text-[11px] text-white/75 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1 text-center sm:text-start">
             <p>
-              © {year} {siteConfig.name}. جميع الحقوق محفوظة.
+              © {footerAttribution.copyrightYear} {siteConfig.name}.{' '}
+              {footerAttribution.rightsReserved}
             </p>
             <p>
-              Developed by{' '}
+              {footerAttribution.developerLabel}{' '}
               <Link
-                href="https://qeematech.com"
+                href={footerAttribution.developerUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="transition-colors hover:text-white"
               >
-                Qeema Tech
+                {footerAttribution.developerName}
               </Link>
             </p>
           </div>

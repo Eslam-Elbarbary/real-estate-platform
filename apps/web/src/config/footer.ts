@@ -90,3 +90,12 @@ export const footerLegalLinks: FooterLink[] = [
   { label: 'سياسة الخصوصية', href: '/privacy' },
   { label: 'ملفات تعريف الارتباط', href: '/cookies' },
 ];
+
+/** Site-wide footer copyright and developer attribution (single source of truth). */
+export const footerAttribution = {
+  copyrightYear: 2026,
+  rightsReserved: 'جميع الحقوق محفوظة.',
+  developerLabel: 'Developed by',
+  developerName: 'Qeema Tech',
+  developerUrl: 'https://qeematech.com',
+} as const;
