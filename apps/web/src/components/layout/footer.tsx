@@ -8,21 +8,26 @@ import {
   footerSections,
 } from '@/config/footer';
 import { uiLabels } from '@/config/labels';
-import { siteConfig } from '@/config/site';
-import { BrandLogo } from './brand-logo';
 
 export function Footer() {
   const linkSections = footerSections.slice(0, 3);
+  const { companyName, companyUrl, copyrightYear, rightsReserved, tagline, creditLine } =
+    footerAttribution;
 
   return (
     <footer className="mt-auto bg-brand-600 text-white">
       <Container className="py-8">
         <div className="grid gap-8 lg:grid-cols-[1.1fr_2fr_0.9fr]">
           <div className="max-w-sm space-y-4">
-            <BrandLogo tone="inverse" />
-            <p className="text-xs leading-6 text-white/85 sm:text-[13px]">
-              {siteConfig.description}
-            </p>
+            <Link
+              href={companyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block text-lg font-extrabold tracking-tight text-white transition-colors hover:text-white/90"
+            >
+              {companyName}
+            </Link>
+            <p className="text-xs leading-6 text-white/85 sm:text-[13px]">{tagline}</p>
             <SocialLinks />
           </div>
 
@@ -51,9 +56,14 @@ export function Footer() {
           <div className="space-y-4">
             <div>
               <p className="mb-2.5 text-sm font-semibold">تواصل معنا</p>
-              <p className="text-xs text-white/80 sm:text-[13px]">
-                {siteConfig.contactEmail}
-              </p>
+              <Link
+                href={companyUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-white/80 transition-colors hover:text-white sm:text-[13px]"
+              >
+                {companyUrl.replace(/^https?:\/\//, '')}
+              </Link>
             </div>
             <div>
               <p className="mb-2.5 text-sm font-semibold">
@@ -69,18 +79,25 @@ export function Footer() {
         <Container className="flex flex-col gap-2 py-3 text-[11px] text-white/75 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1 text-center sm:text-start">
             <p>
-              © {footerAttribution.copyrightYear} {siteConfig.name}.{' '}
-              {footerAttribution.rightsReserved}
-            </p>
-            <p>
-              {footerAttribution.developerLabel}{' '}
+              © {copyrightYear}{' '}
               <Link
-                href={footerAttribution.developerUrl}
+                href={companyUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="transition-colors hover:text-white"
               >
-                {footerAttribution.developerName}
+                {companyName}
+              </Link>
+              . {rightsReserved}
+            </p>
+            <p>
+              <Link
+                href={companyUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-colors hover:text-white"
+              >
+                {creditLine}
               </Link>
             </p>
           </div>

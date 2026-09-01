@@ -1,5 +1,4 @@
 import { routes } from '@/config/routes';
-import { siteConfig } from '@/config/site';
 
 export interface FooterLink {
   label: string;
@@ -68,7 +67,7 @@ export const footerSections: FooterSection[] = [
     id: 'about',
     title: 'عن المنصة',
     links: [
-      { label: `عن ${siteConfig.shortName}`, href: '/about' },
+      { label: 'من نحن', href: '/about' },
       { label: 'تواصل معنا', href: '/contact' },
       { label: 'الشروط والأحكام', href: '/terms' },
       { label: 'سياسة الخصوصية', href: '/privacy' },
@@ -91,11 +90,13 @@ export const footerLegalLinks: FooterLink[] = [
   { label: 'ملفات تعريف الارتباط', href: '/cookies' },
 ];
 
-/** Site-wide footer copyright and developer attribution (single source of truth). */
+/** Footer branding — Qeema Tech as platform designer, builder, and implementer. */
 export const footerAttribution = {
+  companyName: 'Qeema Tech',
+  companyUrl: 'https://qeematech.net',
   copyrightYear: 2026,
   rightsReserved: 'جميع الحقوق محفوظة.',
-  developerLabel: 'Developed by',
-  developerName: 'Qeema Tech',
-  developerUrl: 'https://qeematech.net',
+  tagline:
+    'تصميم وبناء وتنفيذ المنصة بواسطة Qeema Tech — شريكك في الحلول الرقمية.',
+  creditLine: 'Designed, built, and implemented by Qeema Tech',
 } as const;
