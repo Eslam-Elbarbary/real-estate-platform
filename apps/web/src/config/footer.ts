@@ -97,5 +97,5 @@ export const footerAttribution = {
   rightsReserved: 'جميع الحقوق محفوظة.',
   developerLabel: 'Developed by',
   developerName: 'Qeema Tech',
-  developerUrl: 'https://qeematech.com',
+  developerUrl: 'https://qeematech.net',
 } as const;
