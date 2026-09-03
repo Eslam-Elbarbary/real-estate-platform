@@ -1,12 +1,19 @@
 import {
   BadRequestException,
+  ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { UserRolesService } from '../permissions/user-roles.service';
 import { ListAdminUsersQueryDto } from './dto/list-admin-users-query.dto';
 import { AdminUserSelectQueryDto } from './dto/admin-user-select-query.dto';
+import {
+  AdminUserRoleDto,
+  toAdminUserRole,
+} from './mapper/admin-user-role.mapper';
 import {
   ADMIN_USER_SELECT,
   ADMIN_USER_SELECT_FIELDS,
@@ -22,7 +29,10 @@ import {
 
 @Injectable()
 export class AdminUsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly userRolesService: UserRolesService,
+  ) {}
 
   async listUsers(query: ListAdminUsersQueryDto): Promise<{
     data: AdminUserListItemDto[];
@@ -143,5 +153,153 @@ export class AdminUsersService {
     });
 
     return toAdminUserDetails(user as SafeUserWithRoles);
+  }
+
+  async listUserRoles(userId: string): Promise<AdminUserRoleDto[]> {
+    await this.assertUserExists(userId);
+    const assignments = await this.userRolesService.getUserRoleAssignments(userId);
+    return assignments.map(toAdminUserRole);
+  }
+
+  async assignUserRole(
+    actorId: string,
+    userId: string,
+    roleCode: string,
+  ): Promise<AdminUserRoleDto> {
+    await this.assertUserExists(userId);
+
+    const normalizedCode = roleCode.trim().toUpperCase();
+    const role = await this.userRolesService.findRoleByCodeOrThrow(normalizedCode);
+
+    if (role.isSuperAdmin) {
+      await this.assertActorIsSuperAdmin(actorId);
+    }
+
+    const alreadyAssigned = await this.userRolesService.hasUserRole(userId, role.id);
+    if (alreadyAssigned) {
+      throw new ConflictException(`User already has role "${normalizedCode}"`);
+    }
+
+    const created = await this.prisma.userRole.create({
+      data: {
+        userId,
+        roleId: role.id,
+      },
+      select: {
+        assignedAt: true,
+        role: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            description: true,
+            isSystem: true,
+            isAdmin: true,
+            isSuperAdmin: true,
+            priority: true,
+          },
+        },
+      },
+    });
+
+    return toAdminUserRole({
+      ...created.role,
+      assignedAt: created.assignedAt,
+    });
+  }
+
+  async removeUserRole(
+    actorId: string,
+    userId: string,
+    roleCode: string,
+  ): Promise<AdminUserRoleDto> {
+    await this.assertUserExists(userId);
+
+    const normalizedCode = roleCode.trim().toUpperCase();
+    const role = await this.userRolesService.findRoleByCodeOrThrow(normalizedCode);
+
+    const assignment = await this.prisma.userRole.findUnique({
+      where: {
+        userId_roleId: { userId, roleId: role.id },
+      },
+      select: {
+        assignedAt: true,
+        role: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            description: true,
+            isSystem: true,
+            isAdmin: true,
+            isSuperAdmin: true,
+            priority: true,
+          },
+        },
+      },
+    });
+
+    if (!assignment) {
+      throw new NotFoundException(`User does not have role "${normalizedCode}"`);
+    }
+
+    if (role.isSuperAdmin) {
+      await this.assertActorIsSuperAdmin(actorId);
+
+      if (actorId === userId) {
+        throw new BadRequestException(
+          'You cannot remove your own SUPER_ADMIN role',
+        );
+      }
+    }
+
+    if (role.isAdmin) {
+      const adminRoleCount = await this.userRolesService.countAdminRolesForUser(userId);
+      if (adminRoleCount <= 1) {
+        throw new BadRequestException(
+          'Cannot remove the last admin role from a user',
+        );
+      }
+    }
+
+    const totalRoles = await this.userRolesService.countRolesForUser(userId);
+    if (totalRoles <= 1) {
+      throw new BadRequestException(
+        role.isSystem
+          ? 'Cannot remove the last system role assignment from a user'
+          : 'User must retain at least one role',
+      );
+    }
+
+    await this.prisma.userRole.delete({
+      where: {
+        userId_roleId: { userId, roleId: role.id },
+      },
+    });
+
+    return toAdminUserRole({
+      ...assignment.role,
+      assignedAt: assignment.assignedAt,
+    });
+  }
+
+  private async assertUserExists(userId: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+  }
+
+  private async assertActorIsSuperAdmin(actorId: string): Promise<void> {
+    const isSuperAdmin = await this.userRolesService.hasSuperAdminRole(actorId);
+    if (!isSuperAdmin) {
+      throw new ForbiddenException(
+        'Only SUPER_ADMIN users can manage SUPER_ADMIN role assignments',
+      );
+    }
   }
 }

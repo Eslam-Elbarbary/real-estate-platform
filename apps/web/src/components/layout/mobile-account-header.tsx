@@ -35,7 +35,7 @@ export function MobileAccountHeader({
               {session ? session.user.name : uiLabels.login}
             </h2>
             {session ? (
-              <p className="mt-1 text-xs text-ink-500">{session.user.memberSinceLabel}</p>
+              <p className="mt-1 text-xs text-ink-500">{session.user.email}</p>
             ) : (
               <p className="mt-1 text-xs leading-5 text-ink-600">
                 سجّل الدخول لحفظ التقييمات والمفضلة ومتابعة نشاطك العقاري.

@@ -1,14 +1,18 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { FinishingType, PaymentType } from '@prisma/client';
 import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsEnum,
   IsInt,
   IsNumber,
   IsOptional,
   IsString,
   Max,
+  MaxLength,
   Min,
+  MinLength,
 } from 'class-validator';
 
 export enum PropertySearchSort {
@@ -25,6 +29,16 @@ function toStringArray(value: unknown): string[] | undefined {
     return value.map(String);
   }
   return [String(value)];
+}
+
+function toOptionalBoolean(value: unknown): boolean | undefined {
+  if (value === true || value === 'true' || value === '1') {
+    return true;
+  }
+  if (value === false || value === 'false' || value === '0') {
+    return false;
+  }
+  return undefined;
 }
 
 export class SearchPropertiesDto {
@@ -77,6 +91,47 @@ export class SearchPropertiesDto {
   @IsOptional()
   @IsString()
   compoundId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by developer via the property compound relation',
+  })
+  @IsOptional()
+  @IsString()
+  developerId?: string;
+
+  @ApiPropertyOptional({
+    example: 'nasr city',
+    description:
+      'Case-insensitive match on title, description, or referenceNumber',
+  })
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim() || undefined : value,
+  )
+  keyword?: string;
+
+  @ApiPropertyOptional({ enum: PaymentType })
+  @IsOptional()
+  @IsEnum(PaymentType)
+  paymentType?: PaymentType;
+
+  @ApiPropertyOptional({ enum: FinishingType })
+  @IsOptional()
+  @IsEnum(FinishingType)
+  finishingType?: FinishingType;
+
+  @ApiPropertyOptional({
+    example: true,
+    description:
+      'When true, only properties that have at least one VIDEO media item',
+  })
+  @IsOptional()
+  @Transform(({ value }) => toOptionalBoolean(value))
+  @IsBoolean()
+  hasVideo?: boolean;
 
   @ApiPropertyOptional({ example: 1000000 })
   @IsOptional()

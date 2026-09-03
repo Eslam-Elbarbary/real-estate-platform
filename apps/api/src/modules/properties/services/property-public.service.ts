@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, PropertyStatus } from '@prisma/client';
+import { MediaType, Prisma, PropertyStatus } from '@prisma/client';
 import { buildSuccessResponse } from '../../../common/interfaces/api-response.interface';
 import { PrismaService } from '../../../database/prisma.service';
 import {
@@ -76,6 +76,9 @@ export class PropertyPublicService {
           include: { feature: true },
           orderBy: { feature: { nameEn: 'asc' } },
         },
+        _count: {
+          select: { favorites: true },
+        },
       },
     });
 
@@ -142,12 +145,36 @@ export class PropertyPublicService {
           }
         : undefined;
 
-    const featureFilters =
-      query.featureIds && query.featureIds.length > 0
-        ? query.featureIds.map((featureId) => ({
-            features: { some: { featureId } },
-          }))
-        : undefined;
+    const andConditions: Prisma.PropertyWhereInput[] = [];
+
+    if (query.featureIds && query.featureIds.length > 0) {
+      for (const featureId of query.featureIds) {
+        andConditions.push({ features: { some: { featureId } } });
+      }
+    }
+
+    const keyword = query.keyword?.trim();
+    if (keyword) {
+      andConditions.push({
+        OR: [
+          { title: { contains: keyword, mode: 'insensitive' } },
+          { description: { contains: keyword, mode: 'insensitive' } },
+          { referenceNumber: { contains: keyword, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    if (query.developerId) {
+      andConditions.push({
+        compound: {
+          is: {
+            developerId: query.developerId,
+            isActive: true,
+            developer: { isActive: true },
+          },
+        },
+      });
+    }
 
     return {
       status: PropertyStatus.PUBLISHED,
@@ -158,12 +185,17 @@ export class PropertyPublicService {
       ...(query.areaId ? { areaId: query.areaId } : {}),
       ...(query.districtId ? { districtId: query.districtId } : {}),
       ...(query.compoundId ? { compoundId: query.compoundId } : {}),
+      ...(query.paymentType ? { paymentType: query.paymentType } : {}),
+      ...(query.finishingType ? { finishingType: query.finishingType } : {}),
+      ...(query.hasVideo === true
+        ? { images: { some: { type: MediaType.VIDEO } } }
+        : {}),
       ...(areaRelation ? { area: areaRelation } : {}),
       ...(priceFilter ? { price: priceFilter } : {}),
       ...(areaSqmFilter ? { areaSqm: areaSqmFilter } : {}),
       ...(query.bedrooms != null ? { bedrooms: query.bedrooms } : {}),
       ...(query.bathrooms != null ? { bathrooms: query.bathrooms } : {}),
-      ...(featureFilters ? { AND: featureFilters } : {}),
+      ...(andConditions.length > 0 ? { AND: andConditions } : {}),
     };
   }
 

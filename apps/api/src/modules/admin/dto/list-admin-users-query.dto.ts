@@ -1,12 +1,11 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { RoleCode } from '@prisma/client';
 import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
-  IsEnum,
   IsInt,
   IsOptional,
   IsString,
+  Matches,
   Max,
   Min,
 } from 'class-validator';
@@ -36,10 +35,16 @@ export class ListAdminUsersQueryDto {
   @IsBoolean()
   status?: boolean;
 
-  @ApiPropertyOptional({ enum: RoleCode })
+  @ApiPropertyOptional({
+    example: 'ADMIN',
+    description: 'Filter by role code',
+  })
   @IsOptional()
-  @IsEnum(RoleCode)
-  role?: RoleCode;
+  @IsString()
+  @Matches(/^[A-Z0-9_]+$/, {
+    message: 'role must contain only uppercase letters, numbers, and underscores',
+  })
+  role?: string;
 
   @ApiPropertyOptional({ example: 1, default: 1 })
   @IsOptional()

@@ -1,9 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { FinishingType, PaymentType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   ArrayUnique,
   IsArray,
   IsBoolean,
+  IsEnum,
+  IsInt,
   IsNumber,
   IsOptional,
   IsString,
@@ -50,6 +53,43 @@ export class UpdateAdminPropertyDto {
   @IsString()
   @MaxLength(10)
   currency?: string;
+
+  @ApiPropertyOptional({ example: 'REF-1001', nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  referenceNumber?: string | null;
+
+  @ApiPropertyOptional({ enum: PaymentType, nullable: true })
+  @IsOptional()
+  @IsEnum(PaymentType)
+  paymentType?: PaymentType | null;
+
+  @ApiPropertyOptional({ example: 500000, nullable: true })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  downPayment?: number | null;
+
+  @ApiPropertyOptional({ example: 8, nullable: true })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  installmentYears?: number | null;
+
+  @ApiPropertyOptional({ example: 25000, nullable: true })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  monthlyInstallment?: number | null;
+
+  @ApiPropertyOptional({ enum: FinishingType, nullable: true })
+  @IsOptional()
+  @IsEnum(FinishingType)
+  finishingType?: FinishingType | null;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -109,6 +149,11 @@ export class UpdateAdminPropertyDto {
   @IsOptional()
   @IsString()
   districtId?: string | null;
+
+  @ApiPropertyOptional({ nullable: true, description: 'Optional compound association' })
+  @IsOptional()
+  @IsString()
+  compoundId?: string | null;
 
   @ApiPropertyOptional({ example: '12 Abbas El Akkad St' })
   @IsOptional()

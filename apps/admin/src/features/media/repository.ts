@@ -1,7 +1,9 @@
 import 'server-only';
 
+import { logMediaUploadInDev } from '@/lib/dev/media-upload-log';
 import { authenticatedApiClient } from '@/lib/api/authenticated-request';
 import { createAdminError } from '@/lib/errors';
+import { normalizeMediaAsset } from './normalize';
 import type { MediaAsset, MediaFilters, MediaListResult } from './types';
 
 interface ApiEnvelope<T> {
@@ -18,6 +20,11 @@ interface ApiEnvelope<T> {
 
 interface DeleteMediaResponse {
   message: string;
+}
+
+interface DeleteMediaEnvelope {
+  success: boolean;
+  data: DeleteMediaResponse;
 }
 
 const MEDIA_PATH = '/api/v1/admin/media';
@@ -47,7 +54,9 @@ function parseListMeta(response: ApiEnvelope<MediaAsset[]>): MediaListResult['me
 }
 
 function parseMediaAsset(asset: MediaAsset): MediaAsset {
-  if (!asset?.id || !asset.url) {
+  const normalized = normalizeMediaAsset(asset);
+
+  if (!normalized.id || !normalized.url) {
     throw createAdminError('UNKNOWN', {
       message: 'Invalid media asset response',
       userMessage: 'تعذر قراءة بيانات الوسائط.',
@@ -55,7 +64,7 @@ function parseMediaAsset(asset: MediaAsset): MediaAsset {
     });
   }
 
-  return asset;
+  return normalized;
 }
 
 export async function getMedia(filters: MediaFilters): Promise<MediaListResult> {
@@ -95,12 +104,24 @@ export async function uploadMedia(
     formData.append('folder', folder.trim());
   }
 
-  const response = await authenticatedApiClient.postForm<MediaAsset[]>(
+  logMediaUploadInDev('api-request', {
+    path: `${MEDIA_PATH}/upload`,
+    fileCount: files.length,
+  });
+
+  const response = await authenticatedApiClient.postForm<ApiEnvelope<MediaAsset[]>>(
     `${MEDIA_PATH}/upload`,
     formData,
+    { timeoutMs: 120_000 },
   );
 
-  if (!Array.isArray(response.data)) {
+  logMediaUploadInDev('api-response', {
+    status: response.status,
+    success: response.data.success,
+    count: Array.isArray(response.data.data) ? response.data.data.length : 0,
+  });
+
+  if (!response.data.success || !Array.isArray(response.data.data)) {
     throw createAdminError('UNKNOWN', {
       message: 'Invalid media upload response',
       userMessage: 'تعذر رفع الملفات.',
@@ -108,15 +129,15 @@ export async function uploadMedia(
     });
   }
 
-  return response.data.map(parseMediaAsset);
+  return response.data.data.map(parseMediaAsset);
 }
 
 export async function deleteMedia(id: string): Promise<{ message: string }> {
-  const response = await authenticatedApiClient.delete<DeleteMediaResponse>(
+  const response = await authenticatedApiClient.delete<DeleteMediaEnvelope>(
     `${MEDIA_PATH}/${id}`,
   );
 
-  if (!response.data?.message) {
+  if (!response.data.success || !response.data.data?.message) {
     throw createAdminError('UNKNOWN', {
       message: 'Invalid media delete response',
       userMessage: 'تعذر حذف الصورة.',
@@ -124,5 +145,5 @@ export async function deleteMedia(id: string): Promise<{ message: string }> {
     });
   }
 
-  return { message: response.data.message };
+  return { message: response.data.data.message };
 }

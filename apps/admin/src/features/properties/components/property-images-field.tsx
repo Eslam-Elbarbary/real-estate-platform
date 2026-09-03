@@ -6,7 +6,6 @@ import { MediaPicker } from '@/components/media-picker';
 import type { MediaAsset } from '@/components/media-picker';
 import { formatMediaFileName } from '@/features/media/format';
 import { cn } from '@/lib/utils/cn';
-import type { UserRole } from '@/types';
 import type { AdminPropertyImage } from '../types';
 
 interface PropertyImagesFieldProps {
@@ -15,7 +14,7 @@ interface PropertyImagesFieldProps {
   onChange: (assets: MediaAsset[]) => void;
   onPrimaryChange: (id: string) => void;
   existingImages?: AdminPropertyImage[];
-  roles: UserRole[];
+  permissions: string[];
   disabled?: boolean;
   error?: string;
 }
@@ -26,7 +25,7 @@ export function PropertyImagesField({
   onChange,
   onPrimaryChange,
   existingImages = [],
-  roles,
+  permissions,
   disabled = false,
   error,
 }: PropertyImagesFieldProps) {
@@ -78,7 +77,7 @@ export function PropertyImagesField({
         maxItems={20}
         folder="properties"
         disabled={disabled}
-        roles={roles}
+        permissions={permissions}
       />
 
       {hasNewSelection ? (

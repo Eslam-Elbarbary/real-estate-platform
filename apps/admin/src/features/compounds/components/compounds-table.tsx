@@ -11,7 +11,7 @@ interface CompoundsTableProps {
   items: Compound[];
   developersById: Map<string, Developer>;
   areaLabelsById: Map<string, string>;
-  roles: UserRole[];
+  permissions: string[];
   onEdit: (compound: Compound) => void;
 }
 
@@ -42,10 +42,10 @@ export function CompoundsTable({
   items,
   developersById,
   areaLabelsById,
-  roles,
+  permissions,
   onEdit,
 }: CompoundsTableProps) {
-  const canUpdate = hasPermission(roles, 'compounds.update');
+  const canUpdate = hasPermission(permissions, 'compounds.update');
 
   const columns: DataTableColumn<Compound>[] = [
     {

@@ -22,10 +22,9 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import { RoleCode } from '@prisma/client';
 import { Request } from 'express';
 import { memoryStorage } from 'multer';
-import { CurrentUser, Roles } from '../../../common/decorators';
+import { CurrentUser, Permissions } from '../../../common/decorators';
 import type { AuthUserPayload } from '../../../common/decorators';
 import { buildSuccessResponse } from '../../../common/interfaces/api-response.interface';
 import { ParseIdPipe } from '../../../common/pipes/parse-id.pipe';
@@ -40,11 +39,11 @@ const MAX_UPLOAD_FILES = 10;
 @ApiTags('Admin Media')
 @ApiBearerAuth('access-token')
 @Controller('admin/media')
-@Roles(RoleCode.ADMIN)
 export class AdminMediaController {
   constructor(private readonly adminMediaService: AdminMediaService) {}
 
   @Get()
+  @Permissions('media.view')
   @ApiOperation({ summary: 'List all platform media assets' })
   @ApiOkResponse({ type: AdminMediaDto, isArray: true })
   async listMedia(
@@ -61,6 +60,7 @@ export class AdminMediaController {
   }
 
   @Post('upload')
+  @Permissions('media.upload')
   @ApiOperation({ summary: 'Upload one or more images to the media library' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -95,6 +95,7 @@ export class AdminMediaController {
   }
 
   @Delete(':id')
+  @Permissions('media.delete')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete a media asset from Cloudinary and the database' })
   @ApiParam({ name: 'id', description: 'Media asset id' })

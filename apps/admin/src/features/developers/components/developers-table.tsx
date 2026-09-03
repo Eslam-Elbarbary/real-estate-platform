@@ -8,12 +8,12 @@ import { DeveloperStatusBadge } from './developer-status-badge';
 
 interface DevelopersTableProps {
   items: Developer[];
-  roles: UserRole[];
+  permissions: string[];
   onEdit: (developer: Developer) => void;
 }
 
-export function DevelopersTable({ items, roles, onEdit }: DevelopersTableProps) {
-  const canUpdate = hasPermission(roles, 'developers.update');
+export function DevelopersTable({ items, permissions, onEdit }: DevelopersTableProps) {
+  const canUpdate = hasPermission(permissions, 'developers.update');
 
   const columns: DataTableColumn<Developer>[] = [
     {

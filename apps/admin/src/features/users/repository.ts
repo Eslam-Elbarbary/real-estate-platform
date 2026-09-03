@@ -5,6 +5,7 @@ import { createAdminError } from '@/lib/errors';
 import type {
   AdminUser,
   AdminUserDetails,
+  AdminUserRole,
   AdminUserSelectItem,
   UserFilters,
   UserListResult,
@@ -130,4 +131,64 @@ export async function selectUsers(
   }
 
   return response.data.data;
+}
+
+function parseUserRoleResponse(
+  response: ApiEnvelope<AdminUserRole>,
+  userMessage: string,
+): AdminUserRole {
+  if (!response.success || !response.data?.id || !response.data?.code) {
+    throw createAdminError('UNKNOWN', {
+      message: 'Invalid user role response',
+      userMessage,
+      details: response,
+    });
+  }
+
+  return {
+    ...response.data,
+    assignedAt: new Date(response.data.assignedAt).toISOString(),
+  };
+}
+
+export async function getUserRoles(userId: string): Promise<AdminUserRole[]> {
+  const response = await authenticatedApiClient.get<ApiEnvelope<AdminUserRole[]>>(
+    `${USERS_PATH}/${userId}/roles`,
+  );
+
+  if (!response.data.success || !Array.isArray(response.data.data)) {
+    throw createAdminError('UNKNOWN', {
+      message: 'Invalid user roles list response',
+      userMessage: 'تعذر تحميل أدوار المستخدم.',
+      details: response.data,
+    });
+  }
+
+  return response.data.data.map((role) => ({
+    ...role,
+    assignedAt: new Date(role.assignedAt).toISOString(),
+  }));
+}
+
+export async function assignUserRole(
+  userId: string,
+  roleCode: string,
+): Promise<AdminUserRole> {
+  const response = await authenticatedApiClient.post<ApiEnvelope<AdminUserRole>>(
+    `${USERS_PATH}/${userId}/roles`,
+    { roleCode },
+  );
+
+  return parseUserRoleResponse(response.data, 'تعذر تعيين الدور للمستخدم.');
+}
+
+export async function removeUserRole(
+  userId: string,
+  roleCode: string,
+): Promise<AdminUserRole> {
+  const response = await authenticatedApiClient.delete<ApiEnvelope<AdminUserRole>>(
+    `${USERS_PATH}/${userId}/roles/${encodeURIComponent(roleCode)}`,
+  );
+
+  return parseUserRoleResponse(response.data, 'تعذر إزالة الدور من المستخدم.');
 }

@@ -56,8 +56,8 @@ export interface PropertyFormProps {
   mode: 'create' | 'edit';
   initialData?: AdminPropertyDetails;
   catalogs: PropertyFormCatalogs;
-  roles: UserRole[];
-  onSuccess: () => void;
+  permissions: string[];
+  onSuccess: (created?: { id: string; status: string; title: string }) => void;
   formId?: string;
   disabled?: boolean;
   onLoadingChange?: (loading: boolean) => void;
@@ -158,7 +158,7 @@ export function PropertyForm({
   mode,
   initialData,
   catalogs,
-  roles,
+  permissions,
   onSuccess,
   formId = 'property-form',
   disabled = false,
@@ -166,7 +166,7 @@ export function PropertyForm({
 }: PropertyFormProps) {
   const isEdit = mode === 'edit';
   const canSubmit = hasPermission(
-    roles,
+    permissions,
     isEdit ? 'properties.update' : 'properties.create',
   );
 
@@ -365,11 +365,28 @@ export function PropertyForm({
       images: imagePayload,
     };
 
+    if (process.env.NODE_ENV === 'development') {
+      console.info('[admin:property-create:form-submit]', {
+        ownerId: createPayload.ownerId,
+        title: createPayload.title,
+        areaId: createPayload.areaId,
+        imageCount: createPayload.images?.length ?? 0,
+      });
+    }
+
     const result = await createPropertyAction(createPayload);
 
     if (result.ok) {
+      if (process.env.NODE_ENV === 'development') {
+        console.info('[admin:property-create:form-success]', {
+          id: result.data.id,
+          status: result.data.status,
+          title: result.data.title,
+        });
+      }
+
       toast.success('تم إنشاء العقار بنجاح.');
-      onSuccess();
+      onSuccess(result.data);
       setLoading(false);
       onLoadingChange?.(false);
       return;
@@ -563,7 +580,7 @@ export function PropertyForm({
         onChange={handleImagesChange}
         onPrimaryChange={setPrimaryId}
         existingImages={isEdit ? initialData?.images : undefined}
-        roles={roles}
+        permissions={permissions}
         disabled={formDisabled}
         error={fieldErrors.images}
       />
@@ -574,12 +591,6 @@ export function PropertyForm({
         onChange={(featureIds) => updateField('featureIds', featureIds)}
         disabled={formDisabled}
       />
-
-      {canSubmit ? (
-        <button type="submit" className="sr-only">
-          {isEdit ? 'حفظ' : 'إنشاء'}
-        </button>
-      ) : null}
     </form>
   );
 }

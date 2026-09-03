@@ -7,14 +7,12 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   filterNavByPermissions,
-  filterNavByRoles,
   mainNav,
   type NavItem,
 } from '@/config/navigation';
 import { routes } from '@/config/routes';
 import { logoutAction } from '@/features/auth/actions';
 import { cn } from '@/lib/utils/cn';
-import type { UserRole } from '@/types';
 
 const NAV_GROUPS = [
   {
@@ -23,7 +21,7 @@ const NAV_GROUPS = [
   },
   {
     title: 'MANAGEMENT',
-    hrefs: [routes.users.root, routes.properties.root, routes.leads.root],
+    hrefs: [routes.users.root, routes.roles.root, routes.properties.root, routes.leads.root],
   },
   {
     title: 'BUSINESS',
@@ -72,19 +70,19 @@ function getInitials(name: string): string {
 }
 
 interface TopbarProps {
-  roles: UserRole[];
+  permissions: string[];
   userName: string;
   userEmail: string;
 }
 
-export function Topbar({ roles, userName, userEmail }: TopbarProps) {
+export function Topbar({ permissions, userName, userEmail }: TopbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const navItems = filterNavByPermissions(filterNavByRoles(mainNav, roles), roles);
+  const navItems = filterNavByPermissions(mainNav, permissions);
   const groupedNav = groupNavItems(navItems);
   const pageLabel = getCurrentPageLabel(pathname, navItems);
 

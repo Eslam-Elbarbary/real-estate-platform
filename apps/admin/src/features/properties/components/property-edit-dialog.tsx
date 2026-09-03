@@ -13,7 +13,7 @@ interface PropertyEditDialogProps {
   onOpenChange: (open: boolean) => void;
   property: AdminPropertyDetails;
   catalogs: PropertyFormCatalogs;
-  roles: UserRole[];
+  permissions: string[];
   onSuccess: () => void;
 }
 
@@ -24,11 +24,11 @@ export function PropertyEditDialog({
   onOpenChange,
   property,
   catalogs,
-  roles,
+  permissions,
   onSuccess,
 }: PropertyEditDialogProps) {
   const [loading, setLoading] = useState(false);
-  const canUpdate = hasPermission(roles, 'properties.update');
+  const canUpdate = hasPermission(permissions, 'properties.update');
 
   function handleOpenChange(nextOpen: boolean) {
     if (loading) {
@@ -79,7 +79,7 @@ export function PropertyEditDialog({
           mode="edit"
           initialData={property}
           catalogs={catalogs}
-          roles={roles}
+          permissions={permissions}
           formId={FORM_ID}
           disabled={loading}
           onLoadingChange={setLoading}

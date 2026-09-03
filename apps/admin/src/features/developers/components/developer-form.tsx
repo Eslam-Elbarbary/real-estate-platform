@@ -30,7 +30,7 @@ interface DeveloperFormFieldErrors {
 export interface DeveloperFormProps {
   mode: 'create' | 'edit';
   initialData?: Developer | null;
-  roles: UserRole[];
+  permissions: string[];
   onSuccess: () => void;
   formId?: string;
   disabled?: boolean;
@@ -64,7 +64,7 @@ function developerToForm(developer: Developer): DeveloperFormState {
 export function DeveloperForm({
   mode,
   initialData,
-  roles,
+  permissions,
   onSuccess,
   formId = 'developer-form',
   disabled = false,
@@ -72,7 +72,7 @@ export function DeveloperForm({
 }: DeveloperFormProps) {
   const isEdit = mode === 'edit';
   const canSubmit = hasPermission(
-    roles,
+    permissions,
     isEdit ? 'developers.update' : 'developers.create',
   );
 
@@ -251,7 +251,7 @@ export function DeveloperForm({
             logoPublicId: logo.logoPublicId,
           }));
         }}
-        roles={roles}
+        permissions={permissions}
         disabled={formDisabled}
       />
 

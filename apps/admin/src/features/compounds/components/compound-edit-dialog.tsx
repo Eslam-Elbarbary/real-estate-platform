@@ -14,7 +14,7 @@ interface CompoundEditDialogProps {
   onOpenChange: (open: boolean) => void;
   compound: Compound;
   initialDeveloper?: Developer | null;
-  roles: UserRole[];
+  permissions: string[];
   onSuccess: () => void;
 }
 
@@ -25,11 +25,11 @@ export function CompoundEditDialog({
   onOpenChange,
   compound,
   initialDeveloper,
-  roles,
+  permissions,
   onSuccess,
 }: CompoundEditDialogProps) {
   const [loading, setLoading] = useState(false);
-  const canUpdate = hasPermission(roles, 'compounds.update');
+  const canUpdate = hasPermission(permissions, 'compounds.update');
 
   function handleOpenChange(nextOpen: boolean) {
     if (loading) {
@@ -80,7 +80,7 @@ export function CompoundEditDialog({
           mode="edit"
           initialData={compound}
           initialDeveloper={initialDeveloper}
-          roles={roles}
+          permissions={permissions}
           formId={FORM_ID}
           disabled={loading}
           onLoadingChange={setLoading}

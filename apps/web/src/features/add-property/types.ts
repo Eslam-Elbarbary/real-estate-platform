@@ -121,7 +121,7 @@ export interface ListingDescriptionDraft {
 
 export interface ListingImageDraft {
   id: string;
-  previewUrl: string;
+  url: string;
   name: string;
   size: number;
   order: number;

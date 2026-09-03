@@ -35,7 +35,8 @@ export class AdminError extends Error {
 
 const DEFAULT_USER_MESSAGES: Record<AdminErrorCode, string> = {
   UNKNOWN: 'حدث خطأ غير متوقع. حاول مرة أخرى.',
-  NETWORK: 'تعذر الاتصال بالخادم. تحقق من الشبكة ثم أعد المحاولة.',
+  NETWORK:
+    'تعذر الاتصال بالخادم. تأكد من تشغيل خدمة الـ API ثم أعد المحاولة.',
   TIMEOUT: 'انتهت مهلة الطلب. حاول مرة أخرى.',
   UNAUTHORIZED: 'يجب تسجيل الدخول للمتابعة.',
   FORBIDDEN: 'ليست لديك صلاحية لتنفيذ هذا الإجراء.',
@@ -51,8 +52,11 @@ export function getUserFacingErrorMessage(error: unknown): string {
     return error.userMessage;
   }
 
-  if (error instanceof Error && error.message.trim()) {
-    return error.message;
+  if (error instanceof Error) {
+    const message = error.message.trim();
+    if (message && message !== 'NEXT_REDIRECT' && message !== 'NEXT_NOT_FOUND') {
+      return message;
+    }
   }
 
   return DEFAULT_USER_MESSAGES.UNKNOWN;
@@ -91,14 +95,34 @@ export function mapHttpStatusToErrorCode(status: number): AdminErrorCode {
   return 'UNKNOWN';
 }
 
+function isNetworkFailure(error: Error): boolean {
+  const message = error.message.toLowerCase();
+  if (
+    message.includes('fetch failed') ||
+    message.includes('econnrefused') ||
+    message.includes('enotfound') ||
+    message.includes('network') ||
+    message.includes('socket')
+  ) {
+    return true;
+  }
+
+  const cause = (error as Error & { cause?: unknown }).cause;
+  if (cause instanceof Error) {
+    return isNetworkFailure(cause);
+  }
+
+  return false;
+}
+
 export function toAdminError(error: unknown): AdminError {
   if (error instanceof AdminError) {
     return error;
   }
 
-  if (error instanceof TypeError) {
+  if (error instanceof TypeError || (error instanceof Error && isNetworkFailure(error))) {
     return createAdminError('NETWORK', {
-      message: error.message,
+      message: error instanceof Error ? error.message : 'Network request failed',
       cause: error,
     });
   }

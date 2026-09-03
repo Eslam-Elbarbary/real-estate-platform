@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { MediaType, Prisma, PropertyStatus } from '@prisma/client';
@@ -14,6 +15,8 @@ import { AdminPropertyReviewDetailsDto } from './mapper/admin-property.mapper';
 
 @Injectable()
 export class AdminPropertyManagementService {
+  private readonly logger = new Logger(AdminPropertyManagementService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly adminPropertiesService: AdminPropertiesService,
@@ -33,6 +36,14 @@ export class AdminPropertyManagementService {
       districtId: dto.districtId ?? null,
     });
 
+    if (dto.compoundId) {
+      await this.assertActiveCompound(dto.compoundId, dto.areaId);
+    }
+
+    if (dto.referenceNumber?.trim()) {
+      await this.assertUniqueReferenceNumber(dto.referenceNumber.trim());
+    }
+
     const featureIds = [...new Set(dto.featureIds ?? [])];
     await this.assertFeatureIds(featureIds);
 
@@ -41,6 +52,12 @@ export class AdminPropertyManagementService {
       images.map((image) => image.mediaAssetId),
     );
     this.assertPrimaryImageRules(images);
+
+    if (process.env.NODE_ENV !== 'production') {
+      this.logger.debug(
+        `Creating admin property ownerId=${dto.ownerId} title="${dto.title.trim()}" areaId=${dto.areaId} images=${images.length}`,
+      );
+    }
 
     const title = dto.title.trim();
     const slug = await this.ensureUniqueSlug(slugifyTitle(title));
@@ -57,6 +74,12 @@ export class AdminPropertyManagementService {
           transactionTypeId: dto.transactionTypeId,
           price: dto.price,
           currency: dto.currency?.trim() || 'EGP',
+          referenceNumber: dto.referenceNumber?.trim() || null,
+          paymentType: dto.paymentType,
+          downPayment: dto.downPayment,
+          installmentYears: dto.installmentYears,
+          monthlyInstallment: dto.monthlyInstallment,
+          finishingType: dto.finishingType,
           furnished: dto.furnished,
           bedrooms: dto.bedrooms,
           bathrooms: dto.bathrooms,
@@ -65,6 +88,7 @@ export class AdminPropertyManagementService {
           yearBuilt: dto.yearBuilt,
           areaId: dto.areaId,
           districtId: dto.districtId ?? null,
+          compoundId: dto.compoundId ?? null,
           address: dto.address?.trim() || null,
           latitude: dto.latitude,
           longitude: dto.longitude,
@@ -105,6 +129,10 @@ export class AdminPropertyManagementService {
       return property.id;
     });
 
+    if (process.env.NODE_ENV !== 'production') {
+      this.logger.debug(`Created admin property id=${propertyId} status=DRAFT`);
+    }
+
     return this.adminPropertiesService.getPropertyDetails(propertyId);
   }
 
@@ -138,6 +166,17 @@ export class AdminPropertyManagementService {
         districtId:
           dto.districtId !== undefined ? dto.districtId : property.districtId,
       });
+    }
+
+    if (dto.compoundId) {
+      await this.assertActiveCompound(dto.compoundId, nextAreaId);
+    }
+
+    if (dto.referenceNumber !== undefined && dto.referenceNumber?.trim()) {
+      await this.assertUniqueReferenceNumber(
+        dto.referenceNumber.trim(),
+        property.id,
+      );
     }
 
     if (dto.featureIds !== undefined) {
@@ -181,6 +220,30 @@ export class AdminPropertyManagementService {
         data.currency = dto.currency.trim() || 'EGP';
       }
 
+      if (dto.referenceNumber !== undefined) {
+        data.referenceNumber = dto.referenceNumber?.trim() || null;
+      }
+
+      if (dto.paymentType !== undefined) {
+        data.paymentType = dto.paymentType;
+      }
+
+      if (dto.downPayment !== undefined) {
+        data.downPayment = dto.downPayment;
+      }
+
+      if (dto.installmentYears !== undefined) {
+        data.installmentYears = dto.installmentYears;
+      }
+
+      if (dto.monthlyInstallment !== undefined) {
+        data.monthlyInstallment = dto.monthlyInstallment;
+      }
+
+      if (dto.finishingType !== undefined) {
+        data.finishingType = dto.finishingType;
+      }
+
       if (dto.furnished !== undefined) {
         data.furnished = dto.furnished;
       }
@@ -214,6 +277,13 @@ export class AdminPropertyManagementService {
           dto.districtId === null
             ? { disconnect: true }
             : { connect: { id: dto.districtId } };
+      }
+
+      if (dto.compoundId !== undefined) {
+        data.compound =
+          dto.compoundId === null
+            ? { disconnect: true }
+            : { connect: { id: dto.compoundId } };
       }
 
       if (dto.address !== undefined) {
@@ -351,6 +421,40 @@ export class AdminPropertyManagementService {
           'District does not belong to the selected area',
         );
       }
+    }
+  }
+
+  private async assertActiveCompound(
+    compoundId: string,
+    areaId?: string | null,
+  ): Promise<void> {
+    const compound = await this.prisma.compound.findFirst({
+      where: { id: compoundId, isActive: true },
+      select: { id: true, areaId: true },
+    });
+
+    if (!compound) {
+      throw new BadRequestException('Invalid compound');
+    }
+
+    if (areaId && compound.areaId !== areaId) {
+      throw new BadRequestException(
+        'Compound does not belong to the selected area',
+      );
+    }
+  }
+
+  private async assertUniqueReferenceNumber(
+    referenceNumber: string,
+    excludeId?: string,
+  ): Promise<void> {
+    const existing = await this.prisma.property.findUnique({
+      where: { referenceNumber },
+      select: { id: true },
+    });
+
+    if (existing && existing.id !== excludeId) {
+      throw new BadRequestException('Reference number is already in use');
     }
   }
 

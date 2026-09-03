@@ -2,12 +2,15 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   Area,
   City,
+  Compound,
   Country,
   District,
   Feature,
+  FinishingType,
   MediaAsset,
   Payment,
   PaymentStatus,
+  PaymentType,
   Plan,
   Property,
   PropertyImage,
@@ -20,8 +23,8 @@ import {
 } from '@prisma/client';
 import { FeatureResponseDto, toFeatureResponse } from '../../properties/mapper/feature.mapper';
 import {
+  PublicLocationRefDto,
   PublicLocationSummaryDto,
-  PublicNamedRefDto,
   PublicTypeRefDto,
 } from '../../properties/mapper/property-public.mapper';
 import {
@@ -148,6 +151,9 @@ export class AdminPropertyReviewDetailsDto {
   @ApiPropertyOptional({ nullable: true })
   description!: string | null;
 
+  @ApiPropertyOptional({ nullable: true, example: 'REF-1001' })
+  referenceNumber!: string | null;
+
   @ApiProperty({ enum: PropertyStatus })
   status!: PropertyStatus;
 
@@ -156,6 +162,21 @@ export class AdminPropertyReviewDetailsDto {
 
   @ApiProperty()
   currency!: string;
+
+  @ApiPropertyOptional({ enum: PaymentType, nullable: true })
+  paymentType!: PaymentType | null;
+
+  @ApiPropertyOptional({ nullable: true, example: 500000 })
+  downPayment!: number | null;
+
+  @ApiPropertyOptional({ nullable: true, example: 8 })
+  installmentYears!: number | null;
+
+  @ApiPropertyOptional({ nullable: true, example: 25000 })
+  monthlyInstallment!: number | null;
+
+  @ApiPropertyOptional({ enum: FinishingType, nullable: true })
+  finishingType!: FinishingType | null;
 
   @ApiPropertyOptional({ nullable: true })
   furnished!: boolean | null;
@@ -192,6 +213,9 @@ export class AdminPropertyReviewDetailsDto {
 
   @ApiProperty({ type: PublicLocationSummaryDto })
   location!: PublicLocationSummaryDto;
+
+  @ApiPropertyOptional({ type: PublicLocationRefDto, nullable: true })
+  compound!: PublicLocationRefDto | null;
 
   @ApiProperty({ type: AdminPropertyOwnerDto })
   owner!: AdminPropertyOwnerDto;
@@ -252,6 +276,7 @@ export type AdminPropertyCardSource = Property & {
 };
 
 export type AdminPropertyDetailsSource = AdminPropertyCardSource & {
+  compound: Compound | null;
   features: Array<{ feature: Feature }>;
   images: Array<PropertyImage & { mediaAsset: MediaAsset }>;
   subscriptions: Array<Subscription & { plan: Plan }>;
@@ -265,7 +290,13 @@ export type AdminPropertyDetailsSource = AdminPropertyCardSource & {
 };
 
 function decimalToNumber(
-  value: Property['price'] | Property['areaSqm'] | Property['latitude'] | Property['longitude'],
+  value:
+    | Property['price']
+    | Property['areaSqm']
+    | Property['latitude']
+    | Property['longitude']
+    | Property['downPayment']
+    | Property['monthlyInstallment'],
 ): number | null {
   if (value == null) {
     return null;
@@ -278,8 +309,11 @@ function dateToIso(value: Date | null | undefined): string | null {
 }
 
 function toNamedRef(
-  entity: { id: string; nameEn: string; nameAr: string | null } | null | undefined,
-): PublicNamedRefDto | null {
+  entity:
+    | { id: string; nameEn: string; nameAr: string | null; slug?: string | null }
+    | null
+    | undefined,
+): PublicLocationRefDto | null {
   if (!entity) {
     return null;
   }
@@ -287,6 +321,7 @@ function toNamedRef(
     id: entity.id,
     nameEn: entity.nameEn,
     nameAr: entity.nameAr,
+    slug: entity.slug ?? null,
   };
 }
 
@@ -396,9 +431,15 @@ export function toAdminPropertyReviewDetails(
     slug: property.slug,
     title: property.title,
     description: property.description,
+    referenceNumber: property.referenceNumber,
     status: property.status,
     price: decimalToNumber(property.price),
     currency: property.currency,
+    paymentType: property.paymentType,
+    downPayment: decimalToNumber(property.downPayment),
+    installmentYears: property.installmentYears,
+    monthlyInstallment: decimalToNumber(property.monthlyInstallment),
+    finishingType: property.finishingType,
     furnished: property.furnished,
     bedrooms: property.bedrooms,
     bathrooms: property.bathrooms,
@@ -411,6 +452,7 @@ export function toAdminPropertyReviewDetails(
     propertyType: toTypeRef(property.propertyType),
     transactionType: toTypeRef(property.transactionType),
     location: toLocationSummary(property.area, property.district),
+    compound: toNamedRef(property.compound),
     owner: toOwnerDto(property.owner),
     images: property.images
       .slice()

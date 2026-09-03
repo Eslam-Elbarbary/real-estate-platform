@@ -12,7 +12,6 @@ import {
   formatTypeLabel,
 } from '../format';
 import type { AdminPropertyDetails, PublicNamedRef, PropertyFormCatalogs } from '../types';
-import type { UserRole } from '@/types';
 import { PropertyActions } from './property-actions';
 import { PropertyEditTrigger } from './property-edit-trigger';
 import { PropertyGallery } from './property-gallery';
@@ -23,7 +22,7 @@ import { PropertyStatusHistory } from './property-status-history';
 interface PropertyDetailsProps {
   property: AdminPropertyDetails;
   catalogs: PropertyFormCatalogs;
-  roles: UserRole[];
+  permissions: string[];
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
@@ -41,7 +40,7 @@ function locationPart(ref: PublicNamedRef | null): string {
   return formatTypeLabel(ref);
 }
 
-export function PropertyDetails({ property, catalogs, roles }: PropertyDetailsProps) {
+export function PropertyDetails({ property, catalogs, permissions }: PropertyDetailsProps) {
   const title = property.title ?? property.slug;
 
   return (
@@ -55,7 +54,7 @@ export function PropertyDetails({ property, catalogs, roles }: PropertyDetailsPr
             <PropertyEditTrigger
               property={property}
               catalogs={catalogs}
-              roles={roles}
+              permissions={permissions}
             />
             <Link href={routes.properties.root}>
               <Button variant="outline" size="small">
@@ -69,7 +68,7 @@ export function PropertyDetails({ property, catalogs, roles }: PropertyDetailsPr
       <PropertyActions
         propertyId={property.id}
         status={property.status}
-        roles={roles}
+        permissions={permissions}
       />
 
       <div className="grid gap-4 xl:grid-cols-3">

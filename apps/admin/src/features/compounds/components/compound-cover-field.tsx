@@ -13,7 +13,7 @@ export interface CompoundCoverValue {
 interface CompoundCoverFieldProps {
   value: CompoundCoverValue;
   onChange: (value: CompoundCoverValue) => void;
-  roles: UserRole[];
+  permissions: string[];
   disabled?: boolean;
 }
 
@@ -40,7 +40,7 @@ function toPickerAssets(value: CompoundCoverValue): MediaAsset[] {
 export function CompoundCoverField({
   value,
   onChange,
-  roles,
+  permissions,
   disabled = false,
 }: CompoundCoverFieldProps) {
   function handleChange(assets: MediaAsset[]) {
@@ -77,7 +77,7 @@ export function CompoundCoverField({
         maxItems={1}
         folder="compounds"
         disabled={disabled}
-        roles={roles}
+        permissions={permissions}
       />
     </div>
   );

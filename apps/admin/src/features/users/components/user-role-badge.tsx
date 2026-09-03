@@ -1,29 +1,30 @@
 import { Badge } from '@/components/ui/badge';
-import type { UserRole } from '@/types';
+import { formatRoleLabel } from '../format';
 
-const ROLE_CONFIG: Record<
-  UserRole,
-  { label: string; variant: 'default' | 'brand' | 'success' | 'warning' | 'danger' }
+/** Display-only fallbacks for well-known role codes. */
+const ROLE_VARIANT_FALLBACK: Record<
+  string,
+  'default' | 'brand' | 'success' | 'warning' | 'danger'
 > = {
-  USER: { label: 'مستخدم', variant: 'default' },
-  BROKER: { label: 'وسيط', variant: 'brand' },
-  DEVELOPER: { label: 'مطور', variant: 'brand' },
-  MODERATOR: { label: 'مشرف', variant: 'warning' },
-  ADMIN: { label: 'مدير', variant: 'success' },
-  SUPER_ADMIN: { label: 'مدير عام', variant: 'danger' },
+  USER: 'default',
+  BROKER: 'brand',
+  DEVELOPER: 'brand',
+  MODERATOR: 'warning',
+  ADMIN: 'success',
+  SUPER_ADMIN: 'danger',
 };
 
 interface UserRoleBadgeProps {
-  role: UserRole;
+  role: string;
 }
 
 export function UserRoleBadge({ role }: UserRoleBadgeProps) {
-  const config = ROLE_CONFIG[role];
-  return <Badge variant={config.variant}>{config.label}</Badge>;
+  const variant = ROLE_VARIANT_FALLBACK[role] ?? 'default';
+  return <Badge variant={variant}>{formatRoleLabel(role)}</Badge>;
 }
 
 interface UserRolesBadgesProps {
-  roles: UserRole[];
+  roles: string[];
 }
 
 export function UserRolesBadges({ roles }: UserRolesBadgesProps) {

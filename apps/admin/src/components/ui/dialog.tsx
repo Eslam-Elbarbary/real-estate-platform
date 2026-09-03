@@ -5,11 +5,18 @@ import {
   useEffect,
   useId,
   useRef,
+  type MouseEvent,
   type ReactNode,
 } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
+import {
+  isTopmostModalDialog,
+  registerModalDialog,
+  restoreModalDialogStack,
+  unregisterModalDialog,
+} from './dialog-stack';
 
 export interface DialogProps {
   open: boolean;
@@ -31,8 +38,16 @@ export function Dialog({
   className,
 }: DialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const suppressCloseEventRef = useRef(false);
+  const openRef = useRef(open);
   const titleId = useId();
   const descriptionId = useId();
+
+  openRef.current = open;
+
+  const requestClose = useCallback(() => {
+    onOpenChange(false);
+  }, [onOpenChange]);
 
   useEffect(() => {
     const node = dialogRef.current;
@@ -40,16 +55,110 @@ export function Dialog({
       return;
     }
 
-    if (open && !node.open) {
-      node.showModal();
-    } else if (!open && node.open) {
-      node.close();
+    const dialogNode = node;
+
+    function handleNativeClose(event: Event) {
+      if (event.target !== dialogNode) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (suppressCloseEventRef.current) {
+        restoreModalDialogStack();
+        return;
+      }
+
+      if (!openRef.current) {
+        restoreModalDialogStack();
+        return;
+      }
+
+      if (!isTopmostModalDialog(dialogNode)) {
+        restoreModalDialogStack();
+        return;
+      }
+
+      onOpenChange(false);
+      restoreModalDialogStack();
     }
+
+    function handleNativeCancel(event: Event) {
+      if (event.target !== dialogNode) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (!openRef.current) {
+        restoreModalDialogStack();
+        return;
+      }
+
+      if (!isTopmostModalDialog(dialogNode)) {
+        restoreModalDialogStack();
+        return;
+      }
+
+      onOpenChange(false);
+      restoreModalDialogStack();
+    }
+
+    dialogNode.addEventListener('close', handleNativeClose);
+    dialogNode.addEventListener('cancel', handleNativeCancel);
+
+    return () => {
+      dialogNode.removeEventListener('close', handleNativeClose);
+      dialogNode.removeEventListener('cancel', handleNativeCancel);
+    };
+  }, [onOpenChange]);
+
+  useEffect(() => {
+    const node = dialogRef.current;
+    if (!node) {
+      return;
+    }
+
+    if (open) {
+      if (!node.open) {
+        node.showModal();
+      }
+      registerModalDialog(node);
+    } else {
+      unregisterModalDialog(node);
+      if (node.open) {
+        suppressCloseEventRef.current = true;
+        node.close();
+        suppressCloseEventRef.current = false;
+      }
+    }
+
+    return () => {
+      unregisterModalDialog(node);
+    };
   }, [open]);
 
-  const handleClose = useCallback(() => {
-    onOpenChange(false);
-  }, [onOpenChange]);
+  useEffect(() => {
+    function handleAnyDialogClose() {
+      if (openRef.current) {
+        restoreModalDialogStack();
+      }
+    }
+
+    document.addEventListener('close', handleAnyDialogClose, true);
+
+    return () => {
+      document.removeEventListener('close', handleAnyDialogClose, true);
+    };
+  }, []);
+
+  function handleCloseClick(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    requestClose();
+  }
 
   return (
     <dialog
@@ -62,10 +171,8 @@ export function Dialog({
       )}
       aria-labelledby={titleId}
       aria-describedby={description ? descriptionId : undefined}
-      onClose={handleClose}
-      onCancel={(event) => {
-        event.preventDefault();
-        handleClose();
+      onClick={(event) => {
+        event.stopPropagation();
       }}
     >
       <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
@@ -84,14 +191,18 @@ export function Dialog({
           variant="ghost"
           size="small"
           aria-label="إغلاق"
-          onClick={handleClose}
+          onClick={handleCloseClick}
+          onMouseDown={(event) => event.preventDefault()}
         >
           <X className="size-4" aria-hidden />
         </Button>
       </div>
       {children ? <div className="px-4 py-4">{children}</div> : null}
       {footer ? (
-        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border px-4 py-3">
+        <div
+          className="flex flex-wrap items-center justify-end gap-2 border-t border-border px-4 py-3"
+          onClick={(event) => event.stopPropagation()}
+        >
           {footer}
         </div>
       ) : null}

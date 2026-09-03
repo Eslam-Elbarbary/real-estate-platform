@@ -40,7 +40,7 @@ export interface CompoundFormProps {
   mode: 'create' | 'edit';
   initialData?: Compound | null;
   initialDeveloper?: Developer | null;
-  roles: UserRole[];
+  permissions: string[];
   onSuccess: () => void;
   formId?: string;
   disabled?: boolean;
@@ -94,7 +94,7 @@ export function CompoundForm({
   mode,
   initialData,
   initialDeveloper,
-  roles,
+  permissions,
   onSuccess,
   formId = 'compound-form',
   disabled = false,
@@ -102,7 +102,7 @@ export function CompoundForm({
 }: CompoundFormProps) {
   const isEdit = mode === 'edit';
   const canSubmit = hasPermission(
-    roles,
+    permissions,
     isEdit ? 'compounds.update' : 'compounds.create',
   );
 
@@ -306,7 +306,7 @@ export function CompoundForm({
             coverPublicId: cover.coverPublicId,
           }));
         }}
-        roles={roles}
+        permissions={permissions}
         disabled={formDisabled}
       />
 

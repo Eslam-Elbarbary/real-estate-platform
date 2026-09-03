@@ -6,6 +6,7 @@ import { LoggerModule } from './common/logger/logger.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { PermissionsGuard } from './common/guards/permissions.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -74,6 +75,10 @@ import { HealthModule } from './modules/health/health.module';
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: PermissionsGuard,
     },
   ],
 })

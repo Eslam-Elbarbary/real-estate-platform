@@ -5,8 +5,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { MediaAsset, RoleCode } from '@prisma/client';
+import { MediaAsset } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { UserRolesService } from '../permissions/user-roles.service';
 import { ListMediaQueryDto } from './dto/list-media-query.dto';
 import {
   MEDIA_PROVIDER,
@@ -49,6 +50,7 @@ export class MediaService {
     @Inject(MEDIA_PROVIDER)
     private readonly mediaProvider: MediaProvider,
     private readonly prisma: PrismaService,
+    private readonly userRolesService: UserRolesService,
   ) {}
 
   /** Provider passthrough — used by UsersService avatar flow. Do not remove. */
@@ -148,7 +150,7 @@ export class MediaService {
     }
 
     const isOwner = asset.uploadedById === userId;
-    const isAdmin = (roles ?? []).includes(RoleCode.ADMIN);
+    const isAdmin = await this.userRolesService.hasAdminRole(userId);
 
     if (!isOwner && !isAdmin) {
       throw new ForbiddenException('You cannot delete this media asset');

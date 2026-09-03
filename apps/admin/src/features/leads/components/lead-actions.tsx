@@ -14,7 +14,7 @@ import type { LeadStatus } from '../types';
 interface LeadActionsProps {
   leadId: string;
   status: LeadStatus;
-  roles: UserRole[];
+  permissions: string[];
 }
 
 interface StatusAction {
@@ -60,12 +60,12 @@ const REJECT_ACTION: StatusAction = {
   variant: 'danger',
 };
 
-export function LeadActions({ leadId, status, roles }: LeadActionsProps) {
+export function LeadActions({ leadId, status, permissions }: LeadActionsProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [pendingAction, setPendingAction] = useState<StatusAction | null>(null);
 
-  if (!hasPermission(roles, 'leads.update_status')) {
+  if (!hasPermission(permissions, 'leads.update_status')) {
     return null;
   }
 

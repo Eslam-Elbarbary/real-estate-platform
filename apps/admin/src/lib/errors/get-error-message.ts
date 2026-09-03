@@ -12,11 +12,19 @@ const CODE_MESSAGES: Partial<Record<AdminErrorCode, string>> = {
 const FALLBACK_MESSAGE = CODE_MESSAGES.UNKNOWN!;
 
 function isMeaningfulMessage(message: string): boolean {
-  return message.trim().length > 0;
+  const trimmed = message.trim();
+  return (
+    trimmed.length > 0 &&
+    trimmed !== 'NEXT_REDIRECT' &&
+    trimmed !== 'NEXT_NOT_FOUND'
+  );
 }
 
 export function getAdminErrorMessage(error: unknown): string {
   if (error instanceof AdminError) {
+    if (error.code === 'SERVER' || error.code === 'NETWORK' || error.code === 'TIMEOUT') {
+      return error.userMessage;
+    }
     return CODE_MESSAGES[error.code] ?? error.userMessage;
   }
 

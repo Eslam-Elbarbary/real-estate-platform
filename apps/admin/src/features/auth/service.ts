@@ -2,7 +2,6 @@ import 'server-only';
 
 import { apiClient } from '@/lib/api/client';
 import { createAdminError } from '@/lib/errors';
-import type { UserRole } from '@/types';
 import {
   clearAdminSession,
   getStoredAdminSession,
@@ -31,6 +30,8 @@ interface AdminLoginResponseData {
     email: string;
     name: string | null;
     roles: string[];
+    permissions: string[];
+    isAdmin: boolean;
   };
 }
 
@@ -41,7 +42,9 @@ function mapAuthUser(user: AdminLoginResponseData['user']): AdminAuthUser {
     id: user.id,
     email: user.email,
     name: user.name?.trim() || user.email,
-    roles: user.roles as UserRole[],
+    roles: user.roles,
+    permissions: user.permissions ?? [],
+    isAdmin: user.isAdmin ?? false,
   };
 }
 

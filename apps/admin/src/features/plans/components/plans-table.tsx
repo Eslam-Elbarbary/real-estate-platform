@@ -8,12 +8,12 @@ import { PlanStatusBadge } from './plan-status-badge';
 
 interface PlansTableProps {
   items: AdminPlan[];
-  roles: UserRole[];
+  permissions: string[];
   onEdit: (plan: AdminPlan) => void;
 }
 
-export function PlansTable({ items, roles, onEdit }: PlansTableProps) {
-  const canUpdate = hasPermission(roles, 'plans.update');
+export function PlansTable({ items, permissions, onEdit }: PlansTableProps) {
+  const canUpdate = hasPermission(permissions, 'plans.update');
 
   const columns: DataTableColumn<AdminPlan>[] = [
     {

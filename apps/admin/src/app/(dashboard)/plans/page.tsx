@@ -53,11 +53,13 @@ export default async function PlansPage({
     getAdminSession(),
   ]);
   const roles = session?.user.roles ?? [];
+  const permissions = session?.user.permissions ?? [];
 
   return (
     <PlansList
       result={result}
       roles={roles}
+      permissions={permissions}
       filters={{ page, limit, search, status: statusFilter }}
     />
   );

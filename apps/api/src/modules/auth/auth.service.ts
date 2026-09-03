@@ -4,10 +4,11 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { RoleCode, VerificationTokenType } from '@prisma/client';
+import { VerificationTokenType } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { AppLoggerService } from '../../common/logger/app-logger.service';
 import { PrismaService } from '../../database/prisma.service';
+import { UserPermissionsService } from '../permissions/user-permissions.service';
 import { UsersService } from '../users/users.service';
 import { AuthTokenService } from './auth-token.service';
 import { RegisterDto } from './dto/register.dto';
@@ -31,6 +32,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly logger: AppLoggerService,
     private readonly configService: ConfigService,
+    private readonly userPermissionsService: UserPermissionsService,
   ) {
     this.logger.setContext(AuthService.name);
   }
@@ -51,7 +53,7 @@ export class AuthService {
       phone: dto.phone,
     });
 
-    await this.usersService.assignRole(user.id, RoleCode.USER);
+    await this.usersService.assignRole(user.id, 'USER');
     const verificationToken = await this.createVerificationToken(
       user.id,
       VerificationTokenType.EMAIL_VERIFICATION,
@@ -160,10 +162,16 @@ export class AuthService {
 
     const roles = await this.usersService.getRoleCodes(user.id);
     const tokens = await this.issueSession(user.id, user.email, roles, meta);
+    const permissions = await this.userPermissionsService.getPermissionCodesForUser(
+      user.id,
+    );
 
     return {
       ...tokens,
-      user: this.usersService.toPublicUser(user, roles),
+      user: {
+        ...this.usersService.toPublicUser(user, roles),
+        permissions: [...permissions].sort(),
+      },
     };
   }
 
@@ -259,7 +267,7 @@ export class AuthService {
   private async issueSession(
     userId: string,
     email: string,
-    roles: RoleCode[],
+    roles: string[],
     meta: RequestMeta,
   ) {
     const pair = this.tokenService.createTokenPair({

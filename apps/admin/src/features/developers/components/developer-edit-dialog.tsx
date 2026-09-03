@@ -12,7 +12,7 @@ interface DeveloperEditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   developer: Developer;
-  roles: UserRole[];
+  permissions: string[];
   onSuccess: () => void;
 }
 
@@ -22,11 +22,11 @@ export function DeveloperEditDialog({
   open,
   onOpenChange,
   developer,
-  roles,
+  permissions,
   onSuccess,
 }: DeveloperEditDialogProps) {
   const [loading, setLoading] = useState(false);
-  const canUpdate = hasPermission(roles, 'developers.update');
+  const canUpdate = hasPermission(permissions, 'developers.update');
 
   function handleOpenChange(nextOpen: boolean) {
     if (loading) {
@@ -76,7 +76,7 @@ export function DeveloperEditDialog({
         <DeveloperForm
           mode="edit"
           initialData={developer}
-          roles={roles}
+          permissions={permissions}
           formId={FORM_ID}
           disabled={loading}
           onLoadingChange={setLoading}

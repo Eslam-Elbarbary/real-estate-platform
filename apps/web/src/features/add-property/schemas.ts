@@ -79,12 +79,30 @@ export const descriptionStepSchema = z.object({
   }),
 });
 
+const uploadedImageUrlSchema = z
+  .string()
+  .min(1)
+  .refine(
+    (value) => {
+      if (value.startsWith('/assets/')) {
+        return true;
+      }
+      try {
+        const parsed = new URL(value);
+        return parsed.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    },
+    { message: 'رابط الصورة غير صالح' },
+  );
+
 export const mediaStepSchema = z.object({
   images: z
     .array(
       z.object({
         id: z.string(),
-        previewUrl: z.string(),
+        url: uploadedImageUrlSchema,
         name: z.string(),
         size: z.number(),
         order: z.number(),

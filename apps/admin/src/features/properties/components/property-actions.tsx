@@ -18,10 +18,10 @@ import {
 interface PropertyActionsProps {
   propertyId: string;
   status: PropertyStatus;
-  roles: UserRole[];
+  permissions: string[];
 }
 
-export function PropertyActions({ propertyId, status, roles }: PropertyActionsProps) {
+export function PropertyActions({ propertyId, status, permissions }: PropertyActionsProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
@@ -31,11 +31,11 @@ export function PropertyActions({ propertyId, status, roles }: PropertyActionsPr
   const showPendingActions = status === 'PENDING_REVIEW';
   const showArchiveAction = status === 'PUBLISHED';
   const canApprove =
-    showPendingActions && hasPermission(roles, 'properties.approve');
+    showPendingActions && hasPermission(permissions, 'properties.approve');
   const canReject =
-    showPendingActions && hasPermission(roles, 'properties.reject');
+    showPendingActions && hasPermission(permissions, 'properties.reject');
   const canArchive =
-    showArchiveAction && hasPermission(roles, 'properties.archive');
+    showArchiveAction && hasPermission(permissions, 'properties.archive');
 
   if (!canApprove && !canReject && !canArchive) {
     return null;

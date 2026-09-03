@@ -91,6 +91,8 @@ export const routes = {
       `/auth/register?returnTo=${encodeURIComponent(returnTo)}`,
     loginWithReturnTo: (returnTo: string) =>
       `/auth/login?returnTo=${encodeURIComponent(returnTo)}`,
+    forgotPassword: '/auth/forgot-password',
+    resetPassword: '/auth/reset-password',
   },
   /** @deprecated Prefer routes.auth.login */
   login: '/auth/login',

@@ -36,6 +36,12 @@ export const accountCopy = {
   logoutAllDescription:
     'سيتم تسجيل خروجك من جميع الأجهزة والجهاز الحالي.',
   logoutAllConfirm: 'تأكيد تسجيل الخروج',
+  changePasswordTitle: 'تغيير كلمة المرور',
+  currentPasswordLabel: 'كلمة المرور الحالية',
+  newPasswordLabel: 'كلمة المرور الجديدة',
+  confirmPasswordLabel: 'تأكيد كلمة المرور',
+  changePasswordSubmit: 'تغيير كلمة المرور',
+  changePasswordSuccess: 'تم تغيير كلمة المرور. سجّل الدخول مرة أخرى.',
   paymentEmptyTitle:
     'ليس لديك بطاقات ائتمان محفوظة. اضف بطاقات لسهولة الدفع',
   walletEmptyTitle: 'لا يوجد معاملات',

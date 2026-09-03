@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils/cn';
 import { luxuryCardClassName } from './luxury-styles';
 
 interface QuickActionsCardProps {
-  roles: UserRole[];
+  permissions: string[];
 }
 
 interface QuickAction {
@@ -54,9 +54,9 @@ const QUICK_ACTIONS: QuickAction[] = [
   },
 ];
 
-export function QuickActionsCard({ roles }: QuickActionsCardProps) {
+export function QuickActionsCard({ permissions }: QuickActionsCardProps) {
   const visibleActions = QUICK_ACTIONS.filter((action) =>
-    hasPermission(roles, action.permission),
+    hasPermission(permissions, action.permission),
   );
 
   if (visibleActions.length === 0) {

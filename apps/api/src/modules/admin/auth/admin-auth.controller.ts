@@ -8,7 +8,6 @@ import {
   Req,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { RoleCode } from '@prisma/client';
 import type { Request } from 'express';
 import { CurrentUser, Public, Roles } from '../../../common/decorators';
 import type { AuthUserPayload } from '../../../common/decorators/current-user.decorator';
@@ -30,7 +29,7 @@ export class AdminAuthController {
 
   @Get('me')
   @ApiBearerAuth('access-token')
-  @Roles('SUPER_ADMIN', RoleCode.ADMIN, RoleCode.MODERATOR)
+  @Roles('SUPER_ADMIN', 'ADMIN', 'MODERATOR')
   @ApiOperation({ summary: 'Get the current authenticated admin user' })
   me(@CurrentUser() user: AuthUserPayload) {
     return this.adminAuthService.me(user.sub);

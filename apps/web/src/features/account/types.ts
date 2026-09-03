@@ -1,13 +1,15 @@
-/** Account profile settings — distinct from AuthUser session identity. */
+/** Account profile from GET /users/me. */
 export interface AccountProfile {
   userId: string;
+  firstName: string | null;
+  lastName: string | null;
   name: string;
   email: string;
   phone: string;
-  phoneVerified: boolean;
+  avatarUrl?: string | null;
+  isEmailVerified: boolean;
+  roles: string[];
   displayRoleLabel: string;
-  avatarUrl?: string;
-  memberSinceLabel: string;
 }
 
 export interface AccountSecuritySettings {

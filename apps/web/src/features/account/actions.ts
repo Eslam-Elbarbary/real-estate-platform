@@ -1,11 +1,12 @@
 'use server';
 
 import { getAccountService } from './service';
+import { logoutAction } from '@/features/auth/actions';
+import { ApiRequestError } from '@/lib/api/errors';
 import {
   addContactPhoneSchema,
-  updateProfileEmailSchema,
+  changePasswordSchema,
   updateProfileNameSchema,
-  updateProfilePasswordSchema,
   updateProfilePhoneSchema,
 } from './schemas';
 import type { AccountProfile, AdvertisingContactPhone } from './types';
@@ -25,10 +26,40 @@ function fieldErrorsFromZod(
   return fieldErrors;
 }
 
+function mapAccountApiError(
+  error: unknown,
+  context: 'profile' | 'password' = 'profile',
+): ActionResult<never> {
+  if (error instanceof ApiRequestError) {
+    if (error.code === 'UNAUTHORIZED' || error.status === 401) {
+      if (context === 'password') {
+        return {
+          ok: false,
+          error: 'كلمة المرور الحالية غير صحيحة',
+          fieldErrors: { currentPassword: 'كلمة المرور الحالية غير صحيحة' },
+        };
+      }
+      return { ok: false, error: 'انتهت صلاحية الجلسة. سجّل الدخول مرة أخرى.' };
+    }
+    if (error.code === 'NETWORK') {
+      return { ok: false, error: error.userMessage };
+    }
+    return {
+      ok: false,
+      error: error.message || 'تعذر حفظ التغييرات. حاول مرة أخرى.',
+    };
+  }
+  return {
+    ok: false,
+    error: error instanceof Error ? error.message : 'تعذر حفظ التغييرات',
+  };
+}
+
 export async function updateProfileNameAction(
-  name: string,
+  firstName: string,
+  lastName: string,
 ): Promise<ActionResult<AccountProfile>> {
-  const parsed = updateProfileNameSchema.safeParse({ name });
+  const parsed = updateProfileNameSchema.safeParse({ firstName, lastName });
   if (!parsed.success) {
     return {
       ok: false,
@@ -36,43 +67,15 @@ export async function updateProfileNameAction(
       fieldErrors: fieldErrorsFromZod(parsed.error.issues),
     };
   }
-  const data = await getAccountService().updateProfile({
-    name: parsed.data.name,
-  });
-  return { ok: true, data };
-}
-
-export async function updateProfileEmailAction(
-  email: string,
-): Promise<ActionResult<AccountProfile>> {
-  const parsed = updateProfileEmailSchema.safeParse({ email });
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error: 'بيانات غير صالحة',
-      fieldErrors: fieldErrorsFromZod(parsed.error.issues),
-    };
+  try {
+    const data = await getAccountService().updateProfile({
+      firstName: parsed.data.firstName,
+      lastName: parsed.data.lastName,
+    });
+    return { ok: true, data };
+  } catch (error) {
+    return mapAccountApiError(error);
   }
-  const data = await getAccountService().updateProfile({
-    email: parsed.data.email,
-  });
-  return { ok: true, data };
-}
-
-export async function updateProfilePasswordAction(
-  password: string,
-): Promise<ActionResult<{ saved: true }>> {
-  const parsed = updateProfilePasswordSchema.safeParse({ password });
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error: 'بيانات غير صالحة',
-      fieldErrors: fieldErrorsFromZod(parsed.error.issues),
-    };
-  }
-  // Demo-only: accept password change without persistence.
-  void parsed.data.password;
-  return { ok: true, data: { saved: true } };
 }
 
 export async function updateProfilePhoneAction(
@@ -86,11 +89,40 @@ export async function updateProfilePhoneAction(
       fieldErrors: fieldErrorsFromZod(parsed.error.issues),
     };
   }
-  const data = await getAccountService().updateProfile({
-    phone: parsed.data.phone,
-    phoneVerified: true,
-  });
-  return { ok: true, data };
+  try {
+    const data = await getAccountService().updateProfile({
+      phone: parsed.data.phone,
+    });
+    return { ok: true, data };
+  } catch (error) {
+    return mapAccountApiError(error);
+  }
+}
+
+export async function changePasswordAction(input: {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}): Promise<ActionResult<{ saved: true }>> {
+  const parsed = changePasswordSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: 'بيانات غير صالحة',
+      fieldErrors: fieldErrorsFromZod(parsed.error.issues),
+    };
+  }
+
+  try {
+    await getAccountService().changePassword({
+      currentPassword: parsed.data.currentPassword,
+      newPassword: parsed.data.newPassword,
+    });
+    await logoutAction();
+    return { ok: true, data: { saved: true } };
+  } catch (error) {
+    return mapAccountApiError(error, 'password');
+  }
 }
 
 function normalizeEgyptNationalPhone(raw: string): string {

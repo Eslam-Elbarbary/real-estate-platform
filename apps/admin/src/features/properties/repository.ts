@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { logPropertyCreateInDev } from '@/lib/dev/property-create-log';
 import { authenticatedApiClient } from '@/lib/api/authenticated-request';
 import { createAdminError } from '@/lib/errors';
 import type {
@@ -165,12 +166,29 @@ function parsePropertyDetailsResponse(
 export async function createProperty(
   input: CreatePropertyInput,
 ): Promise<AdminPropertyDetails> {
+  logPropertyCreateInDev('api-request', {
+    path: PROPERTIES_PATH,
+    ownerId: input.ownerId,
+    title: input.title,
+    areaId: input.areaId,
+    imageCount: input.images?.length ?? 0,
+  });
+
   const response = await authenticatedApiClient.post<ApiEnvelope<AdminPropertyDetails>>(
     PROPERTIES_PATH,
     input,
   );
 
-  return parsePropertyDetailsResponse(response.data, 'تعذر إنشاء العقار.');
+  const created = parsePropertyDetailsResponse(response.data, 'تعذر إنشاء العقار.');
+
+  logPropertyCreateInDev('api-response', {
+    status: response.status,
+    id: created.id,
+    propertyStatus: created.status,
+    title: created.title,
+  });
+
+  return created;
 }
 
 export async function updateProperty(

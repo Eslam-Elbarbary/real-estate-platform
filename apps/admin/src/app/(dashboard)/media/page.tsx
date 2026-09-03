@@ -34,9 +34,9 @@ export default async function MediaPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const session = await getAdminSession();
-  const roles = session?.user.roles ?? [];
+  const permissions = session?.user.permissions ?? [];
 
-  if (!hasPermission(roles, 'media.view')) {
+  if (!hasPermission(permissions, 'media.view')) {
     redirect(routes.forbidden);
   }
 
@@ -51,7 +51,7 @@ export default async function MediaPage({
   return (
     <MediaLibrary
       result={result}
-      roles={roles}
+      permissions={permissions}
       filters={{ page, limit, search, folder }}
     />
   );

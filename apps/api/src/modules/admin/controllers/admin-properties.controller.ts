@@ -6,9 +6,8 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { RoleCode } from '@prisma/client';
 import { Request } from 'express';
-import { CurrentUser, Roles } from '../../../common/decorators';
+import { CurrentUser, Permissions } from '../../../common/decorators';
 import type { AuthUserPayload } from '../../../common/decorators';
 import { buildSuccessResponse } from '../../../common/interfaces/api-response.interface';
 import { AdminPropertiesService } from '../admin-properties.service';
@@ -25,7 +24,6 @@ import {
 @ApiTags('Admin')
 @ApiBearerAuth()
 @Controller('admin/properties')
-@Roles(RoleCode.ADMIN, RoleCode.MODERATOR)
 export class AdminPropertiesController {
   constructor(
     private readonly adminPropertiesService: AdminPropertiesService,
@@ -33,7 +31,7 @@ export class AdminPropertiesController {
   ) {}
 
   @Post()
-  @Roles(RoleCode.ADMIN)
+  @Permissions('properties.create')
   @ApiOperation({ summary: 'Create a property (admin management)' })
   @ApiCreatedResponse({ type: AdminPropertyReviewDetailsDto })
   createProperty(
@@ -44,6 +42,7 @@ export class AdminPropertiesController {
   }
 
   @Get()
+  @Permissions('properties.view')
   @ApiOperation({ summary: 'List properties for moderation review' })
   async listProperties(@Query() query: ListAdminPropertiesQueryDto, @Req() req: Request) {
     const result = await this.adminPropertiesService.listProperties(query);
@@ -56,13 +55,14 @@ export class AdminPropertiesController {
   }
 
   @Get(':id')
+  @Permissions('properties.view')
   @ApiOperation({ summary: 'Get property review details' })
   getPropertyDetails(@Param('id') id: string): Promise<AdminPropertyReviewDetailsDto> {
     return this.adminPropertiesService.getPropertyDetails(id);
   }
 
   @Patch(':id')
-  @Roles(RoleCode.ADMIN)
+  @Permissions('properties.update')
   @ApiOperation({ summary: 'Update a property (admin management)' })
   @ApiOkResponse({ type: AdminPropertyReviewDetailsDto })
   updateProperty(
@@ -74,6 +74,7 @@ export class AdminPropertiesController {
   }
 
   @Post(':id/approve')
+  @Permissions('properties.approve')
   @ApiOperation({ summary: 'Approve a pending review property' })
   approveProperty(
     @CurrentUser() user: AuthUserPayload,
@@ -83,6 +84,7 @@ export class AdminPropertiesController {
   }
 
   @Post(':id/reject')
+  @Permissions('properties.reject')
   @ApiOperation({ summary: 'Reject a pending review property' })
   rejectProperty(
     @CurrentUser() user: AuthUserPayload,
@@ -93,7 +95,7 @@ export class AdminPropertiesController {
   }
 
   @Post(':id/archive')
-  @Roles(RoleCode.ADMIN)
+  @Permissions('properties.archive')
   @ApiOperation({ summary: 'Archive a property (admin only)' })
   archiveProperty(@CurrentUser() user: AuthUserPayload, @Param('id') id: string) {
     return this.adminPropertiesService.archiveProperty(user.sub, id);

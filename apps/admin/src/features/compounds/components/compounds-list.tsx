@@ -21,7 +21,8 @@ interface CompoundsListProps {
   result: CompoundListResult;
   developers: Developer[];
   areaLabelsById: Map<string, string>;
-  roles: UserRole[];
+  roles: string[];
+  permissions: string[];
   filters: {
     page: number;
     limit: number;
@@ -37,6 +38,7 @@ export function CompoundsList({
   developers,
   areaLabelsById,
   roles,
+  permissions,
   filters,
 }: CompoundsListProps) {
   const router = useRouter();
@@ -44,7 +46,7 @@ export function CompoundsList({
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editingCompound, setEditingCompound] = useState<Compound | null>(null);
-  const canCreate = hasPermission(roles, 'compounds.create');
+  const canCreate = hasPermission(permissions, 'compounds.create');
 
   const developersById = useMemo(
     () => new Map(developers.map((developer) => [developer.id, developer])),
@@ -148,7 +150,7 @@ export function CompoundsList({
             items={items}
             developersById={developersById}
             areaLabelsById={areaLabelsById}
-            roles={roles}
+            permissions={permissions}
             onEdit={handleEdit}
           />
 
@@ -161,7 +163,7 @@ export function CompoundsList({
       <CompoundCreateDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
-        roles={roles}
+        permissions={permissions}
         onSuccess={() => {
           void handleSuccess();
         }}
@@ -182,7 +184,7 @@ export function CompoundsList({
               ? developersById.get(editingCompound.developerId) ?? null
               : null
           }
-          roles={roles}
+          permissions={permissions}
           onSuccess={() => {
             void handleSuccess();
           }}

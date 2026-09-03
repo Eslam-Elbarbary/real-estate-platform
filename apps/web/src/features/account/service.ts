@@ -23,8 +23,19 @@ export class AccountService {
     return this.repository.getProfile();
   }
 
-  updateProfile(patch: Partial<AccountProfile>): Promise<AccountProfile> {
+  updateProfile(patch: {
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+  }): Promise<AccountProfile> {
     return this.repository.updateProfile(patch);
+  }
+
+  changePassword(input: {
+    currentPassword: string;
+    newPassword: string;
+  }): Promise<void> {
+    return this.repository.changePassword(input);
   }
 
   getSecuritySettings(): Promise<AccountSecuritySettings> {

@@ -107,7 +107,15 @@ export async function authenticatedApiRequest<T>(
       options._retried ||
       options.skipRefresh
     ) {
-      if (error instanceof AdminError && (error.code === 'UNAUTHORIZED' || error.code === 'FORBIDDEN')) {
+      if (error instanceof AdminError && error.code === 'FORBIDDEN') {
+        handleAuthFailure(error, 'api:request', {
+          path: options.path,
+          method: options.method ?? 'GET',
+          retried: options._retried ?? false,
+        });
+      }
+
+      if (error instanceof AdminError && error.code === 'UNAUTHORIZED') {
         handleAuthFailure(error, 'api:request', {
           path: options.path,
           method: options.method ?? 'GET',
@@ -125,7 +133,18 @@ export async function authenticatedApiRequest<T>(
 
     logAdminErrorInDev('auth:refresh-retry', error, { path: options.path });
 
-    const refreshedAccessToken = await requestRefreshedAccessToken();
+    let refreshedAccessToken: string | false;
+    try {
+      refreshedAccessToken = await requestRefreshedAccessToken();
+    } catch (refreshError) {
+      rethrowIfNavigationError(refreshError);
+      logAdminErrorInDev('auth:refresh-retry', refreshError, {
+        path: options.path,
+        phase: 'refresh-request',
+      });
+      throw refreshError;
+    }
+
     if (!refreshedAccessToken) {
       logAdminErrorInDev('auth:refresh-retry', new Error('Token refresh failed after 401'), {
         path: options.path,

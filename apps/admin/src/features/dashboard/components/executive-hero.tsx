@@ -17,7 +17,8 @@ import type { AdminDashboardExecutiveSummary, AdminDashboardModeration, UserRole
 import { cn } from '@/lib/utils/cn';
 
 interface ExecutiveHeroProps {
-  roles: UserRole[];
+  roles: string[];
+  permissions: string[];
   updatedAt: string;
   moderation: AdminDashboardModeration;
   executive: AdminDashboardExecutiveSummary;
@@ -89,12 +90,13 @@ function HeroVisual() {
 
 export function ExecutiveHero({
   roles,
+  permissions,
   updatedAt,
   moderation,
   executive,
 }: ExecutiveHeroProps) {
-  const canCreateProperty = hasPermission(roles, 'properties.create');
-  const canReviewProperties = hasPermission(roles, 'properties.view');
+  const canCreateProperty = hasPermission(permissions, 'properties.create');
+  const canReviewProperties = hasPermission(permissions, 'properties.view');
 
   const metrics = [
     { icon: Home, label: 'إجمالي العقارات', value: executive.totalProperties },

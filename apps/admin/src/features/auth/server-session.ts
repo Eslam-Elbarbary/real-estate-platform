@@ -3,7 +3,9 @@ import 'server-only';
 import { headers } from 'next/headers';
 import { env } from '@/config/env';
 import { logAdminErrorInDev } from '@/lib/dev/admin-log';
+import { AdminError, toAdminError } from '@/lib/errors';
 import { refreshAccessToken } from './refresh';
+import { runWithRefreshLock } from './refresh-lock';
 import {
   clearAdminSession,
   getStoredAdminSession,
@@ -27,11 +29,7 @@ async function resolveAdminAppUrl(): Promise<string> {
   return env.adminUrl;
 }
 
-/**
- * Refreshes tokens with the backend and persists HttpOnly session cookies.
- * Safe in Route Handlers; do not call from Server Components (use the refresh route).
- */
-export async function persistRefreshedAdminSession(): Promise<string | false> {
+async function persistRefreshedAdminSessionInternal(): Promise<string | false> {
   const session = await getStoredAdminSession();
 
   if (!session?.refreshToken) {
@@ -39,7 +37,16 @@ export async function persistRefreshedAdminSession(): Promise<string | false> {
     return false;
   }
 
-  const refreshed = await refreshAccessToken(session.refreshToken);
+  let refreshed;
+  try {
+    refreshed = await refreshAccessToken(session.refreshToken);
+  } catch (error) {
+    if (error instanceof AdminError && error.code === 'NETWORK') {
+      throw error;
+    }
+    logAdminErrorInDev('auth:persist-refresh', error);
+    return false;
+  }
 
   if (!refreshed) {
     logAdminErrorInDev('auth:persist-refresh', new Error('Backend refresh rejected token'));
@@ -50,17 +57,27 @@ export async function persistRefreshedAdminSession(): Promise<string | false> {
   await saveAdminSession({
     accessToken: refreshed.accessToken,
     refreshToken: refreshed.refreshToken,
-    user: refreshed.user,
+    user: {
+      ...refreshed.user,
+      permissions: refreshed.user.permissions.length
+        ? refreshed.user.permissions
+        : session.user.permissions,
+      isAdmin: refreshed.user.isAdmin || session.user.isAdmin,
+    },
   });
 
   return refreshed.accessToken;
 }
 
 /**
- * Server-side token refresh via the Route Handler so cookie writes happen
- * in an allowed context during RSC data fetching.
+ * Refreshes tokens with the backend and persists HttpOnly session cookies.
+ * Safe in Route Handlers; do not call from Server Components (use the refresh route).
  */
-export async function requestRefreshedAccessToken(): Promise<string | false> {
+export async function persistRefreshedAdminSession(): Promise<string | false> {
+  return runWithRefreshLock(persistRefreshedAdminSessionInternal);
+}
+
+async function requestRefreshedAccessTokenInternal(): Promise<string | false> {
   const headerStore = await headers();
   const cookieHeader = headerStore.get('cookie');
 
@@ -80,7 +97,7 @@ export async function requestRefreshedAccessToken(): Promise<string | false> {
     });
   } catch (error) {
     logAdminErrorInDev('auth:refresh-route', error, { url: refreshUrl.toString() });
-    return false;
+    throw toAdminError(error);
   }
 
   if (!response.ok) {
@@ -105,4 +122,12 @@ export async function requestRefreshedAccessToken(): Promise<string | false> {
   }
 
   return body.accessToken;
+}
+
+/**
+ * Server-side token refresh via the Route Handler so cookie writes happen
+ * in an allowed context during RSC data fetching.
+ */
+export async function requestRefreshedAccessToken(): Promise<string | false> {
+  return requestRefreshedAccessTokenInternal();
 }

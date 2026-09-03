@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { ImagePlus, X } from 'lucide-react';
 import { hasPermission } from '@/features/auth/permissions';
 import { formatMediaFileName } from '@/features/media/format';
+import { getMediaImageUrl, normalizeMediaAsset } from '@/features/media/normalize';
 import type { MediaAsset } from '@/features/media/types';
 import { cn } from '@/lib/utils/cn';
 import { MediaPickerDialog } from './media-picker-dialog';
@@ -17,10 +18,10 @@ export function MediaPicker({
   maxItems,
   folder,
   disabled = false,
-  roles,
+  permissions,
 }: MediaPickerProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const canView = hasPermission(roles, 'media.view');
+  const canView = hasPermission(permissions, 'media.view');
 
   const atMaxItems =
     maxItems !== undefined && value.length >= maxItems && multiple;
@@ -30,12 +31,14 @@ export function MediaPicker({
   }
 
   function handleConfirm(images: MediaAsset[]) {
+    const normalized = images.map((asset) => normalizeMediaAsset(asset));
+
     if (!multiple) {
-      onChange(images.slice(0, 1));
+      onChange(normalized.slice(0, 1));
       return;
     }
 
-    const merged = images.reduce<MediaAsset[]>((acc, asset) => {
+    const merged = normalized.reduce<MediaAsset[]>((acc, asset) => {
       if (acc.some((item) => item.id === asset.id)) {
         return acc;
       }
@@ -54,30 +57,36 @@ export function MediaPicker({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-3">
-        {value.map((asset) => (
-          <div
-            key={asset.id}
-            className="relative size-24 overflow-hidden rounded-xl border border-border bg-white shadow-sm"
-          >
-            <Image
-              src={asset.url}
-              alt={formatMediaFileName(asset.fileName)}
-              fill
-              sizes="96px"
-              className="object-cover"
-            />
-            {!disabled ? (
-              <button
-                type="button"
-                className="absolute end-1 top-1 rounded-full bg-white/95 p-1 text-ink-700 shadow-sm transition-colors hover:bg-danger-50 hover:text-danger-600"
-                aria-label={`إزالة ${formatMediaFileName(asset.fileName)}`}
-                onClick={() => removeImage(asset.id)}
-              >
-                <X className="size-3.5" aria-hidden />
-              </button>
-            ) : null}
-          </div>
-        ))}
+        {value.map((asset) => {
+          const imageUrl = getMediaImageUrl(asset);
+          return (
+            <div
+              key={asset.id}
+              className="relative size-24 overflow-hidden rounded-xl border border-border bg-white shadow-sm"
+            >
+              {imageUrl ? (
+                <Image
+                  src={imageUrl}
+                  alt={formatMediaFileName(asset.fileName)}
+                  fill
+                  sizes="96px"
+                  className="object-cover"
+                  unoptimized
+                />
+              ) : null}
+              {!disabled ? (
+                <button
+                  type="button"
+                  className="absolute end-1 top-1 rounded-full bg-white/95 p-1 text-ink-700 shadow-sm transition-colors hover:bg-danger-50 hover:text-danger-600"
+                  aria-label={`إزالة ${formatMediaFileName(asset.fileName)}`}
+                  onClick={() => removeImage(asset.id)}
+                >
+                  <X className="size-3.5" aria-hidden />
+                </button>
+              ) : null}
+            </div>
+          );
+        })}
 
         {!disabled && !atMaxItems ? (
           <button
@@ -109,7 +118,7 @@ export function MediaPicker({
         multiple={multiple}
         maxItems={maxItems}
         folder={folder}
-        roles={roles}
+        permissions={permissions}
       />
     </div>
   );

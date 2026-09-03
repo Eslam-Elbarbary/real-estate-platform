@@ -4,16 +4,20 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { PageHeader } from '@/components/layout/page-header';
 import { routes } from '@/config/routes';
+import { hasPermission } from '@/features/auth/permissions';
+import type { AdminRole } from '@/features/roles/types';
 import { formatDate, formatUserName, formatVerified } from '../format';
-import type { AdminUserDetails } from '../types';
-import type { UserRole } from '@/types';
+import type { AdminUserDetails, AdminUserRole } from '../types';
 import { UserActions } from './user-actions';
 import { UserRolesBadges } from './user-role-badge';
+import { UserRolesPanel } from './user-roles-panel';
 import { UserStatusBadge } from './user-status-badge';
 
 interface UserDetailsProps {
   user: AdminUserDetails;
-  roles: UserRole[];
+  permissions: string[];
+  assignedRoles?: AdminUserRole[];
+  availableRoles?: AdminRole[];
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
@@ -27,8 +31,14 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function UserDetails({ user, roles }: UserDetailsProps) {
+export function UserDetails({
+  user,
+  permissions,
+  assignedRoles = [],
+  availableRoles = [],
+}: UserDetailsProps) {
   const displayName = formatUserName(user);
+  const canManageRoles = hasPermission(permissions, 'users.manage_roles');
 
   return (
     <div>
@@ -52,11 +62,11 @@ export function UserDetails({ user, roles }: UserDetailsProps) {
           userId={user.id}
           isActive={user.isActive}
           userName={displayName}
-          roles={roles}
+          permissions={permissions}
         />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="mb-4 grid gap-4 xl:grid-cols-2">
         <Card>
           <CardHeader>
             <h2 className="text-base font-semibold text-ink-900">معلومات الحساب</h2>
@@ -103,13 +113,24 @@ export function UserDetails({ user, roles }: UserDetailsProps) {
                 {formatVerified(user.isEmailVerified)}
               </Badge>
             </div>
-            <div className="flex flex-col gap-2 pt-3">
-              <span className="text-sm text-ink-500">الأدوار</span>
-              <UserRolesBadges roles={user.roles} />
-            </div>
+            {!canManageRoles ? (
+              <div className="flex flex-col gap-2 pt-3">
+                <span className="text-sm text-ink-500">الأدوار</span>
+                <UserRolesBadges roles={user.roles} />
+              </div>
+            ) : null}
           </CardContent>
         </Card>
       </div>
+
+      {canManageRoles ? (
+        <UserRolesPanel
+          userId={user.id}
+          permissions={permissions}
+          assignedRoles={assignedRoles}
+          availableRoles={availableRoles}
+        />
+      ) : null}
     </div>
   );
 }

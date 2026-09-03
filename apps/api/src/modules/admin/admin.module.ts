@@ -5,6 +5,7 @@ import { CompoundsModule } from '../compounds/compounds.module';
 import { DevelopersModule } from '../developers/developers.module';
 import { MediaModule } from '../media/media.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { PermissionsModule } from '../permissions/permissions.module';
 import { PlansModule } from '../plans/plans.module';
 
 import { AdminLeadsService } from './admin-leads.service';
@@ -34,6 +35,7 @@ import { AdminAuthModule } from './auth/admin-auth.module';
     NotificationsModule,
     AlertsModule,
     PlansModule,
+    PermissionsModule,
   ],
   controllers: [
     AdminDashboardController,
@@ -57,4 +59,3 @@ import { AdminAuthModule } from './auth/admin-auth.module';
   ],
 })
 export class AdminModule {}
-

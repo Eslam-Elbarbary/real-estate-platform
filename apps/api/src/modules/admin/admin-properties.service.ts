@@ -35,6 +35,7 @@ const PROPERTY_CARD_INCLUDE = {
 
 const PROPERTY_DETAILS_INCLUDE = {
   ...PROPERTY_CARD_INCLUDE,
+  compound: true,
   features: { include: { feature: true } },
   images: {
     include: { mediaAsset: true },

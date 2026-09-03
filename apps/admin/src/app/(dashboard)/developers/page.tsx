@@ -34,11 +34,13 @@ export default async function DevelopersPage({
     getAdminSession(),
   ]);
   const roles = session?.user.roles ?? [];
+  const permissions = session?.user.permissions ?? [];
 
   return (
     <DevelopersList
       result={result}
       roles={roles}
+      permissions={permissions}
       filters={{ page, limit, search }}
     />
   );

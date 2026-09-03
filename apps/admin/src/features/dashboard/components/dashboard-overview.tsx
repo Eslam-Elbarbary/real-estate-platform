@@ -23,7 +23,8 @@ import { RevenueChart } from './revenue-chart';
 
 interface DashboardOverviewProps {
   overview: DashboardOverview;
-  roles: UserRole[];
+  roles: string[];
+  permissions: string[];
   updatedAt?: string;
 }
 
@@ -70,7 +71,7 @@ function getRevenueTrend(revenue: AdminDashboardRevenueAnalytics): {
   return { trend: 'neutral', trendLabel: 'مستقر عن الشهر السابق' };
 }
 
-export function DashboardOverview({ overview, roles, updatedAt }: DashboardOverviewProps) {
+export function DashboardOverview({ overview, roles, permissions, updatedAt }: DashboardOverviewProps) {
   const { data, recentActivity } = overview;
   const revenueTrend = getRevenueTrend(data.revenue);
 
@@ -78,6 +79,7 @@ export function DashboardOverview({ overview, roles, updatedAt }: DashboardOverv
     <div className="space-y-6">
       <ExecutiveHero
         roles={roles}
+        permissions={permissions}
         updatedAt={updatedAt ?? new Date().toISOString()}
         moderation={data.moderation}
         executive={data.executive}

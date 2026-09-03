@@ -95,9 +95,9 @@ export function mapAuthUserToAdviceAuthor(user: AuthUser): AdviceAuthor {
   return {
     id: user.id,
     displayName: user.name,
-    roleLabel: user.displayRoleLabel,
-    avatarUrl: user.avatarUrl,
-    isVerified: user.phoneVerified,
+    roleLabel: user.roles[0],
+    avatarUrl: user.avatarUrl ?? undefined,
+    isVerified: user.isEmailVerified,
   };
 }
 

@@ -51,6 +51,14 @@ export async function getStoredAdminSession(): Promise<StoredAdminSession | null
       return null;
     }
 
+    if (!Array.isArray(user.permissions)) {
+      return null;
+    }
+
+    if (typeof user.isAdmin !== 'boolean') {
+      return null;
+    }
+
     return { accessToken, refreshToken, user };
   } catch {
     return null;

@@ -16,7 +16,8 @@ import { PlansTable } from './plans-table';
 
 interface PlansListProps {
   result: PlanListResult;
-  roles: UserRole[];
+  roles: string[];
+  permissions: string[];
   filters: {
     page: number;
     limit: number;
@@ -25,12 +26,12 @@ interface PlansListProps {
   };
 }
 
-export function PlansList({ result, roles, filters }: PlansListProps) {
+export function PlansList({ result, roles, permissions, filters }: PlansListProps) {
   const router = useRouter();
   const { items, meta } = result;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<AdminPlan | null>(null);
-  const canCreate = hasPermission(roles, 'plans.create');
+  const canCreate = hasPermission(permissions, 'plans.create');
 
   function handleAdd() {
     setEditingPlan(null);
@@ -77,7 +78,7 @@ export function PlansList({ result, roles, filters }: PlansListProps) {
           </p>
         </CardHeader>
         <CardContent className="space-y-4 p-0 pb-4">
-          <PlansTable items={items} roles={roles} onEdit={handleEdit} />
+          <PlansTable items={items} permissions={permissions} onEdit={handleEdit} />
 
           {meta.totalPages > 1 ? (
             <Pagination page={meta.page} totalPages={meta.totalPages} />
@@ -89,7 +90,7 @@ export function PlansList({ result, roles, filters }: PlansListProps) {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         plan={editingPlan}
-        roles={roles}
+        permissions={permissions}
         onSuccess={() => {
           void handleSuccess();
         }}

@@ -10,14 +10,24 @@ interface AdminShellProps {
 export async function AdminShell({ children }: AdminShellProps) {
   const session = await getAdminSession();
   const roles = session?.user.roles ?? [];
+  const permissions = session?.user.permissions ?? [];
   const userName = session?.user.name ?? 'Admin User';
   const userEmail = session?.user.email ?? '';
 
   return (
     <div className="min-h-full bg-background">
-      <Sidebar roles={roles} userName={userName} userEmail={userEmail} />
+      <Sidebar
+        roles={roles}
+        permissions={permissions}
+        userName={userName}
+        userEmail={userEmail}
+      />
       <div className="flex min-h-full flex-col transition-[padding] duration-300 lg:ps-sidebar">
-        <Topbar roles={roles} userName={userName} userEmail={userEmail} />
+        <Topbar
+          permissions={permissions}
+          userName={userName}
+          userEmail={userEmail}
+        />
         <main
           id="main-content"
           className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8"

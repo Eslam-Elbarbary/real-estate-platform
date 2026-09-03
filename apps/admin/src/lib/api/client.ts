@@ -1,9 +1,11 @@
 import { env } from '@/config/env';
+import { logAdminErrorInDev } from '@/lib/dev/admin-log';
 import {
   AdminError,
   createAdminError,
   mapHttpStatusToErrorCode,
   toAdminError,
+  type AdminErrorCode,
 } from '@/lib/errors';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -55,6 +57,26 @@ function buildUrl(path: string, query?: ApiRequestOptions['query']): string {
 
 function ensureTrailingSlash(base: string): string {
   return base.endsWith('/') ? base : `${base}/`;
+}
+
+function mapHttpErrorUserMessage(code: AdminErrorCode, message: string): string | undefined {
+  if (code === 'SERVER') {
+    if (message.includes('unable to verify the first certificate')) {
+      return 'تعذر الاتصال بخدمة رفع الصور (خطأ شهادة SSL). فعّل CLOUDINARY_TLS_INSECURE=true في API محليًا.';
+    }
+    if (message.toLowerCase().includes('cloudinary')) {
+      return 'تعذر رفع الصورة إلى Cloudinary. تحقق من إعدادات الخدمة.';
+    }
+    if (message.length > 0 && message.length <= 240) {
+      return message;
+    }
+  }
+
+  if (code === 'TIMEOUT') {
+    return 'انتهت مهلة رفع الصورة. تحقق من اتصال الشبكة وحاول مرة أخرى.';
+  }
+
+  return undefined;
 }
 
 function extractErrorMessage(body: unknown, fallback: string): string {
@@ -140,6 +162,10 @@ async function performApiRequest<T>(
 
     const parsed = await parseBody(response);
 
+    if (process.env.NODE_ENV === 'development') {
+      console.info(`[admin:api] ${method} ${path} -> ${response.status}`);
+    }
+
     if (!response.ok) {
       const code = mapHttpStatusToErrorCode(response.status);
       const message = extractErrorMessage(
@@ -149,6 +175,7 @@ async function performApiRequest<T>(
 
       throw createAdminError(code, {
         message,
+        userMessage: mapHttpErrorUserMessage(code, message),
         status: response.status,
         details: parsed,
       });
@@ -178,11 +205,20 @@ async function performApiRequest<T>(
       });
     }
 
+    logNetworkFailure(path, method, error);
     throw toAdminError(error);
   } finally {
     clearTimeout(timeoutId);
     signal?.removeEventListener('abort', onAbort);
   }
+}
+
+function logNetworkFailure(path: string, method: string, error: unknown): void {
+  if (process.env.NODE_ENV !== 'development') {
+    return;
+  }
+
+  logAdminErrorInDev('api:network', error, { path, method });
 }
 
 /**

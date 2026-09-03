@@ -7,14 +7,13 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   filterNavByPermissions,
-  filterNavByRoles,
   mainNav,
   type NavItem,
 } from '@/config/navigation';
 import { routes } from '@/config/routes';
 import { logoutAction } from '@/features/auth/actions';
+import { formatRoleLabel } from '@/features/users/format';
 import { cn } from '@/lib/utils/cn';
-import type { UserRole } from '@/types';
 
 const NAV_GROUPS = [
   {
@@ -23,7 +22,7 @@ const NAV_GROUPS = [
   },
   {
     title: 'MANAGEMENT',
-    hrefs: [routes.users.root, routes.properties.root, routes.leads.root],
+    hrefs: [routes.users.root, routes.roles.root, routes.properties.root, routes.leads.root],
   },
   {
     title: 'BUSINESS',
@@ -35,23 +34,15 @@ const NAV_GROUPS = [
   },
 ] as const;
 
-const ROLE_LABELS: Partial<Record<UserRole, string>> = {
-  SUPER_ADMIN: 'مدير عام',
-  ADMIN: 'مدير',
-  MODERATOR: 'مشرف',
-  DEVELOPER: 'مطور',
-  BROKER: 'وسيط',
-  USER: 'مستخدم',
-};
-
-const ROLE_PRIORITY: UserRole[] = [
+/** Display-only priority for picking a badge role; not used for authorization. */
+const ROLE_PRIORITY = [
   'SUPER_ADMIN',
   'ADMIN',
   'MODERATOR',
   'DEVELOPER',
   'BROKER',
   'USER',
-];
+] as const;
 
 function isActivePath(pathname: string, href: string) {
   if (href === '/') {
@@ -70,7 +61,7 @@ function groupNavItems(items: NavItem[]) {
   })).filter((group) => group.items.length > 0);
 }
 
-function getPrimaryRole(roles: UserRole[]): UserRole | null {
+function getPrimaryRole(roles: string[]): string | null {
   for (const role of ROLE_PRIORITY) {
     if (roles.includes(role)) {
       return role;
@@ -95,16 +86,17 @@ function getInitials(name: string): string {
 }
 
 interface SidebarProps {
-  roles: UserRole[];
+  roles: string[];
+  permissions: string[];
   userName: string;
   userEmail: string;
 }
 
-export function Sidebar({ roles, userName, userEmail }: SidebarProps) {
+export function Sidebar({ roles, permissions, userName, userEmail }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
-  const navItems = filterNavByPermissions(filterNavByRoles(mainNav, roles), roles);
+  const navItems = filterNavByPermissions(mainNav, permissions);
   const groupedNav = groupNavItems(navItems);
   const primaryRole = getPrimaryRole(roles);
 
@@ -195,7 +187,7 @@ export function Sidebar({ roles, userName, userEmail }: SidebarProps) {
               <p className="truncate text-sm font-medium text-white">{userName}</p>
               {primaryRole ? (
                 <span className="mt-1 inline-flex rounded-full bg-accent-500/15 px-2 py-0.5 text-[0.65rem] font-medium text-accent-500 ring-1 ring-accent-500/25">
-                  {ROLE_LABELS[primaryRole] ?? primaryRole}
+                  {formatRoleLabel(primaryRole)}
                 </span>
               ) : null}
             </div>

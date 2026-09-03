@@ -1,25 +1,21 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
-import type { UserRole } from '@/types';
-
-const ROLE_OPTIONS: Array<{ value: UserRole; label: string }> = [
-  { value: 'USER', label: 'مستخدم' },
-  { value: 'BROKER', label: 'وسيط' },
-  { value: 'DEVELOPER', label: 'مطور' },
-  { value: 'ADMIN', label: 'مدير' },
-  { value: 'MODERATOR', label: 'مشرف' },
-  { value: 'SUPER_ADMIN', label: 'مدير عام' },
-];
+import { Select, type SelectOption } from '@/components/ui/select';
 
 interface UserFiltersProps {
   search: string;
   role: string;
   status: '' | 'true' | 'false';
+  roleOptions: SelectOption[];
 }
 
-export function UserFilters({ search, role, status }: UserFiltersProps) {
+export function UserFilters({
+  search,
+  role,
+  status,
+  roleOptions,
+}: UserFiltersProps) {
   return (
     <Card className="mb-6">
       <CardContent className="pt-6">
@@ -37,7 +33,7 @@ export function UserFilters({ search, role, status }: UserFiltersProps) {
             name="role"
             label="الدور"
             placeholder="جميع الأدوار"
-            options={ROLE_OPTIONS}
+            options={roleOptions}
             defaultValue={role}
           />
           <Select

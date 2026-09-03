@@ -1,5 +1,6 @@
-import { PlanStatus, PrismaClient, RoleCode } from '@prisma/client';
+import { PlanStatus, PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { seedPermissionsAndRoleMappings } from './seeds/permissions.seed';
 
 const prisma = new PrismaClient();
 
@@ -13,16 +14,63 @@ const SUPER_ADMIN_SEED = {
   lastName: 'Admin',
 } as const;
 
-const ROLES: Array<{ code: RoleCode; name: string; description: string }> = [
-  { code: RoleCode.USER, name: 'User', description: 'Standard marketplace user' },
-  { code: RoleCode.BROKER, name: 'Broker', description: 'Licensed broker / agent' },
-  { code: RoleCode.DEVELOPER, name: 'Developer', description: 'Real estate developer account' },
-  { code: RoleCode.ADMIN, name: 'Admin', description: 'Platform administrator' },
-  { code: RoleCode.MODERATOR, name: 'Moderator', description: 'Content and listing moderator' },
+type RoleSeed = {
+  code: string;
+  name: string;
+  description: string;
+  isSystem: boolean;
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
+};
+
+const ROLES: RoleSeed[] = [
   {
-    code: RoleCode.SUPER_ADMIN,
+    code: 'USER',
+    name: 'User',
+    description: 'Standard marketplace user',
+    isSystem: true,
+    isAdmin: false,
+    isSuperAdmin: false,
+  },
+  {
+    code: 'BROKER',
+    name: 'Broker',
+    description: 'Licensed broker / agent',
+    isSystem: true,
+    isAdmin: false,
+    isSuperAdmin: false,
+  },
+  {
+    code: 'DEVELOPER',
+    name: 'Developer',
+    description: 'Real estate developer account',
+    isSystem: true,
+    isAdmin: false,
+    isSuperAdmin: false,
+  },
+  {
+    code: 'ADMIN',
+    name: 'Admin',
+    description: 'Platform administrator',
+    isSystem: true,
+    isAdmin: true,
+    isSuperAdmin: false,
+  },
+  {
+    code: 'MODERATOR',
+    name: 'Moderator',
+    description: 'Content and listing moderator',
+    isSystem: true,
+    isAdmin: true,
+    isSuperAdmin: false,
+  },
+  {
+    code: 'SUPER_ADMIN',
     name: 'Super Admin',
     description: 'Full platform administrator',
+    isSystem: true,
+    isAdmin: true,
+    isSuperAdmin: true,
   },
 ];
 
@@ -107,7 +155,13 @@ async function seedRoles() {
   for (const role of ROLES) {
     await prisma.role.upsert({
       where: { code: role.code },
-      update: { name: role.name, description: role.description },
+      update: {
+        name: role.name,
+        description: role.description,
+        isSystem: role.isSystem,
+        isAdmin: role.isAdmin,
+        isSuperAdmin: role.isSuperAdmin,
+      },
       create: role,
     });
   }
@@ -136,7 +190,7 @@ async function seedSuperAdmin() {
   });
 
   const role = await prisma.role.findUniqueOrThrow({
-    where: { code: RoleCode.SUPER_ADMIN },
+    where: { code: 'SUPER_ADMIN' },
   });
 
   await prisma.userRole.upsert({
@@ -399,6 +453,7 @@ async function seedDevelopersAndCompounds() {
 async function main() {
   console.log('Seeding reference data…');
   await seedRoles();
+  await seedPermissionsAndRoleMappings(prisma);
   await seedSuperAdmin();
   await seedTransactionTypes();
   await seedPropertyTypes();
@@ -406,7 +461,7 @@ async function main() {
   await seedPlans();
   await seedDevelopersAndCompounds();
   console.log(
-    'Seed complete (roles, super admin, transaction types, property types, features, plans, developers, compounds).',
+    'Seed complete (roles, permissions, super admin, transaction types, property types, features, plans, developers, compounds).',
   );
 }
 

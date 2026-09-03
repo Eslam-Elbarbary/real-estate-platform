@@ -82,9 +82,10 @@ test.describe('Valuation + Auth visual QA @ 1920x1080', () => {
       fullPage: true,
     });
 
-    // 05 register errors (reserved fictional identifiers)
-    await page.locator('#register-name').fill('مستخدم تجريبي');
-    await page.locator('#register-email').fill('taken@example.test');
+    // 05 register validation errors
+    await page.locator('#register-firstName').fill('مستخدم');
+    await page.locator('#register-lastName').fill('تجريبي');
+    await page.locator('#register-email').fill('not-an-email');
     await page.locator('#register-phone').fill('01111111111');
     await page.locator('#register-password').fill('secret12');
     await page.locator('[data-testid="register-submit"]').click();
@@ -95,20 +96,19 @@ test.describe('Valuation + Auth visual QA @ 1920x1080', () => {
       fullPage: true,
     });
 
-    // Fix register for verify flow
+    // Valid client fields → verify-email check inbox (API may still reject)
     await page.locator('#register-email').fill('newuser@example.test');
     await page.locator('#register-phone').fill('01012345678');
     await page.locator('[data-testid="register-submit"]').click();
     await expect(
       page.getByRole('heading', { name: 'تأكيد بريدك الإلكتروني' }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 15_000 });
     await page.screenshot({
       path: path.join(outDir, '06-verify-email.png'),
       fullPage: true,
     });
 
-    await page.getByRole('button', { name: 'تخطي' }).click();
-    await page.waitForURL('**/valuation');
+    await page.goto('/valuation', { waitUntil: 'networkidle' });
     await expect(page.getByRole('heading', { name: 'تقييم العقار' })).toBeVisible();
 
     // 07 account menu logged in

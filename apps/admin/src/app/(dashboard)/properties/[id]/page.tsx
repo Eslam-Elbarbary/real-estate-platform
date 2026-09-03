@@ -20,9 +20,9 @@ export default async function PropertyDetailsPage({
     getPropertyFormCatalogs(),
     getAdminSession(),
   ]);
-  const roles = session?.user.roles ?? [];
+  const permissions = session?.user.permissions ?? [];
 
   return (
-    <PropertyDetails property={property} catalogs={catalogs} roles={roles} />
+    <PropertyDetails property={property} catalogs={catalogs} permissions={permissions} />
   );
 }

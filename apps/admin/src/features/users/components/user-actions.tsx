@@ -7,24 +7,23 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { hasPermission } from '@/features/auth/permissions';
 import { getAdminErrorMessage } from '@/lib/errors';
 import { toast } from '@/lib/toast';
-import type { UserRole } from '@/types';
 import { updateUserStatusAction } from '../actions';
 
 interface UserActionsProps {
   userId: string;
   isActive: boolean;
   userName: string;
-  roles: UserRole[];
+  permissions: string[];
 }
 
-export function UserActions({ userId, isActive, userName, roles }: UserActionsProps) {
+export function UserActions({ userId, isActive, userName, permissions }: UserActionsProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const nextIsActive = !isActive;
 
-  if (!hasPermission(roles, 'users.update_status')) {
+  if (!hasPermission(permissions, 'users.update')) {
     return null;
   }
 

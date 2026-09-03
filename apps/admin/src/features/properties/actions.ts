@@ -1,5 +1,7 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
+import { logPropertyCreateInDev } from '@/lib/dev/property-create-log';
 import { getUserFacingErrorMessage } from '@/lib/errors';
 import {
   approveAdminProperty,
@@ -14,13 +16,46 @@ export type PropertyActionResult =
   | { ok: true }
   | { ok: false; error: string };
 
+export type CreatePropertyActionResult =
+  | { ok: true; data: { id: string; status: string; title: string } }
+  | { ok: false; error: string };
+
 export async function createPropertyAction(
   data: CreatePropertyInput,
-): Promise<PropertyActionResult> {
+): Promise<CreatePropertyActionResult> {
+  logPropertyCreateInDev('action-start', {
+    ownerId: data.ownerId,
+    title: data.title,
+    areaId: data.areaId,
+    propertyTypeId: data.propertyTypeId,
+    transactionTypeId: data.transactionTypeId,
+    imageCount: data.images?.length ?? 0,
+    featureCount: data.featureIds?.length ?? 0,
+  });
+
   try {
-    await createAdminProperty(data);
-    return { ok: true };
+    const created = await createAdminProperty(data);
+
+    logPropertyCreateInDev('action-success', {
+      id: created.id,
+      status: created.status,
+      title: created.title,
+    });
+
+    revalidatePath('/properties');
+
+    return {
+      ok: true,
+      data: {
+        id: created.id,
+        status: created.status,
+        title: created.title ?? data.title,
+      },
+    };
   } catch (error) {
+    logPropertyCreateInDev('action-failure', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return { ok: false, error: getUserFacingErrorMessage(error) };
   }
 }

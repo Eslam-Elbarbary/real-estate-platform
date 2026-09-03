@@ -6,9 +6,8 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { RoleCode } from '@prisma/client';
 import { Request } from 'express';
-import { Roles } from '../../../common/decorators';
+import { Permissions } from '../../../common/decorators';
 import { buildSuccessResponse } from '../../../common/interfaces/api-response.interface';
 import { ParseIdPipe } from '../../../common/pipes/parse-id.pipe';
 import { CreateDeveloperDto } from '../../developers/dto/create-developer.dto';
@@ -23,11 +22,11 @@ import {
 @ApiTags('Admin')
 @ApiBearerAuth()
 @Controller('admin/developers')
-@Roles(RoleCode.ADMIN)
 export class AdminDevelopersController {
   constructor(private readonly developersService: DevelopersService) {}
 
   @Get()
+  @Permissions('developers.view')
   @ApiOperation({ summary: 'List developers for admin management' })
   @ApiOkResponse({ type: AdminDeveloperDto, isArray: true })
   async listDevelopers(@Query() query: ListDevelopersQueryDto, @Req() req: Request) {
@@ -41,6 +40,7 @@ export class AdminDevelopersController {
   }
 
   @Post()
+  @Permissions('developers.create')
   @ApiOperation({ summary: 'Create a developer' })
   @ApiCreatedResponse({ type: AdminDeveloperDto })
   createDeveloper(@Body() dto: CreateDeveloperDto): Promise<AdminDeveloperDto> {
@@ -48,6 +48,7 @@ export class AdminDevelopersController {
   }
 
   @Get(':id')
+  @Permissions('developers.view')
   @ApiOperation({ summary: 'Get developer details for admin management' })
   @ApiOkResponse({ type: AdminDeveloperDetailsDto })
   getDeveloper(
@@ -57,6 +58,7 @@ export class AdminDevelopersController {
   }
 
   @Patch(':id')
+  @Permissions('developers.update')
   @ApiOperation({ summary: 'Update a developer' })
   @ApiOkResponse({ type: AdminDeveloperDto })
   updateDeveloper(

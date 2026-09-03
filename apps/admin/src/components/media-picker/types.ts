@@ -1,5 +1,4 @@
 import type { MediaAsset } from '@/features/media/types';
-import type { UserRole } from '@/types';
 
 export type { MediaAsset };
 
@@ -11,7 +10,7 @@ export interface MediaPickerProps {
   folder?: string;
   disabled?: boolean;
   /** Required for permission checks (media.view / media.upload). */
-  roles: UserRole[];
+  permissions: string[];
 }
 
 export interface MediaPickerDialogProps {
@@ -22,7 +21,7 @@ export interface MediaPickerDialogProps {
   multiple: boolean;
   maxItems?: number;
   folder?: string;
-  roles: UserRole[];
+  permissions: string[];
 }
 
 export interface MediaPickerGridProps {

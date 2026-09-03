@@ -16,7 +16,8 @@ export interface DashboardHeroSummary {
 }
 
 interface DashboardHeroProps {
-  roles: UserRole[];
+  roles: string[];
+  permissions: string[];
   summary: DashboardHeroSummary;
   updatedAt: string;
 }
@@ -87,9 +88,9 @@ function SummaryMetric({
   );
 }
 
-export function DashboardHero({ roles, summary, updatedAt }: DashboardHeroProps) {
-  const canReviewProperties = hasPermission(roles, 'properties.view');
-  const canManageLeads = hasPermission(roles, 'leads.view');
+export function DashboardHero({ roles, permissions, summary, updatedAt }: DashboardHeroProps) {
+  const canReviewProperties = hasPermission(permissions, 'properties.view');
+  const canManageLeads = hasPermission(permissions, 'leads.view');
 
   return (
     <section

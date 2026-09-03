@@ -77,8 +77,19 @@ export function listingStepCookieName(draftId: string, step: StoredStepKey): str
   return `demo_listing_${draftId}_${step}`;
 }
 
-function isLightweightPreviewUrl(url: string): boolean {
-  if (!url || url.startsWith('data:') || url.startsWith('blob:')) return false;
+function isPersistableImageUrl(url: string): boolean {
+  if (!url || url.startsWith('data:') || url.startsWith('blob:')) {
+    return false;
+  }
+
+  if (url.startsWith('https://res.cloudinary.com/')) {
+    return true;
+  }
+
+  if (url.startsWith('/assets/')) {
+    return true;
+  }
+
   return url.length < 400;
 }
 
@@ -87,8 +98,8 @@ function sanitizeMedia(media: ListingMediaDraft): ListingMediaDraft {
     videoUrl: media.videoUrl,
     images: media.images.map((img, index) => ({
       id: img.id,
-      previewUrl: isLightweightPreviewUrl(img.previewUrl)
-        ? img.previewUrl
+      url: isPersistableImageUrl(img.url)
+        ? img.url
         : DEMO_PROPERTY_IMAGES[index % DEMO_PROPERTY_IMAGES.length],
       name: img.name.slice(0, 80),
       size: img.size,

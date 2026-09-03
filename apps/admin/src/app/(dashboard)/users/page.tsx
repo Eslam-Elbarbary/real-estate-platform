@@ -4,12 +4,12 @@ import { hasPermission } from '@/features/auth/permissions';
 import { getAdminSession } from '@/features/auth/service';
 import { getStoredAdminSession } from '@/features/auth/session';
 import { UsersList } from '@/features/users/components/users-list';
-import { getAdminUsers } from '@/features/users';
+import { getAdminUsers, getAssignableAdminRoles } from '@/features/users';
+import { formatRoleLabel } from '@/features/users/format';
 import { logAdminSessionInDev } from '@/lib/dev/admin-session-log';
 import { handleAdminPageError } from '@/lib/server/handle-admin-page-error';
 import { isNextNavigationError } from '@/lib/server/is-navigation-error';
 import { createPageMetadata } from '@/lib/seo/metadata';
-import type { UserRole } from '@/types';
 
 export const metadata = createPageMetadata({
   title: 'المستخدمون',
@@ -17,13 +17,16 @@ export const metadata = createPageMetadata({
   path: '/users',
 });
 
-const VALID_ROLES: UserRole[] = [
-  'USER',
-  'BROKER',
-  'DEVELOPER',
-  'ADMIN',
-  'MODERATOR',
-  'SUPER_ADMIN',
+const ROLE_CODE_PATTERN = /^[A-Z0-9_]+$/;
+
+/** Display-only fallback options when roles catalog is unavailable. */
+const ROLE_FILTER_FALLBACK: Array<{ value: string; label: string }> = [
+  { value: 'USER', label: formatRoleLabel('USER') },
+  { value: 'BROKER', label: formatRoleLabel('BROKER') },
+  { value: 'DEVELOPER', label: formatRoleLabel('DEVELOPER') },
+  { value: 'ADMIN', label: formatRoleLabel('ADMIN') },
+  { value: 'MODERATOR', label: formatRoleLabel('MODERATOR') },
+  { value: 'SUPER_ADMIN', label: formatRoleLabel('SUPER_ADMIN') },
 ];
 
 function parsePositiveInt(
@@ -40,10 +43,10 @@ function parseString(value: string | string[] | undefined): string {
   return raw?.trim() ?? '';
 }
 
-function parseRole(value: string | string[] | undefined): UserRole | undefined {
-  const raw = parseString(value);
-  if (raw && VALID_ROLES.includes(raw as UserRole)) {
-    return raw as UserRole;
+function parseRole(value: string | string[] | undefined): string | undefined {
+  const raw = parseString(value).toUpperCase();
+  if (raw && ROLE_CODE_PATTERN.test(raw)) {
+    return raw;
   }
   return undefined;
 }
@@ -67,6 +70,7 @@ export default async function UsersPage({
   const session = await getAdminSession();
   const stored = await getStoredAdminSession();
   const roles = session?.user.roles ?? [];
+  const permissions = session?.user.permissions ?? [];
 
   logAdminSessionInDev('users:page', stored
     ? {
@@ -76,10 +80,10 @@ export default async function UsersPage({
       }
     : null, {
     roles,
-    canViewUsers: hasPermission(roles, 'users.view'),
+    canViewUsers: hasPermission(permissions, 'users.view'),
   });
 
-  if (!hasPermission(roles, 'users.view')) {
+  if (!hasPermission(permissions, 'users.view')) {
     redirect(routes.forbidden);
   }
 
@@ -94,15 +98,32 @@ export default async function UsersPage({
     statusRaw === 'true' || statusRaw === 'false' ? statusRaw : '';
 
   let result;
+  let roleOptions = ROLE_FILTER_FALLBACK;
 
   try {
-    result = await getAdminUsers({
+    const usersPromise = getAdminUsers({
       page,
       limit,
       search,
       role,
       status,
     });
+
+    if (hasPermission(permissions, 'roles.view')) {
+      const [usersResult, catalog] = await Promise.all([
+        usersPromise,
+        getAssignableAdminRoles(),
+      ]);
+      result = usersResult;
+      if (catalog.length > 0) {
+        roleOptions = catalog.map((item) => ({
+          value: item.code,
+          label: item.name,
+        }));
+      }
+    } else {
+      result = await usersPromise;
+    }
   } catch (error) {
     if (isNextNavigationError(error)) {
       throw error;
@@ -113,6 +134,7 @@ export default async function UsersPage({
   return (
     <UsersList
       result={result}
+      roleOptions={roleOptions}
       filters={{
         page,
         limit,

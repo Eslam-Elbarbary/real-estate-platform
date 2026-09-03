@@ -19,7 +19,7 @@ export default async function LeadDetailsPage({
     getAdminLeadDetails(id),
     getAdminSession(),
   ]);
-  const roles = session?.user.roles ?? [];
+  const permissions = session?.user.permissions ?? [];
 
-  return <LeadDetails lead={lead} roles={roles} />;
+  return <LeadDetails lead={lead} permissions={permissions} />;
 }

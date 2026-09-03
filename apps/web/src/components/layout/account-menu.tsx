@@ -239,7 +239,7 @@ function LoggedInPanel({
             {session.user.name}
           </h2>
           <p className="mt-1 text-xs text-ink-500">
-            {session.user.memberSinceLabel}
+            {session.user.email}
           </p>
         </div>
         <Link

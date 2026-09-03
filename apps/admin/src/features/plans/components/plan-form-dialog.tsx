@@ -25,7 +25,7 @@ interface PlanFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   plan?: AdminPlan | null;
-  roles: UserRole[];
+  permissions: string[];
   onSuccess: () => void;
 }
 
@@ -81,12 +81,12 @@ export function PlanFormDialog({
   open,
   onOpenChange,
   plan,
-  roles,
+  permissions,
   onSuccess,
 }: PlanFormDialogProps) {
   const isEdit = Boolean(plan);
   const canSubmit = hasPermission(
-    roles,
+    permissions,
     isEdit ? 'plans.update' : 'plans.create',
   );
   const [form, setForm] = useState<PlanFormState>(EMPTY_FORM);

@@ -21,7 +21,7 @@ import { MediaUploadDialog } from './media-upload-dialog';
 
 interface MediaLibraryProps {
   result: MediaListResult;
-  roles: UserRole[];
+  permissions: string[];
   filters: {
     page: number;
     limit: number;
@@ -30,12 +30,12 @@ interface MediaLibraryProps {
   };
 }
 
-export function MediaLibrary({ result, roles, filters }: MediaLibraryProps) {
+export function MediaLibrary({ result, permissions, filters }: MediaLibraryProps) {
   const router = useRouter();
   const { items, meta } = result;
 
-  const canUpload = hasPermission(roles, 'media.upload');
-  const canDelete = hasPermission(roles, 'media.delete');
+  const canUpload = hasPermission(permissions, 'media.upload');
+  const canDelete = hasPermission(permissions, 'media.delete');
 
   const [uploadOpen, setUploadOpen] = useState(false);
   const [previewAsset, setPreviewAsset] = useState<MediaAsset | null>(null);

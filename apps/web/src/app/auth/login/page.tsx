@@ -10,7 +10,11 @@ export const metadata = createPageMetadata({
 });
 
 interface LoginPageProps {
-  searchParams: Promise<{ returnTo?: string }>;
+  searchParams: Promise<{
+    returnTo?: string;
+    passwordChanged?: string;
+    passwordReset?: string;
+  }>;
 }
 
 function safeReturnTo(value: string | undefined): string {
@@ -22,5 +26,11 @@ function safeReturnTo(value: string | undefined): string {
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
-  return <LoginForm returnTo={safeReturnTo(params.returnTo)} />;
+  return (
+    <LoginForm
+      returnTo={safeReturnTo(params.returnTo)}
+      passwordChanged={params.passwordChanged === '1'}
+      passwordReset={params.passwordReset === '1'}
+    />
+  );
 }

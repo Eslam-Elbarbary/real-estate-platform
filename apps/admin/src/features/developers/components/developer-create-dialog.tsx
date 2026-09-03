@@ -10,7 +10,7 @@ import { DeveloperForm } from './developer-form';
 interface DeveloperCreateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  roles: UserRole[];
+  permissions: string[];
   onSuccess: () => void;
 }
 
@@ -19,11 +19,11 @@ const FORM_ID = 'developer-create-form';
 export function DeveloperCreateDialog({
   open,
   onOpenChange,
-  roles,
+  permissions,
   onSuccess,
 }: DeveloperCreateDialogProps) {
   const [loading, setLoading] = useState(false);
-  const canCreate = hasPermission(roles, 'developers.create');
+  const canCreate = hasPermission(permissions, 'developers.create');
 
   function handleOpenChange(nextOpen: boolean) {
     if (loading) {
@@ -72,7 +72,7 @@ export function DeveloperCreateDialog({
       {open ? (
         <DeveloperForm
           mode="create"
-          roles={roles}
+          permissions={permissions}
           formId={FORM_ID}
           disabled={loading}
           onLoadingChange={setLoading}

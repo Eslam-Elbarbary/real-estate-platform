@@ -6,9 +6,8 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { RoleCode } from '@prisma/client';
 import { Request } from 'express';
-import { Roles } from '../../../common/decorators';
+import { Permissions } from '../../../common/decorators';
 import { buildSuccessResponse } from '../../../common/interfaces/api-response.interface';
 import { ParseIdPipe } from '../../../common/pipes/parse-id.pipe';
 import { CompoundsService } from '../../compounds/compounds.service';
@@ -23,11 +22,11 @@ import {
 @ApiTags('Admin')
 @ApiBearerAuth()
 @Controller('admin/compounds')
-@Roles(RoleCode.ADMIN)
 export class AdminCompoundsController {
   constructor(private readonly compoundsService: CompoundsService) {}
 
   @Get()
+  @Permissions('compounds.view')
   @ApiOperation({ summary: 'List compounds for admin management' })
   @ApiOkResponse({ type: AdminCompoundDto, isArray: true })
   async listCompounds(@Query() query: ListAdminCompoundsQueryDto, @Req() req: Request) {
@@ -41,6 +40,7 @@ export class AdminCompoundsController {
   }
 
   @Post()
+  @Permissions('compounds.create')
   @ApiOperation({ summary: 'Create a compound' })
   @ApiCreatedResponse({ type: AdminCompoundDto })
   createCompound(@Body() dto: CreateCompoundDto): Promise<AdminCompoundDto> {
@@ -48,6 +48,7 @@ export class AdminCompoundsController {
   }
 
   @Get(':id')
+  @Permissions('compounds.view')
   @ApiOperation({ summary: 'Get compound details for admin management' })
   @ApiOkResponse({ type: AdminCompoundDetailsDto })
   getCompound(
@@ -57,6 +58,7 @@ export class AdminCompoundsController {
   }
 
   @Patch(':id')
+  @Permissions('compounds.update')
   @ApiOperation({ summary: 'Update a compound' })
   @ApiOkResponse({ type: AdminCompoundDto })
   updateCompound(

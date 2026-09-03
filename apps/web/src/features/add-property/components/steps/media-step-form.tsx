@@ -3,71 +3,130 @@
 import { useState, useTransition, type FormEvent } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ImagePlus, X } from 'lucide-react';
+import { ImagePlus, Loader2, X } from 'lucide-react';
 import { getButtonClassName } from '@/components/ui/button';
+import { uploadPropertyImageAction } from '@/features/media/actions';
 import { saveMediaStepAction } from '../../actions';
 import { DEMO_PROPERTY_IMAGES, listingCopy } from '../../config';
 import type { ListingDraft, ListingImageDraft } from '../../types';
 
-const MAX_BYTES = 30 * 1024 * 1024;
+const MAX_BYTES = 5 * 1024 * 1024;
 const ACCEPT = 'image/jpeg,image/png,image/webp';
 
 interface MediaStepFormProps {
   draft: ListingDraft;
 }
 
+type LocalImageEntry = ListingImageDraft & {
+  uploadStatus: 'uploaded' | 'uploading' | 'failed';
+};
+
+function toLocalEntry(image: ListingImageDraft): LocalImageEntry {
+  return { ...image, uploadStatus: 'uploaded' };
+}
+
 export function MediaStepForm({ draft }: MediaStepFormProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [images, setImages] = useState<ListingImageDraft[]>(draft.media.images);
+  const [images, setImages] = useState<LocalImageEntry[]>(
+    draft.media.images.map(toLocalEntry),
+  );
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>(() => {
     const map: Record<string, string> = {};
     for (const img of draft.media.images) {
-      map[img.id] = img.previewUrl;
+      map[img.id] = img.url;
     }
     return map;
   });
   const [videoUrl, setVideoUrl] = useState(draft.media.videoUrl ?? '');
 
-  function onFilesSelected(fileList: FileList | null) {
-    if (!fileList?.length) return;
-    setError(null);
-    const next = [...images];
-    const nextPreviews = { ...previewUrls };
+  const uploadingCount = images.filter((img) => img.uploadStatus === 'uploading').length;
 
-    Array.from(fileList).forEach((file) => {
-      if (!ACCEPT.split(',').includes(file.type)) {
-        setError('يُسمح فقط بصور JPEG أو PNG أو WebP');
-        return;
-      }
-      if (file.size > MAX_BYTES) {
-        setError(listingCopy.maxSize);
-        return;
-      }
-      const order = next.length;
-      const id = `img-${Date.now()}-${order}`;
-      const demoPath =
-        DEMO_PROPERTY_IMAGES[order % DEMO_PROPERTY_IMAGES.length];
-      const objectUrl = URL.createObjectURL(file);
-      nextPreviews[id] = objectUrl;
-      next.push({
-        id,
-        previewUrl: demoPath,
+  async function uploadFile(file: File, order: number, isCover: boolean) {
+    const tempId = `img-${Date.now()}-${order}`;
+    const objectUrl = URL.createObjectURL(file);
+
+    setPreviewUrls((prev) => ({ ...prev, [tempId]: objectUrl }));
+    setImages((prev) => [
+      ...prev,
+      {
+        id: tempId,
+        url: '',
         name: file.name,
         size: file.size,
         order,
-        isCover: order === 0,
-      });
-    });
+        isCover,
+        uploadStatus: 'uploading',
+      },
+    ]);
 
-    setImages(next);
-    setPreviewUrls(nextPreviews);
+    const formData = new FormData();
+    formData.append('file', file);
+    const result = await uploadPropertyImageAction(formData);
+
+    if (!result.ok) {
+      URL.revokeObjectURL(objectUrl);
+      setPreviewUrls((prev) => {
+        const copy = { ...prev };
+        delete copy[tempId];
+        return copy;
+      });
+      setImages((prev) => prev.filter((img) => img.id !== tempId));
+      setError(result.error);
+      return;
+    }
+
+    URL.revokeObjectURL(objectUrl);
+    setPreviewUrls((prev) => ({ ...prev, [tempId]: result.data.url }));
+    setImages((prev) =>
+      prev.map((img) =>
+        img.id === tempId
+          ? {
+              id: result.data.id,
+              url: result.data.url,
+              name: result.data.name,
+              size: result.data.size,
+              order: img.order,
+              isCover: img.isCover,
+              uploadStatus: 'uploaded',
+            }
+          : img,
+      ),
+    );
+  }
+
+  function onFilesSelected(fileList: FileList | null) {
+    if (!fileList?.length) return;
+    setError(null);
+
+    const files = Array.from(fileList);
+    const startOrder = images.filter((img) => img.uploadStatus !== 'failed').length;
+    const shouldSetCover = startOrder === 0;
+
+    void (async () => {
+      for (let index = 0; index < files.length; index += 1) {
+        const file = files[index]!;
+        if (!ACCEPT.split(',').includes(file.type)) {
+          setError('يُسمح فقط بصور JPEG أو PNG أو WebP');
+          return;
+        }
+        if (file.size > MAX_BYTES) {
+          setError('حجم الملف كبير جدًا. الحد الأقصى 5 ميجابايت.');
+          return;
+        }
+
+        await uploadFile(file, startOrder + index, shouldSetCover && index === 0);
+      }
+    })();
   }
 
   function removeImage(id: string) {
     const url = previewUrls[id];
-    if (url?.startsWith('blob:')) URL.revokeObjectURL(url);
+    if (url?.startsWith('blob:')) {
+      URL.revokeObjectURL(url);
+    }
+
     const filtered = images
       .filter((img) => img.id !== id)
       .map((img, index) => ({
@@ -75,6 +134,7 @@ export function MediaStepForm({ draft }: MediaStepFormProps) {
         order: index,
         isCover: index === 0,
       }));
+
     setImages(filtered);
     setPreviewUrls((prev) => {
       const copy = { ...prev };
@@ -86,13 +146,24 @@ export function MediaStepForm({ draft }: MediaStepFormProps) {
   function onSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
-    if (images.length < 1) {
+
+    const uploadedImages = images
+      .filter((img) => img.uploadStatus === 'uploaded' && img.url)
+      .map(({ uploadStatus: _status, ...img }) => img);
+
+    if (uploadingCount > 0) {
+      setError('انتظر حتى اكتمال رفع الصور.');
+      return;
+    }
+
+    if (uploadedImages.length < 1) {
       setError('أضف صورة واحدةًا على الأقل');
       return;
     }
+
     startTransition(async () => {
       const result = await saveMediaStepAction(draft.id, {
-        images,
+        images: uploadedImages,
         videoUrl,
       });
       if (!result.ok) {
@@ -115,18 +186,26 @@ export function MediaStepForm({ draft }: MediaStepFormProps) {
           <span className="text-sm font-bold text-ink-800">
             {listingCopy.addPhotos}
           </span>
-          <span className="text-xs text-ink-500">{listingCopy.maxSize}</span>
+          <span className="text-xs text-ink-500">الحد الأقصى 5 ميجابايت لكل صورة</span>
           <input
             type="file"
             accept={ACCEPT}
             multiple
             className="sr-only"
+            disabled={pending || uploadingCount > 0}
             onChange={(e) => {
               onFilesSelected(e.target.files);
               e.target.value = '';
             }}
           />
         </label>
+
+        {uploadingCount > 0 ? (
+          <p className="mt-2 flex items-center gap-2 text-sm text-ink-600">
+            <Loader2 className="size-4 animate-spin" aria-hidden />
+            جاري رفع {uploadingCount} {uploadingCount === 1 ? 'صورة' : 'صور'}...
+          </p>
+        ) : null}
 
         {images.length > 0 ? (
           <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -136,16 +215,27 @@ export function MediaStepForm({ draft }: MediaStepFormProps) {
                 className="relative overflow-hidden rounded-lg border border-[#e5e5e5]"
               >
                 <div className="relative aspect-[4/3]">
-                  <Image
-                    src={previewUrls[img.id] ?? img.previewUrl}
-                    alt=""
-                    fill
-                    unoptimized={Boolean(previewUrls[img.id]?.startsWith('blob:'))}
-                    className="object-cover"
-                    sizes="200px"
-                  />
+                  {previewUrls[img.id] ? (
+                    <Image
+                      src={previewUrls[img.id]}
+                      alt=""
+                      fill
+                      unoptimized={previewUrls[img.id]?.startsWith('blob:')}
+                      className="object-cover"
+                      sizes="200px"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center bg-surface-100">
+                      <Loader2 className="size-6 animate-spin text-brand-600" aria-hidden />
+                    </div>
+                  )}
                 </div>
-                {img.isCover ? (
+                {img.uploadStatus === 'uploading' ? (
+                  <span className="absolute inset-x-2 bottom-2 rounded bg-ink-900/80 px-2 py-0.5 text-center text-[10px] font-bold text-white">
+                    جاري الرفع...
+                  </span>
+                ) : null}
+                {img.isCover && img.uploadStatus === 'uploaded' ? (
                   <span className="absolute start-2 top-2 rounded bg-ink-900/80 px-2 py-0.5 text-[10px] font-bold text-white">
                     غلاف
                   </span>
@@ -153,7 +243,8 @@ export function MediaStepForm({ draft }: MediaStepFormProps) {
                 <button
                   type="button"
                   onClick={() => removeImage(img.id)}
-                  className="absolute end-2 top-2 inline-flex size-7 items-center justify-center rounded-full bg-white/90 text-ink-700 shadow"
+                  disabled={img.uploadStatus === 'uploading'}
+                  className="absolute end-2 top-2 inline-flex size-7 items-center justify-center rounded-full bg-white/90 text-ink-700 shadow disabled:opacity-50"
                   aria-label="حذف الصورة"
                 >
                   <X size={14} />
@@ -172,11 +263,12 @@ export function MediaStepForm({ draft }: MediaStepFormProps) {
               setImages([
                 {
                   id,
-                  previewUrl: demoPath,
+                  url: demoPath,
                   name: 'demo-cover.webp',
                   size: 120_000,
                   order: 0,
                   isCover: true,
+                  uploadStatus: 'uploaded',
                 },
               ]);
               setPreviewUrls({ [id]: demoPath });
@@ -213,7 +305,7 @@ export function MediaStepForm({ draft }: MediaStepFormProps) {
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || uploadingCount > 0}
         className={getButtonClassName({
           className: 'h-12 min-w-[140px] rounded-lg px-8 text-base font-extrabold',
         })}

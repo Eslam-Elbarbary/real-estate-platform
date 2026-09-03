@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { RoleCode, User } from '@prisma/client';
+import { User } from '@prisma/client';
 
 export class AdminUserListItemDto {
   @ApiProperty()
@@ -23,8 +23,8 @@ export class AdminUserListItemDto {
   @ApiProperty()
   isActive!: boolean;
 
-  @ApiProperty({ enum: RoleCode, isArray: true })
-  roles!: RoleCode[];
+  @ApiProperty({ type: [String], example: ['USER', 'ADMIN'] })
+  roles!: string[];
 
   @ApiProperty()
   createdAt!: string;
@@ -62,7 +62,7 @@ export type SafeUserWithRoles = Pick<
   | 'createdAt'
   | 'updatedAt'
 > & {
-  roles: Array<{ role: { code: RoleCode } }>;
+  roles: Array<{ role: { code: string } }>;
 };
 
 function toDisplayName(user: Pick<User, 'firstName' | 'lastName'>): string | null {

@@ -1,6 +1,6 @@
 import { apiClient } from '@/lib/api/client';
 import { logAdminErrorInDev } from '@/lib/dev/admin-log';
-import type { UserRole } from '@/types';
+import { AdminError } from '@/lib/errors';
 import type { AdminAuthUser } from './types';
 
 interface ApiEnvelope<T> {
@@ -17,6 +17,7 @@ interface RefreshResponseData {
     email: string;
     name: string | null;
     roles: string[];
+    permissions: string[];
   };
 }
 
@@ -33,7 +34,9 @@ function mapAuthUser(user: RefreshResponseData['user']): AdminAuthUser {
     id: user.id,
     email: user.email,
     name: user.name?.trim() || user.email,
-    roles: user.roles as UserRole[],
+    roles: user.roles,
+    permissions: user.permissions ?? [],
+    isAdmin: false,
   };
 }
 
@@ -42,7 +45,8 @@ function isValidRefreshData(data: RefreshResponseData | undefined): data is Refr
     data?.accessToken &&
       data.refreshToken &&
       data.user?.id &&
-      data.user.email,
+      data.user.email &&
+      Array.isArray(data.user.permissions),
   );
 }
 
@@ -76,6 +80,9 @@ export async function refreshAccessToken(
       user: mapAuthUser(payload.data.user),
     };
   } catch (error) {
+    if (error instanceof AdminError && (error.code === 'NETWORK' || error.code === 'TIMEOUT')) {
+      throw error;
+    }
     logAdminErrorInDev('auth:refresh-api', error);
     return null;
   }

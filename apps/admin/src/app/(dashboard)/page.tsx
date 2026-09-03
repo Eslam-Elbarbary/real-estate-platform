@@ -19,6 +19,7 @@ export default async function AdminHomePage() {
     <DashboardOverview
       overview={overview}
       roles={session?.user.roles ?? []}
+      permissions={session?.user.permissions ?? []}
     />
   );
 }

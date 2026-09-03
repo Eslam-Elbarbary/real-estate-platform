@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { hasPermission } from '@/features/auth/permissions';
@@ -12,8 +13,8 @@ interface PropertyCreateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   catalogs: PropertyFormCatalogs;
-  roles: UserRole[];
-  onSuccess: () => void;
+  permissions: string[];
+  onSuccess: (created: { id: string; status: string; title: string }) => void;
 }
 
 const FORM_ID = 'property-create-form';
@@ -22,11 +23,16 @@ export function PropertyCreateDialog({
   open,
   onOpenChange,
   catalogs,
-  roles,
+  permissions,
   onSuccess,
 }: PropertyCreateDialogProps) {
   const [loading, setLoading] = useState(false);
-  const canCreate = hasPermission(roles, 'properties.create');
+  const [mounted, setMounted] = useState(false);
+  const canCreate = hasPermission(permissions, 'properties.create');
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   function handleOpenChange(nextOpen: boolean) {
     if (loading) {
@@ -35,12 +41,12 @@ export function PropertyCreateDialog({
     onOpenChange(nextOpen);
   }
 
-  function handleSuccess() {
+  function handleSuccess(created: { id: string; status: string; title: string }) {
     onOpenChange(false);
-    onSuccess();
+    onSuccess(created);
   }
 
-  return (
+  const dialogTree = (
     <Dialog
       open={open}
       onOpenChange={handleOpenChange}
@@ -54,7 +60,11 @@ export function PropertyCreateDialog({
             variant="outline"
             size="small"
             disabled={loading}
-            onClick={() => handleOpenChange(false)}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              handleOpenChange(false);
+            }}
           >
             إلغاء
           </Button>
@@ -76,13 +86,23 @@ export function PropertyCreateDialog({
         <PropertyForm
           mode="create"
           catalogs={catalogs}
-          roles={roles}
+          permissions={permissions}
           formId={FORM_ID}
           disabled={loading}
           onLoadingChange={setLoading}
-          onSuccess={handleSuccess}
+          onSuccess={(created) => {
+            if (created) {
+              handleSuccess(created);
+            }
+          }}
         />
       ) : null}
     </Dialog>
   );
+
+  if (!mounted) {
+    return null;
+  }
+
+  return createPortal(dialogTree, document.body);
 }

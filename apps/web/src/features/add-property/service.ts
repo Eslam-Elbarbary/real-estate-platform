@@ -142,7 +142,7 @@ export class ListingDraftService {
       id: draft.id,
       slug: `listing-${draft.id.toLowerCase()}`,
       title: draft.description.ar.title || getPropertyTypeLabel(draft.propertyType!),
-      image: cover?.previewUrl,
+      image: cover?.url,
       transaction: draft.transaction ?? 'sale',
       propertyType: draft.propertyType!,
       locationLabel: draft.locationLabel ?? '',

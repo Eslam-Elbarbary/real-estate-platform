@@ -13,7 +13,7 @@ export interface DeveloperLogoValue {
 interface DeveloperLogoFieldProps {
   value: DeveloperLogoValue;
   onChange: (value: DeveloperLogoValue) => void;
-  roles: UserRole[];
+  permissions: string[];
   disabled?: boolean;
 }
 
@@ -40,7 +40,7 @@ function toPickerAssets(value: DeveloperLogoValue): MediaAsset[] {
 export function DeveloperLogoField({
   value,
   onChange,
-  roles,
+  permissions,
   disabled = false,
 }: DeveloperLogoFieldProps) {
   function handleChange(assets: MediaAsset[]) {
@@ -77,7 +77,7 @@ export function DeveloperLogoField({
         maxItems={1}
         folder="developers"
         disabled={disabled}
-        roles={roles}
+        permissions={permissions}
       />
     </div>
   );

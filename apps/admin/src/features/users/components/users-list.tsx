@@ -2,12 +2,14 @@ import { Pagination } from '@/components/data';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { PageHeader } from '@/components/layout/page-header';
+import type { SelectOption } from '@/components/ui/select';
 import type { UserListResult } from '../types';
 import { UserFilters } from './user-filters';
 import { UsersTable } from './users-table';
 
 interface UsersListProps {
   result: UserListResult;
+  roleOptions: SelectOption[];
   filters: {
     page: number;
     limit: number;
@@ -17,7 +19,7 @@ interface UsersListProps {
   };
 }
 
-export function UsersList({ result, filters }: UsersListProps) {
+export function UsersList({ result, filters, roleOptions }: UsersListProps) {
   const { items, meta } = result;
 
   return (
@@ -36,6 +38,7 @@ export function UsersList({ result, filters }: UsersListProps) {
         search={filters.search}
         role={filters.role}
         status={filters.status}
+        roleOptions={roleOptions}
       />
 
       <Card>

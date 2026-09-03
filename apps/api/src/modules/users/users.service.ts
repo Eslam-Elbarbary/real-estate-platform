@@ -4,10 +4,11 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { RoleCode, User } from '@prisma/client';
+import { User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../database/prisma.service';
 import { MediaService } from '../media/media.service';
+import { UserRolesService } from '../permissions/user-roles.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
@@ -26,7 +27,7 @@ export type ProfileResponse = {
   email: string;
   phone: string | null;
   avatarUrl: string | null;
-  roles: RoleCode[];
+  roles: string[];
   isEmailVerified: boolean;
 };
 
@@ -44,6 +45,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mediaService: MediaService,
+    private readonly userRolesService: UserRolesService,
   ) {}
 
   async create(data: CreateUserData): Promise<User> {
@@ -80,28 +82,25 @@ export class UsersService {
     return this.findByIdOrThrow(id);
   }
 
-  async getRoleCodes(userId: string): Promise<RoleCode[]> {
-    const rows = await this.prisma.userRole.findMany({
-      where: { userId },
-      include: { role: { select: { code: true } } },
-    });
-    return rows.map((row) => row.role.code);
+  /** @deprecated Prefer UserRolesService.getUserRoleCodes */
+  async getRoleCodes(userId: string): Promise<string[]> {
+    return this.userRolesService.getUserRoleCodes(userId);
   }
 
-  async assignRole(userId: string, roleCode: RoleCode): Promise<void> {
-    const role = await this.prisma.role.findUnique({ where: { code: roleCode } });
-    if (!role) {
+  async assignRole(userId: string, roleCode: string): Promise<void> {
+    const roleId = await this.userRolesService.findRoleIdByCode(roleCode);
+    if (!roleId) {
       throw new NotFoundException(`Role ${roleCode} is not configured`);
     }
 
     await this.prisma.userRole.upsert({
       where: {
-        userId_roleId: { userId, roleId: role.id },
+        userId_roleId: { userId, roleId },
       },
       update: {},
       create: {
         userId,
-        roleId: role.id,
+        roleId,
       },
     });
   }
@@ -236,7 +235,7 @@ export class UsersService {
     return { message: 'Password changed successfully. Please sign in again.' };
   }
 
-  toPublicUser(user: User, roles: RoleCode[] = []) {
+  toPublicUser(user: User, roles: string[] = []) {
     const name = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
 
     return {
@@ -254,7 +253,7 @@ export class UsersService {
     };
   }
 
-  toProfile(user: User, roles: RoleCode[]): ProfileResponse {
+  toProfile(user: User, roles: string[]): ProfileResponse {
     return {
       id: user.id,
       firstName: user.firstName,

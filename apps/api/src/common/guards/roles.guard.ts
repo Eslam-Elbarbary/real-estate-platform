@@ -6,29 +6,25 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { RoleCode } from '@prisma/client';
 
 export const ROLES_KEY = 'roles';
 
 /**
- * Admin role inheritance: higher roles satisfy lower admin/moderator requirements.
+ * Legacy admin role inheritance for @Roles() routes.
+ * Higher roles satisfy lower admin/moderator requirements.
  * USER, BROKER, and DEVELOPER use exact matching only.
  */
-const ROLE_HIERARCHY: Partial<Record<RoleCode, readonly RoleCode[]>> = {
-  [RoleCode.SUPER_ADMIN]: [
-    RoleCode.SUPER_ADMIN,
-    RoleCode.ADMIN,
-    RoleCode.MODERATOR,
-  ],
-  [RoleCode.ADMIN]: [RoleCode.ADMIN, RoleCode.MODERATOR],
-  [RoleCode.MODERATOR]: [RoleCode.MODERATOR],
+const ROLE_HIERARCHY: Partial<Record<string, readonly string[]>> = {
+  SUPER_ADMIN: ['SUPER_ADMIN', 'ADMIN', 'MODERATOR'],
+  ADMIN: ['ADMIN', 'MODERATOR'],
+  MODERATOR: ['MODERATOR'],
 };
 
 function expandUserRoles(userRoles: string[]): Set<string> {
   const expanded = new Set<string>();
 
   for (const role of userRoles) {
-    const inherited = ROLE_HIERARCHY[role as RoleCode];
+    const inherited = ROLE_HIERARCHY[role];
     if (inherited) {
       for (const inheritedRole of inherited) {
         expanded.add(inheritedRole);

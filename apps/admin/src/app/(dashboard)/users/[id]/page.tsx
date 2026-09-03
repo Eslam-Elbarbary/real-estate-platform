@@ -1,7 +1,14 @@
 import { UserDetails } from '@/features/users/components/user-details';
-import { getAdminUserDetails } from '@/features/users';
+import {
+  getAdminUserDetails,
+  getAdminUserRoles,
+  getAssignableAdminRoles,
+} from '@/features/users';
+import { hasPermission } from '@/features/auth/permissions';
 import { getAdminSession } from '@/features/auth/service';
+import type { AdminRole } from '@/features/roles/types';
 import { createPageMetadata } from '@/lib/seo/metadata';
+import type { AdminUserRole } from '@/features/users/types';
 
 export const metadata = createPageMetadata({
   title: 'تفاصيل المستخدم',
@@ -19,7 +26,27 @@ export default async function UserDetailsPage({
     getAdminUserDetails(id),
     getAdminSession(),
   ]);
-  const roles = session?.user.roles ?? [];
+  const permissions = session?.user.permissions ?? [];
+  const canManageRoles = hasPermission(permissions, 'users.manage_roles');
 
-  return <UserDetails user={user} roles={roles} />;
+  let assignedRoles: AdminUserRole[] = [];
+  let availableRoles: AdminRole[] = [];
+
+  if (canManageRoles) {
+    const [roles, catalog] = await Promise.all([
+      getAdminUserRoles(id),
+      getAssignableAdminRoles(),
+    ]);
+    assignedRoles = roles;
+    availableRoles = catalog;
+  }
+
+  return (
+    <UserDetails
+      user={user}
+      permissions={permissions}
+      assignedRoles={assignedRoles}
+      availableRoles={availableRoles}
+    />
+  );
 }

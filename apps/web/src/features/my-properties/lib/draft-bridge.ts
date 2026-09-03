@@ -14,7 +14,7 @@ export function listingDraftToManagedListing(draft: ListingDraft): ManagedListin
       (draft.propertyType
         ? `مسودة — ${getPropertyTypeLabel(draft.propertyType)}`
         : 'مسودة إعلان'),
-    image: cover?.previewUrl,
+    image: cover?.url,
     transaction: draft.transaction ?? 'sale',
     propertyType: draft.propertyType ?? 'apartment',
     locationLabel: draft.locationLabel ?? 'لم يُحدد الموقع بعد',

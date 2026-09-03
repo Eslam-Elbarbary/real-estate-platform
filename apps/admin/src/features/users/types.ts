@@ -1,5 +1,3 @@
-import type { UserRole } from '@/types';
-
 /** Matches NestJS AdminUserListItemDto. */
 export interface AdminUser {
   id: string;
@@ -7,7 +5,8 @@ export interface AdminUser {
   email: string;
   phone: string | null;
   avatarUrl: string | null;
-  roles: UserRole[];
+  /** Dynamic role codes from the API (not a fixed enum). */
+  roles: string[];
   isActive: boolean;
   isEmailVerified: boolean;
   createdAt: string;
@@ -18,12 +17,28 @@ export interface AdminUserDetails extends AdminUser {
   updatedAt: string;
 }
 
+/** Matches NestJS AdminUserRoleDto. */
+export interface AdminUserRole {
+  id: string;
+  code: string;
+  name: string;
+  isSystem: boolean;
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
+  assignedAt: string;
+}
+
 export interface UserFilters {
   search?: string;
-  role?: UserRole;
+  /** Role code filter (`^[A-Z0-9_]+$`). */
+  role?: string;
   status?: boolean;
   page?: number;
   limit?: number;
+}
+
+export interface AssignUserRoleInput {
+  roleCode: string;
 }
 
 export interface UserPaginationMeta {

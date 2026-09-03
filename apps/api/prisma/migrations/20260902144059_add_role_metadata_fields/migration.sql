@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "roles" ADD COLUMN     "isAdmin" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "isSuperAdmin" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "isSystem" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "priority" INTEGER NOT NULL DEFAULT 0,
+ALTER COLUMN "name" SET DEFAULT 'User';

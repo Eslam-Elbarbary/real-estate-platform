@@ -55,12 +55,14 @@ export default async function PropertiesPage({
     getAdminSession(),
   ]);
   const roles = session?.user.roles ?? [];
+  const permissions = session?.user.permissions ?? [];
 
   return (
     <PropertiesList
       result={result}
       catalogs={catalogs}
       roles={roles}
+      permissions={permissions}
       filters={{ status, page, limit, search }}
     />
   );

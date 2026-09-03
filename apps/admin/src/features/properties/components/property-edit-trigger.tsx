@@ -11,17 +11,17 @@ import { PropertyEditDialog } from './property-edit-dialog';
 interface PropertyEditTriggerProps {
   property: AdminPropertyDetails;
   catalogs: PropertyFormCatalogs;
-  roles: UserRole[];
+  permissions: string[];
 }
 
 export function PropertyEditTrigger({
   property,
   catalogs,
-  roles,
+  permissions,
 }: PropertyEditTriggerProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const canUpdate = hasPermission(roles, 'properties.update');
+  const canUpdate = hasPermission(permissions, 'properties.update');
 
   if (!canUpdate) {
     return null;
@@ -38,7 +38,7 @@ export function PropertyEditTrigger({
         onOpenChange={setOpen}
         property={property}
         catalogs={catalogs}
-        roles={roles}
+        permissions={permissions}
         onSuccess={() => {
           void router.refresh();
         }}

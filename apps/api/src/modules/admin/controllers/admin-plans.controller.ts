@@ -15,9 +15,8 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { RoleCode } from '@prisma/client';
 import { Request } from 'express';
-import { Roles } from '../../../common/decorators';
+import { Permissions } from '../../../common/decorators';
 import { buildSuccessResponse } from '../../../common/interfaces/api-response.interface';
 import { ParseIdPipe } from '../../../common/pipes/parse-id.pipe';
 import { CreatePlanDto } from '../../plans/dto/create-plan.dto';
@@ -29,11 +28,11 @@ import { PlansService } from '../../plans/plans.service';
 @ApiTags('Admin')
 @ApiBearerAuth()
 @Controller('admin/plans')
-@Roles(RoleCode.ADMIN)
 export class AdminPlansController {
   constructor(private readonly plansService: PlansService) {}
 
   @Get()
+  @Permissions('plans.view')
   @ApiOperation({ summary: 'List all plans for admin management' })
   async listPlans(@Query() query: ListAdminPlansQueryDto, @Req() req: Request) {
     const result = await this.plansService.listAdmin(query);
@@ -46,6 +45,7 @@ export class AdminPlansController {
   }
 
   @Post()
+  @Permissions('plans.create')
   @ApiOperation({ summary: 'Create a listing plan' })
   @ApiCreatedResponse({ type: AdminPlanDto })
   createPlan(@Body() dto: CreatePlanDto): Promise<AdminPlanDto> {
@@ -53,6 +53,7 @@ export class AdminPlansController {
   }
 
   @Get(':id')
+  @Permissions('plans.view')
   @ApiOperation({ summary: 'Get plan details for admin management' })
   @ApiOkResponse({ type: AdminPlanDto })
   getPlan(@Param('id', ParseIdPipe) id: string): Promise<AdminPlanDto> {
@@ -60,6 +61,7 @@ export class AdminPlansController {
   }
 
   @Patch(':id')
+  @Permissions('plans.update')
   @ApiOperation({ summary: 'Update a listing plan' })
   @ApiOkResponse({ type: AdminPlanDto })
   updatePlan(

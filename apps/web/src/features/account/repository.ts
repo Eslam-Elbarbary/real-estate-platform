@@ -1,5 +1,11 @@
 import { cookies } from 'next/headers';
-import { DEMO_USER } from '@/features/auth/demo-user';
+import { withRefreshedAccessToken } from '@/features/auth/session';
+import {
+  changeCurrentUserPassword,
+  fetchCurrentUserProfile,
+  updateCurrentUserProfile,
+  type UserProfileResponse,
+} from './api';
 import type {
   AccountProfile,
   AccountSecuritySettings,
@@ -10,12 +16,11 @@ import type {
   UserSubscription,
 } from './types';
 
-export const ACCOUNT_CONTACTS_COOKIE = 'demo_account_contacts';
-export const ACCOUNT_PROFILE_COOKIE = 'demo_account_profile';
-export const ACCOUNT_SUBSCRIPTION_COOKIE = 'demo_account_subscription';
+export const ACCOUNT_CONTACTS_COOKIE = 'account_contacts';
+export const ACCOUNT_SUBSCRIPTION_COOKIE = 'account_subscription';
 
-const DEFAULT_WALLET: FinancialWallet = {
-  id: 'wallet-demo-1',
+const EMPTY_WALLET: FinancialWallet = {
+  id: 'wallet-empty',
   currency: 'EGP',
   balance: 0,
 };
@@ -27,29 +32,29 @@ function toE164(nationalPhone: string): string {
   return `+20${digits}`;
 }
 
-function defaultProfile(): AccountProfile {
+function displayName(profile: UserProfileResponse): string {
+  const full = [profile.firstName, profile.lastName]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(' ');
+  return full || profile.email;
+}
+
+export function mapUserProfile(profile: UserProfileResponse): AccountProfile {
   return {
-    userId: DEMO_USER.id,
-    name: DEMO_USER.name,
-    email: DEMO_USER.email,
-    phone: DEMO_USER.phone,
-    phoneVerified: DEMO_USER.phoneVerified ?? true,
-    displayRoleLabel: DEMO_USER.displayRoleLabel ?? 'مالك عقار',
-    avatarUrl: DEMO_USER.avatarUrl,
-    memberSinceLabel: DEMO_USER.memberSinceLabel,
+    userId: profile.id,
+    firstName: profile.firstName,
+    lastName: profile.lastName,
+    name: displayName(profile),
+    email: profile.email,
+    phone: profile.phone?.trim() ?? '',
+    avatarUrl: profile.avatarUrl,
+    isEmailVerified: profile.isEmailVerified,
+    roles: profile.roles ?? [],
+    displayRoleLabel: profile.roles[0] ?? '',
   };
 }
 
-function defaultContacts(): AdvertisingContactPhone[] {
-  return [
-    {
-      id: 'contact-demo-1',
-      phone: DEMO_USER.phone,
-      e164: toE164(DEMO_USER.phone),
-      whatsappEnabled: false,
-    },
-  ];
-}
 
 function parseJson<T>(raw: string | undefined, fallback: T): T {
   if (!raw) return fallback;
@@ -62,7 +67,15 @@ function parseJson<T>(raw: string | undefined, fallback: T): T {
 
 export interface AccountRepository {
   getProfile(): Promise<AccountProfile>;
-  updateProfile(patch: Partial<AccountProfile>): Promise<AccountProfile>;
+  updateProfile(patch: {
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+  }): Promise<AccountProfile>;
+  changePassword(input: {
+    currentPassword: string;
+    newPassword: string;
+  }): Promise<void>;
   getSecuritySettings(): Promise<AccountSecuritySettings>;
   getPaymentMethods(): Promise<SavedPaymentMethod[]>;
   getContactPhones(): Promise<AdvertisingContactPhone[]>;
@@ -77,33 +90,60 @@ export interface AccountRepository {
   ): Promise<UserSubscription | null>;
 }
 
-export class CookieAccountRepository implements AccountRepository {
-  private async readProfile(): Promise<AccountProfile> {
-    const jar = await cookies();
-    const stored = parseJson<Partial<AccountProfile> | null>(
-      jar.get(ACCOUNT_PROFILE_COOKIE)?.value,
-      null,
-    );
-    return { ...defaultProfile(), ...stored };
+export class AccountApiRepository implements AccountRepository {
+  async getProfile(): Promise<AccountProfile> {
+    const profile = await withRefreshedAccessToken(fetchCurrentUserProfile);
+    return mapUserProfile(profile);
   }
 
-  private async writeProfile(profile: AccountProfile): Promise<void> {
-    const jar = await cookies();
-    jar.set(ACCOUNT_PROFILE_COOKIE, JSON.stringify(profile), {
-      httpOnly: true,
-      sameSite: 'lax',
-      path: '/',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24 * 30,
-    });
+  async updateProfile(patch: {
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+  }): Promise<AccountProfile> {
+    const profile = await withRefreshedAccessToken((accessToken) =>
+      updateCurrentUserProfile(accessToken, patch),
+    );
+    return mapUserProfile(profile);
+  }
+
+  async changePassword(input: {
+    currentPassword: string;
+    newPassword: string;
+  }): Promise<void> {
+    await withRefreshedAccessToken((accessToken) =>
+      changeCurrentUserPassword(accessToken, input),
+    );
+  }
+
+  async getSecuritySettings(): Promise<AccountSecuritySettings> {
+    const profile = await this.getProfile();
+    return {
+      email: profile.email,
+      phone: profile.phone,
+      phoneVerified: false,
+      passwordMasked: '********',
+    };
   }
 
   private async readContacts(): Promise<AdvertisingContactPhone[]> {
     const jar = await cookies();
     const raw = jar.get(ACCOUNT_CONTACTS_COOKIE)?.value;
-    if (!raw) return defaultContacts();
-    const parsed = parseJson<AdvertisingContactPhone[]>(raw, defaultContacts());
-    return Array.isArray(parsed) ? parsed : defaultContacts();
+    if (!raw) {
+      const profile = await this.getProfile();
+      const phone = profile.phone.trim();
+      if (!phone) return [];
+      return [
+        {
+          id: 'contact-primary',
+          phone,
+          e164: toE164(phone),
+          whatsappEnabled: false,
+        },
+      ];
+    }
+    const parsed = parseJson<AdvertisingContactPhone[]>(raw, []);
+    return Array.isArray(parsed) ? parsed : [];
   }
 
   private async writeContacts(items: AdvertisingContactPhone[]): Promise<void> {
@@ -115,26 +155,6 @@ export class CookieAccountRepository implements AccountRepository {
       secure: process.env.NODE_ENV === 'production',
       maxAge: 60 * 60 * 24 * 30,
     });
-  }
-
-  async getProfile(): Promise<AccountProfile> {
-    return this.readProfile();
-  }
-
-  async updateProfile(patch: Partial<AccountProfile>): Promise<AccountProfile> {
-    const next = { ...(await this.readProfile()), ...patch };
-    await this.writeProfile(next);
-    return next;
-  }
-
-  async getSecuritySettings(): Promise<AccountSecuritySettings> {
-    const profile = await this.readProfile();
-    return {
-      email: profile.email,
-      phone: profile.phone,
-      phoneVerified: profile.phoneVerified,
-      passwordMasked: '********',
-    };
   }
 
   async getPaymentMethods(): Promise<SavedPaymentMethod[]> {
@@ -183,7 +203,7 @@ export class CookieAccountRepository implements AccountRepository {
   }
 
   async getWallet(): Promise<FinancialWallet> {
-    return DEFAULT_WALLET;
+    return EMPTY_WALLET;
   }
 
   async getWalletTransactions(): Promise<FinancialWalletTransaction[]> {
@@ -228,7 +248,10 @@ let accountRepository: AccountRepository | null = null;
 
 export function getAccountRepository(): AccountRepository {
   if (!accountRepository) {
-    accountRepository = new CookieAccountRepository();
+    accountRepository = new AccountApiRepository();
   }
   return accountRepository;
 }
+
+/** @deprecated Prefer AccountApiRepository */
+export const CookieAccountRepository = AccountApiRepository;

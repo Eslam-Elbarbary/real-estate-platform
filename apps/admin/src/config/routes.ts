@@ -6,6 +6,10 @@ export const routes = {
     root: '/users',
     details: (id: string) => `/users/${id}`,
   },
+  roles: {
+    root: '/roles',
+    details: (id: string) => `/roles/${id}`,
+  },
   properties: {
     root: '/properties',
     details: (id: string) => `/properties/${id}`,

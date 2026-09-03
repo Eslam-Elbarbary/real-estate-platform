@@ -10,7 +10,7 @@ import { CompoundForm } from './compound-form';
 interface CompoundCreateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  roles: UserRole[];
+  permissions: string[];
   onSuccess: () => void;
 }
 
@@ -19,11 +19,11 @@ const FORM_ID = 'compound-create-form';
 export function CompoundCreateDialog({
   open,
   onOpenChange,
-  roles,
+  permissions,
   onSuccess,
 }: CompoundCreateDialogProps) {
   const [loading, setLoading] = useState(false);
-  const canCreate = hasPermission(roles, 'compounds.create');
+  const canCreate = hasPermission(permissions, 'compounds.create');
 
   function handleOpenChange(nextOpen: boolean) {
     if (loading) {
@@ -72,7 +72,7 @@ export function CompoundCreateDialog({
       {open ? (
         <CompoundForm
           mode="create"
-          roles={roles}
+          permissions={permissions}
           formId={FORM_ID}
           disabled={loading}
           onLoadingChange={setLoading}

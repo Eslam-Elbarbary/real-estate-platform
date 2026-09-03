@@ -14,10 +14,17 @@ import { PropertiesFilters } from './properties-filters';
 import { PropertiesTable } from './properties-table';
 import { PropertyCreateDialog } from './property-create-dialog';
 
+interface CreatedPropertySummary {
+  id: string;
+  status: string;
+  title: string;
+}
+
 interface PropertiesListProps {
   result: AdminPropertiesListResult;
   catalogs: PropertyFormCatalogs;
-  roles: UserRole[];
+  roles: string[];
+  permissions: string[];
   filters: {
     status: PropertyStatus;
     page: number;
@@ -30,15 +37,21 @@ export function PropertiesList({
   result,
   catalogs,
   roles,
+  permissions,
   filters,
 }: PropertiesListProps) {
   const router = useRouter();
   const { items, meta } = result;
   const [createOpen, setCreateOpen] = useState(false);
-  const canCreate = hasPermission(roles, 'properties.create');
+  const canCreate = hasPermission(permissions, 'properties.create');
 
-  async function handleCreateSuccess() {
-    await router.refresh();
+  function handleCreateSuccess(created: CreatedPropertySummary) {
+    const params = new URLSearchParams();
+    params.set('status', created.status);
+    params.set('page', '1');
+
+    router.replace(`/properties?${params.toString()}`);
+    router.refresh();
   }
 
   return (
@@ -83,10 +96,8 @@ export function PropertiesList({
         open={createOpen}
         onOpenChange={setCreateOpen}
         catalogs={catalogs}
-        roles={roles}
-        onSuccess={() => {
-          void handleCreateSuccess();
-        }}
+        permissions={permissions}
+        onSuccess={handleCreateSuccess}
       />
     </div>
   );

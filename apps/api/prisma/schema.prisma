@@ -16,15 +16,6 @@ datasource db {
 // Enums
 // -----------------------------------------------------------------------------
 
-enum RoleCode {
-  USER
-  BROKER
-  DEVELOPER
-  ADMIN
-  MODERATOR
-  SUPER_ADMIN
-}
-
 enum VerificationTokenType {
   EMAIL_VERIFICATION
   PASSWORD_RESET
@@ -44,6 +35,20 @@ enum RentPeriod {
   MONTHLY
   YEARLY
   DAILY
+}
+
+enum PaymentType {
+  CASH
+  INSTALLMENT
+  CASH_OR_INSTALLMENT
+}
+
+enum FinishingType {
+  UNFINISHED
+  SEMI_FINISHED
+  FINISHED
+  LUX
+  SUPER_LUX
 }
 
 enum MediaType {
@@ -145,12 +150,16 @@ model User {
 }
 
 model Role {
-  id          String   @id @default(cuid())
-  code        RoleCode @unique
-  name        String @default("User") @map("name")
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  code          String   @unique
+  name          String   @default("User") @map("name")
+  description   String?
+  isSystem      Boolean  @default(false)
+  isAdmin       Boolean  @default(false)
+  isSuperAdmin  Boolean  @default(false)
+  priority      Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   users       UserRole[]
   permissions RolePermission[]
@@ -349,15 +358,21 @@ model Property {
   districtId        String?
   compoundId        String?
 
-  title       String?
-  slug        String         @unique
-  description String?
-  status      PropertyStatus @default(DRAFT)
+  title           String?
+  slug            String         @unique
+  description     String?
+  referenceNumber String?        @unique
+  status          PropertyStatus @default(DRAFT)
 
-  price      Decimal?    @db.Decimal(14, 2)
-  currency   String      @default("EGP")
-  furnished  Boolean?
-  rentPeriod RentPeriod?
+  price               Decimal?      @db.Decimal(14, 2)
+  currency            String        @default("EGP")
+  paymentType         PaymentType?
+  downPayment         Decimal?      @db.Decimal(14, 2)
+  installmentYears    Int?
+  monthlyInstallment  Decimal?      @db.Decimal(14, 2)
+  furnished           Boolean?
+  rentPeriod          RentPeriod?
+  finishingType       FinishingType?
 
   bedrooms  Int?
   bathrooms Int?
@@ -368,6 +383,8 @@ model Property {
   address   String?
   latitude  Decimal? @db.Decimal(10, 7)
   longitude Decimal? @db.Decimal(10, 7)
+
+  viewCount Int @default(0)
 
   submittedAt    DateTime?
   reviewedAt     DateTime?
@@ -404,6 +421,8 @@ model Property {
   @@index([compoundId])
   @@index([reviewedById])
   @@index([price])
+  @@index([paymentType])
+  @@index([finishingType])
   @@index([publishedAt])
   @@index([submittedAt])
   @@index([archivedAt])
@@ -470,6 +489,7 @@ model PropertyImage {
   mediaAsset MediaAsset @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
 
   @@index([propertyId, sortOrder])
+  @@index([propertyId, type])
   @@index([mediaAssetId])
   @@map("property_images")
 }

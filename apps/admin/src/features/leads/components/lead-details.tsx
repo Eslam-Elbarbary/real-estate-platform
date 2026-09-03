@@ -11,7 +11,7 @@ import { LeadStatusBadge } from './lead-status-badge';
 
 interface LeadDetailsProps {
   lead: AdminLead;
-  roles: UserRole[];
+  permissions: string[];
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
@@ -25,7 +25,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function LeadDetails({ lead, roles }: LeadDetailsProps) {
+export function LeadDetails({ lead, permissions }: LeadDetailsProps) {
   const buyerName = formatUserName(lead.buyer);
   const sellerName = formatUserName(lead.seller);
 
@@ -46,7 +46,7 @@ export function LeadDetails({ lead, roles }: LeadDetailsProps) {
         }
       />
 
-      <LeadActions leadId={lead.id} status={lead.status} roles={roles} />
+      <LeadActions leadId={lead.id} status={lead.status} permissions={permissions} />
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Card>

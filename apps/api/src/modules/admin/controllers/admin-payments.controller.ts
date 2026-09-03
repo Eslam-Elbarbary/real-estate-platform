@@ -5,9 +5,8 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { RoleCode } from '@prisma/client';
 import { Request } from 'express';
-import { Roles } from '../../../common/decorators';
+import { Permissions } from '../../../common/decorators';
 import { buildSuccessResponse } from '../../../common/interfaces/api-response.interface';
 import { ParseIdPipe } from '../../../common/pipes/parse-id.pipe';
 import { AdminPaymentsService } from '../admin-payments.service';
@@ -17,11 +16,11 @@ import { AdminPaymentDto } from '../mapper/admin-payment.mapper';
 @ApiTags('Admin')
 @ApiBearerAuth()
 @Controller('admin/payments')
-@Roles(RoleCode.ADMIN)
 export class AdminPaymentsController {
   constructor(private readonly adminPaymentsService: AdminPaymentsService) {}
 
   @Get()
+  @Permissions('payments.view')
   @ApiOperation({ summary: 'List payments for admin management' })
   @ApiOkResponse({ type: [AdminPaymentDto] })
   async listPayments(
@@ -38,6 +37,7 @@ export class AdminPaymentsController {
   }
 
   @Get(':id')
+  @Permissions('payments.view')
   @ApiOperation({ summary: 'Get payment details for admin management' })
   @ApiOkResponse({ type: AdminPaymentDto })
   getPaymentDetails(

@@ -1,19 +1,17 @@
 import { z } from 'zod';
 
 const egyptMobileRegex = /^(01)[0125][0-9]{8}$/;
+const e164EgyptRegex = /^\+20[0-9]{10}$/;
 
-export const identifierSchema = z
+export const emailSchema = z
   .string()
   .trim()
-  .min(1, 'البريد الإلكتروني أو رقم الهاتف مطلوب')
-  .refine(
-    (value) =>
-      z.string().email().safeParse(value).success || egyptMobileRegex.test(value),
-    'أدخل بريدًا إلكترونيًا صالحًا أو رقم موبايل مصري',
-  );
+  .min(1, 'البريد الإلكتروني مطلوب')
+  .email('أدخل بريدًا إلكترونيًا صالحًا')
+  .max(255, 'البريد الإلكتروني طويل جدًا');
 
-export const loginIdentifierSchema = z.object({
-  identifier: identifierSchema,
+export const loginEmailSchema = z.object({
+  email: emailSchema,
 });
 
 export const loginPasswordSchema = z.object({
@@ -21,24 +19,75 @@ export const loginPasswordSchema = z.object({
   rememberMe: z.boolean().optional(),
 });
 
+export const loginCredentialsSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(1, 'كلمة المرور مطلوبة'),
+  rememberMe: z.boolean().optional(),
+});
+
+/** @deprecated Email-only login — use loginEmailSchema */
+export const identifierSchema = emailSchema;
+
+/** @deprecated Email-only login — use loginEmailSchema */
+export const loginIdentifierSchema = loginEmailSchema;
+
+export const passwordSchema = z
+  .string()
+  .min(8, 'كلمة المرور يجب ألا تقل عن 8 أحرف')
+  .max(128, 'كلمة المرور طويلة جدًا')
+  .regex(/[A-Za-z]/, 'كلمة المرور يجب أن تحتوي على حرف واحد على الأقل')
+  .regex(/[0-9]/, 'كلمة المرور يجب أن تحتوي على رقم واحد على الأقل');
+
 export const registerSchema = z.object({
-  name: z.string().trim().min(2, 'الاسم مطلوب'),
-  email: z.string().trim().email('البريد الإلكتروني غير صالح'),
+  firstName: z
+    .string()
+    .trim()
+    .min(1, 'الاسم الأول مطلوب')
+    .max(80, 'الاسم الأول طويل جدًا'),
+  lastName: z
+    .string()
+    .trim()
+    .min(1, 'اسم العائلة مطلوب')
+    .max(80, 'اسم العائلة طويل جدًا'),
+  email: emailSchema,
   phone: z
     .string()
     .trim()
-    .regex(egyptMobileRegex, 'أدخل رقم موبايل مصري صالح (مثال: 01012345678)'),
-  password: z.string().min(6, 'كلمة المرور يجب ألا تقل عن 6 أحرف'),
+    .optional()
+    .refine(
+      (value) =>
+        !value || egyptMobileRegex.test(value) || e164EgyptRegex.test(value),
+      'أدخل رقم موبايل مصري صالح (مثال: 01012345678)',
+    ),
+  password: passwordSchema,
 });
 
-export type LoginIdentifierValues = z.infer<typeof loginIdentifierSchema>;
+export const verifyEmailSchema = z.object({
+  token: z.string().trim().min(10, 'رابط التفعيل غير صالح'),
+});
+
+export const forgotPasswordSchema = z.object({
+  email: emailSchema,
+});
+
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().trim().min(10, 'رابط إعادة التعيين غير صالح'),
+    password: passwordSchema,
+    confirmPassword: z.string().min(1, 'تأكيد كلمة المرور مطلوب'),
+  })
+  .refine((value) => value.password === value.confirmPassword, {
+    message: 'كلمتا المرور غير متطابقتين',
+    path: ['confirmPassword'],
+  });
+
+export type LoginEmailValues = z.infer<typeof loginEmailSchema>;
 export type LoginPasswordValues = z.infer<typeof loginPasswordSchema>;
+export type LoginCredentialsValues = z.infer<typeof loginCredentialsSchema>;
 export type RegisterValues = z.infer<typeof registerSchema>;
+export type VerifyEmailValues = z.infer<typeof verifyEmailSchema>;
+export type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;
 
-/** Fictional reserved identifiers for demo duplicate-error states only. */
-export const RESERVED_DEMO_EMAILS = new Set([
-  'taken@example.test',
-  'exists@example.test',
-]);
-
-export const RESERVED_DEMO_PHONES = new Set(['01111111111', '01222222222']);
+/** @deprecated */
+export type LoginIdentifierValues = LoginEmailValues;

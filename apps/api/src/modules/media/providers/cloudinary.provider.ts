@@ -28,12 +28,19 @@ export class CloudinaryProvider implements MediaProvider {
     const cloudName = this.configService.get<string>('cloudinary.cloudName');
     const apiKey = this.configService.get<string>('cloudinary.apiKey');
     const apiSecret = this.configService.get<string>('cloudinary.apiSecret');
-    this.defaultFolder =
-      this.configService.get<string>('cloudinary.folder') ?? 'aqarmap';
+    this.defaultFolder = this.configService.get<string>('cloudinary.folder') ?? 'aqarmap';
 
     this.configured = Boolean(cloudName && apiKey && apiSecret);
 
     if (this.configured) {
+      const tlsInsecure = this.configService.get<boolean>('cloudinary.tlsInsecure', false);
+      if (tlsInsecure && process.env.NODE_ENV !== 'production') {
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+        this.logger.warn(
+          'CLOUDINARY_TLS_INSECURE=true — TLS certificate verification disabled for local uploads',
+        );
+      }
+
       cloudinary.config({
         cloud_name: cloudName,
         api_key: apiKey,
@@ -60,7 +67,8 @@ export class CloudinaryProvider implements MediaProvider {
     const options = {
       folder: input.folder ?? this.defaultFolder,
       public_id: input.publicId,
-      resource_type: (input.resourceType ?? 'image') as 'image' | 'video' | 'raw' | 'auto',
+      resource_type: (input.resourceType ?? 'image') as
+        'image' | 'video' | 'raw' | 'auto',
       tags: input.tags,
       overwrite: true,
       unique_filename: !input.publicId,
@@ -68,10 +76,20 @@ export class CloudinaryProvider implements MediaProvider {
 
     let result: UploadApiResponse;
 
-    if (input.buffer) {
-      result = await this.uploadBuffer(input.buffer, options);
-    } else {
-      result = await cloudinary.uploader.upload(input.source!, options);
+    try {
+      if (input.buffer) {
+        result = await this.uploadBuffer(input.buffer, options);
+      } else {
+        result = await cloudinary.uploader.upload(input.source!, options);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Cloudinary upload failed';
+      this.logger.error(`Cloudinary upload failed: ${message}`);
+      throw new ServiceUnavailableException(
+        message.includes('unable to verify the first certificate')
+          ? 'Cloudinary TLS certificate verification failed. Set CLOUDINARY_TLS_INSECURE=true for local development.'
+          : `Cloudinary upload failed: ${message}`,
+      );
     }
 
     return {

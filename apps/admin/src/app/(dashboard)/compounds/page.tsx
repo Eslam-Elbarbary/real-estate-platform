@@ -86,6 +86,7 @@ export default async function CompoundsPage({
     getAdminSession(),
   ]);
   const roles = session?.user.roles ?? [];
+  const permissions = session?.user.permissions ?? [];
   const areaLabelsById = buildAreaLabelMap(flattenAreas(locationTree));
 
   return (
@@ -94,6 +95,7 @@ export default async function CompoundsPage({
       developers={developersResult.items}
       areaLabelsById={areaLabelsById}
       roles={roles}
+      permissions={permissions}
       filters={{
         page,
         limit,

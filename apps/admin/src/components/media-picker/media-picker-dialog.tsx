@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Pagination } from '@/components/data';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
@@ -10,6 +11,7 @@ import { hasPermission } from '@/features/auth/permissions';
 import { listMediaAction } from '@/features/media/actions';
 import { MediaUploadDialog } from '@/features/media/components/media-upload-dialog';
 import { MEDIA_FOLDER_OPTIONS } from '@/features/media/types';
+import { normalizeMediaAsset } from '@/features/media/normalize';
 import type { MediaAsset } from '@/features/media/types';
 import { getAdminErrorMessage } from '@/lib/errors';
 import { toast } from '@/lib/toast';
@@ -24,9 +26,9 @@ export function MediaPickerDialog({
   multiple,
   maxItems,
   folder: defaultFolder,
-  roles,
+  permissions,
 }: MediaPickerDialogProps) {
-  const canUpload = hasPermission(roles, 'media.upload');
+  const canUpload = hasPermission(permissions, 'media.upload');
 
   const [items, setItems] = useState<MediaAsset[]>([]);
   const [page, setPage] = useState(1);
@@ -38,6 +40,11 @@ export function MediaPickerDialog({
   );
   const [loading, setLoading] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const loadMedia = useCallback(async () => {
     setLoading(true);
@@ -50,7 +57,7 @@ export function MediaPickerDialog({
     });
 
     if (result.ok) {
-      setItems(result.data.items);
+      setItems(result.data.items.map(normalizeMediaAsset));
       setTotalPages(result.data.meta.totalPages);
       setLoading(false);
       return;
@@ -81,7 +88,7 @@ export function MediaPickerDialog({
   function handleToggle(asset: MediaAsset) {
     if (!multiple) {
       onConfirm([asset]);
-      onOpenChange(false);
+      closePicker();
       return;
     }
 
@@ -102,7 +109,10 @@ export function MediaPickerDialog({
     });
   }
 
-  function handleConfirmMultiple() {
+  function handleConfirmMultiple(event: React.MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+
     const selectedMap = new Map<string, MediaAsset>();
 
     for (const asset of value) {
@@ -118,7 +128,7 @@ export function MediaPickerDialog({
     }
 
     onConfirm(Array.from(selectedMap.values()));
-    onOpenChange(false);
+    closePicker(event);
   }
 
   async function handleUploadSuccess(uploaded?: MediaAsset[]) {
@@ -130,7 +140,7 @@ export function MediaPickerDialog({
 
     if (!multiple) {
       onConfirm([uploaded[0]!]);
-      onOpenChange(false);
+      closePicker();
       setUploadOpen(false);
       return;
     }
@@ -149,11 +159,25 @@ export function MediaPickerDialog({
     setUploadOpen(false);
   }
 
-  return (
+  function closePicker(event?: React.SyntheticEvent) {
+    event?.preventDefault();
+    event?.stopPropagation();
+    onOpenChange(false);
+  }
+
+  function handlePickerOpenChange(nextOpen: boolean) {
+    if (!nextOpen) {
+      closePicker();
+      return;
+    }
+    onOpenChange(true);
+  }
+
+  const dialogTree = (
     <>
       <Dialog
         open={open}
-        onOpenChange={onOpenChange}
+        onOpenChange={handlePickerOpenChange}
         title="اختيار من مكتبة الوسائط"
         description="ابحث واختر الصور المناسبة للنموذج"
         className="w-[min(100%-2rem,52rem)]"
@@ -164,11 +188,16 @@ export function MediaPickerDialog({
                 type="button"
                 variant="outline"
                 size="small"
-                onClick={() => onOpenChange(false)}
+                onClick={closePicker}
               >
                 إلغاء
               </Button>
-              <Button type="button" size="small" onClick={handleConfirmMultiple}>
+              <Button
+                type="button"
+                size="small"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={handleConfirmMultiple}
+              >
                 تأكيد الاختيار
               </Button>
             </>
@@ -255,4 +284,10 @@ export function MediaPickerDialog({
       ) : null}
     </>
   );
+
+  if (!mounted) {
+    return null;
+  }
+
+  return createPortal(dialogTree, document.body);
 }

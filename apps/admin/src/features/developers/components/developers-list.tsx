@@ -17,7 +17,8 @@ import { DevelopersTable } from './developers-table';
 
 interface DevelopersListProps {
   result: DeveloperListResult;
-  roles: UserRole[];
+  roles: string[];
+  permissions: string[];
   filters: {
     page: number;
     limit: number;
@@ -25,13 +26,13 @@ interface DevelopersListProps {
   };
 }
 
-export function DevelopersList({ result, roles, filters }: DevelopersListProps) {
+export function DevelopersList({ result, roles, permissions, filters }: DevelopersListProps) {
   const router = useRouter();
   const { items, meta } = result;
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editingDeveloper, setEditingDeveloper] = useState<Developer | null>(null);
-  const canCreate = hasPermission(roles, 'developers.create');
+  const canCreate = hasPermission(permissions, 'developers.create');
 
   function handleEdit(developer: Developer) {
     setEditingDeveloper(developer);
@@ -92,7 +93,7 @@ export function DevelopersList({ result, roles, filters }: DevelopersListProps) 
           </p>
         </CardHeader>
         <CardContent className="space-y-4 p-0 pb-4">
-          <DevelopersTable items={items} roles={roles} onEdit={handleEdit} />
+          <DevelopersTable items={items} permissions={permissions} onEdit={handleEdit} />
 
           {meta.totalPages > 1 ? (
             <Pagination page={meta.page} totalPages={meta.totalPages} />
@@ -103,7 +104,7 @@ export function DevelopersList({ result, roles, filters }: DevelopersListProps) 
       <DeveloperCreateDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
-        roles={roles}
+        permissions={permissions}
         onSuccess={() => {
           void handleSuccess();
         }}
@@ -119,7 +120,7 @@ export function DevelopersList({ result, roles, filters }: DevelopersListProps) 
             }
           }}
           developer={editingDeveloper}
-          roles={roles}
+          permissions={permissions}
           onSuccess={() => {
             void handleSuccess();
           }}

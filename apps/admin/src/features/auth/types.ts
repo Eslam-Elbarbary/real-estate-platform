@@ -1,10 +1,10 @@
-import type { UserRole } from '@/types';
-
 export interface AdminAuthUser {
   id: string;
   email: string;
   name: string;
-  roles: UserRole[];
+  roles: string[];
+  permissions: string[];
+  isAdmin: boolean;
 }
 
 export interface AdminAuthSession {

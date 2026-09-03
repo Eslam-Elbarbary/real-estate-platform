@@ -39,7 +39,7 @@ export function PublishPreview({ draft }: PublishPreviewProps) {
         <div className="relative h-40 w-full shrink-0 bg-surface-100 sm:h-auto sm:w-48">
           {cover ? (
             <Image
-              src={cover.previewUrl}
+              src={cover.url}
               alt=""
               fill
               className="object-cover"

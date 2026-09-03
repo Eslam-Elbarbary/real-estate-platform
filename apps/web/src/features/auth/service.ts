@@ -1,48 +1,43 @@
 import {
-  completeDemoSessionAction,
   getSessionAction,
+  loginAction,
   loginWithCredentialsAction,
-  loginWithMagicLinkAction,
   logoutAction,
   registerAction,
+  verifyEmailAction,
+  forgotPasswordAction,
+  resetPasswordAction,
 } from './actions';
 import { getServerSession } from './session';
-import type {
-  AuthService,
-  LoginCredentialsInput,
-  MagicLinkInput,
-  RegisterInput,
-} from './types';
+import type { AuthService, LoginCredentialsInput, RegisterInput } from './types';
 
 /**
- * Frontend-demo auth service. Replace with Express/API-backed implementation later.
+ * Auth service facade over server actions (API JWT session).
  */
-export class MockAuthService implements AuthService {
+export class ApiAuthService implements AuthService {
   async getSession() {
     return getServerSession();
   }
 
   async loginWithCredentials(input: LoginCredentialsInput) {
-    const result = await loginWithCredentialsAction(input);
+    const result = await loginAction(input);
     if (!result.ok) {
       throw new Error(result.error);
     }
     const session = await getServerSession();
     if (!session) {
-      throw new Error('تعذر إنشاء جلسة العرض');
+      throw new Error('تعذر إنشاء الجلسة بعد تسجيل الدخول');
     }
     return session;
-  }
-
-  async loginWithMagicLink(input: MagicLinkInput) {
-    await loginWithMagicLinkAction(input);
-    return { sent: true as const };
   }
 
   async register(input: RegisterInput) {
     const result = await registerAction(input);
     if (!result.ok) {
-      const message = Object.values(result.fieldErrors)[0] ?? 'تعذر إنشاء الحساب';
+      const message =
+        result.error ??
+        Object.values(result.fieldErrors ?? {})[0] ??
+        'تعذر إنشاء الحساب';
       throw new Error(message);
     }
     return { needsVerification: true as const };
@@ -57,16 +52,18 @@ let authService: AuthService | null = null;
 
 export function getAuthService(): AuthService {
   if (!authService) {
-    authService = new MockAuthService();
+    authService = new ApiAuthService();
   }
   return authService;
 }
 
 export {
-  completeDemoSessionAction,
   getSessionAction,
+  loginAction,
   loginWithCredentialsAction,
-  loginWithMagicLinkAction,
   logoutAction,
   registerAction,
+  verifyEmailAction,
+  forgotPasswordAction,
+  resetPasswordAction,
 };
