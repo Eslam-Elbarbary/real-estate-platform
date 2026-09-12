@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { LeadStatus } from '@prisma/client';
+import { LeadStatus } from '@/prisma/generated/prisma-client';
 import { IsIn } from 'class-validator';
 
 /** Seller-facing status transitions (FOLLOW_UP kept in DB for legacy rows). */

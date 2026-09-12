@@ -11,7 +11,7 @@ import {
   SubscriptionStatus,
   type Plan,
   type Property,
-} from '@prisma/client';
+} from '@/prisma/generated/prisma-client';
 import { PrismaService } from '../../database/prisma.service';
 import { PropertyValidationService } from '../properties/services/property-validation.service';
 import {

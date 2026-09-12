@@ -7,7 +7,7 @@ import {
   Property,
   PropertyImage,
   User,
-} from '@prisma/client';
+} from '@/prisma/generated/prisma-client';
 import { PublicPrimaryImageDto } from '../../properties/mapper/property-public.mapper';
 
 export class LeadBuyerCardDto {

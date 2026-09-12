@@ -20,7 +20,7 @@ import {
   Subscription,
   TransactionType,
   User,
-} from '@prisma/client';
+} from '@/prisma/generated/prisma-client';
 import { FeatureResponseDto, toFeatureResponse } from '../../properties/mapper/feature.mapper';
 import {
   PublicLocationRefDto,

@@ -6,7 +6,7 @@ import {
   PropertyStatus,
   RoleCode,
   SubscriptionStatus,
-} from '@prisma/client';
+} from '@/prisma/generated/prisma-client';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';

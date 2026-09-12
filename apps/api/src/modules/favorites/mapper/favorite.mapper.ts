@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Favorite } from '@prisma/client';
+import { Favorite } from '@/prisma/generated/prisma-client';
 import {
   PublicLocationSummaryDto,
   PublicPrimaryImageDto,

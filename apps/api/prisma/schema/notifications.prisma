@@ -1,0 +1,29 @@
+// -----------------------------------------------------------------------------
+// Engagement: notifications
+// -----------------------------------------------------------------------------
+
+enum NotificationType {
+  SYSTEM
+  LEAD
+  PROPERTY
+  SUBSCRIPTION
+  PAYMENT
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String?
+  data      Json?
+  isRead    Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}

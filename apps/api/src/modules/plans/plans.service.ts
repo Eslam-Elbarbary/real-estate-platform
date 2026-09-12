@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PlanStatus, Prisma } from '@prisma/client';
+import { PlanStatus, Prisma } from '@/prisma/generated/prisma-client';
 import { PrismaService } from '../../database/prisma.service';
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { ListAdminPlansQueryDto } from './dto/list-admin-plans-query.dto';

@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@/prisma/generated/prisma-client';
 import { PrismaService } from '../../database/prisma.service';
 import { UserRolesService } from '../permissions/user-roles.service';
 import { ListAdminUsersQueryDto } from './dto/list-admin-users-query.dto';

@@ -7,6 +7,7 @@
     "^.+\\.(t|j)s$": "ts-jest"
   },
   "moduleNameMapper": {
+    "^@/prisma/(.*)$": "<rootDir>/../prisma/$1",
     "^@/(.*)$": "<rootDir>/../src/$1"
   }
 }

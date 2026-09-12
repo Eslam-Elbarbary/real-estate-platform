@@ -5,11 +5,11 @@
 
 generator client {
   provider = "prisma-client-js"
+  output   = "../generated/prisma-client"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // -----------------------------------------------------------------------------
@@ -150,16 +150,16 @@ model User {
 }
 
 model Role {
-  id            String   @id @default(cuid())
-  code          String   @unique
-  name          String   @default("User") @map("name")
-  description   String?
-  isSystem      Boolean  @default(false)
-  isAdmin       Boolean  @default(false)
-  isSuperAdmin  Boolean  @default(false)
-  priority      Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  code         String   @unique
+  name         String   @default("User") @map("name")
+  description  String?
+  isSystem     Boolean  @default(false)
+  isAdmin      Boolean  @default(false)
+  isSuperAdmin Boolean  @default(false)
+  priority     Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   users       UserRole[]
   permissions RolePermission[]
@@ -364,15 +364,15 @@ model Property {
   referenceNumber String?        @unique
   status          PropertyStatus @default(DRAFT)
 
-  price               Decimal?      @db.Decimal(14, 2)
-  currency            String        @default("EGP")
-  paymentType         PaymentType?
-  downPayment         Decimal?      @db.Decimal(14, 2)
-  installmentYears    Int?
-  monthlyInstallment  Decimal?      @db.Decimal(14, 2)
-  furnished           Boolean?
-  rentPeriod          RentPeriod?
-  finishingType       FinishingType?
+  price              Decimal?       @db.Decimal(14, 2)
+  currency           String         @default("EGP")
+  paymentType        PaymentType?
+  downPayment        Decimal?       @db.Decimal(14, 2)
+  installmentYears   Int?
+  monthlyInstallment Decimal?       @db.Decimal(14, 2)
+  furnished          Boolean?
+  rentPeriod         RentPeriod?
+  finishingType      FinishingType?
 
   bedrooms  Int?
   bathrooms Int?
@@ -598,18 +598,18 @@ model Plan {
 
 /// Listing-scoped subscription: each property has its own plan lifecycle.
 model Subscription {
-  id                    String             @id @default(cuid())
-  propertyId            String
-  planId                String
-  status                SubscriptionStatus @default(PENDING)
+  id                     String             @id @default(cuid())
+  propertyId             String
+  planId                 String
+  status                 SubscriptionStatus @default(PENDING)
   /// Frozen plan price at selection time (unaffected by later Plan edits).
-  priceAtPurchase       Decimal            @db.Decimal(12, 2)
+  priceAtPurchase        Decimal            @db.Decimal(12, 2)
   /// Frozen plan duration at selection time.
   durationDaysAtPurchase Int
-  startsAt              DateTime?
-  endsAt                DateTime?
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
+  startsAt               DateTime?
+  endsAt                 DateTime?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
 
   property Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   plan     Plan      @relation(fields: [planId], references: [id], onDelete: Restrict)

@@ -3,7 +3,7 @@ import {
   Payment,
   PaymentProvider,
   PaymentStatus,
-} from '@prisma/client';
+} from '@/prisma/generated/prisma-client';
 
 export class PaymentResponseDto {
   @ApiProperty()

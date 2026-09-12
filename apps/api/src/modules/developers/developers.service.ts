@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, PropertyStatus } from '@prisma/client';
+import { Prisma, PropertyStatus } from '@/prisma/generated/prisma-client';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateDeveloperDto } from './dto/create-developer.dto';
 import { ListDevelopersQueryDto } from './dto/list-developers-query.dto';

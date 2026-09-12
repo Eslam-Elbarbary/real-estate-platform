@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { FinishingType, PaymentType } from '@prisma/client';
+import { FinishingType, PaymentType } from '@/prisma/generated/prisma-client';
 import { Type } from 'class-transformer';
 import {
   ArrayUnique,

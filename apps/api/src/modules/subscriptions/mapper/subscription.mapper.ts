@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Plan, Subscription, SubscriptionStatus } from '@prisma/client';
+import { Plan, Subscription, SubscriptionStatus } from '@/prisma/generated/prisma-client';
 import {
   PlanResponseDto,
   toPlanResponse,

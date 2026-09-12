@@ -1,0 +1,39 @@
+// -----------------------------------------------------------------------------
+// Business: subscriptions
+// Subscription is owned by a Property listing (not by User directly):
+//   Property → Subscription → Plan
+// -----------------------------------------------------------------------------
+
+enum SubscriptionStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+/// Listing-scoped subscription: each property has its own plan lifecycle.
+model Subscription {
+  id                     String             @id @default(cuid())
+  propertyId             String
+  planId                 String
+  status                 SubscriptionStatus @default(PENDING)
+  /// Frozen plan price at selection time (unaffected by later Plan edits).
+  priceAtPurchase        Decimal            @db.Decimal(12, 2)
+  /// Frozen plan duration at selection time.
+  durationDaysAtPurchase Int
+  startsAt               DateTime?
+  endsAt                 DateTime?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  property Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  plan     Plan      @relation(fields: [planId], references: [id], onDelete: Restrict)
+  payments Payment[]
+  invoice  Invoice?
+
+  @@index([propertyId])
+  @@index([planId])
+  @@index([status])
+  @@index([endsAt])
+  @@map("subscriptions")
+}

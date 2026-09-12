@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Prisma, SavedSearchAlert } from '@prisma/client';
+import { Prisma, SavedSearchAlert } from '@/prisma/generated/prisma-client';
 
 export class AlertResponseDto {
   @ApiProperty()

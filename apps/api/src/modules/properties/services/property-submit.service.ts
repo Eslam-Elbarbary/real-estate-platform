@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PropertyStatus, SubscriptionStatus } from '@prisma/client';
+import { PropertyStatus, SubscriptionStatus } from '@/prisma/generated/prisma-client';
 import { PrismaService } from '../../../database/prisma.service';
 import {
   PropertyResponseDto,

@@ -7,7 +7,7 @@ import {
   Property,
   Subscription,
   User,
-} from '@prisma/client';
+} from '@/prisma/generated/prisma-client';
 
 export class AdminPaymentPlanDto {
   @ApiProperty()

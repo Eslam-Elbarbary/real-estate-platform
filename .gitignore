@@ -24,6 +24,9 @@ dist/
 build/
 tmp/
 
+# prisma
+apps/api/prisma/generated/
+
 # turbo
 .turbo
 

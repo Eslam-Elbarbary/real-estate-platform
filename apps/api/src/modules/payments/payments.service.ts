@@ -10,7 +10,7 @@ import {
   Prisma,
   PropertyStatus,
   SubscriptionStatus,
-} from '@prisma/client';
+} from '@/prisma/generated/prisma-client';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PropertyValidationService } from '../properties/services/property-validation.service';

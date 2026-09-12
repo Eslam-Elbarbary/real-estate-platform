@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Property } from '@prisma/client';
+import { Property } from '@/prisma/generated/prisma-client';
 import { PrismaService } from '../../../database/prisma.service';
 import { PropertyCompletionDto } from '../dto/submit-property.dto';
 

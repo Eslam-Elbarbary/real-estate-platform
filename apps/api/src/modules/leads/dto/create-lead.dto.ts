@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { LeadType } from '@prisma/client';
+import { LeadType } from '@/prisma/generated/prisma-client';
 import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreateLeadDto {

@@ -1,0 +1,44 @@
+// -----------------------------------------------------------------------------
+// Engagement: leads
+// -----------------------------------------------------------------------------
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  FOLLOW_UP
+  INTERESTED
+  CLOSED
+  REJECTED
+}
+
+enum LeadType {
+  PHONE
+  WHATSAPP
+  CONTACT_FORM
+}
+
+model Lead {
+  id         String     @id @default(cuid())
+  propertyId String
+  buyerId    String
+  sellerId   String
+  type       LeadType
+  message    String?
+  phone      String?
+  email      String?
+  status     LeadStatus @default(NEW)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  buyer    User     @relation("LeadBuyer", fields: [buyerId], references: [id], onDelete: Restrict)
+  seller   User     @relation("LeadSeller", fields: [sellerId], references: [id], onDelete: Restrict)
+
+  @@index([propertyId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+  @@map("leads")
+}

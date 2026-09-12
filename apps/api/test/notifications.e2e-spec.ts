@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotificationType, RoleCode } from '@prisma/client';
+import { NotificationType, RoleCode } from '@/prisma/generated/prisma-client';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';

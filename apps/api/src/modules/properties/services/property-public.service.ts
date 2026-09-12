@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { MediaType, Prisma, PropertyStatus } from '@prisma/client';
+import { MediaType, Prisma, PropertyStatus } from '@/prisma/generated/prisma-client';
 import { buildSuccessResponse } from '../../../common/interfaces/api-response.interface';
 import { PrismaService } from '../../../database/prisma.service';
 import {

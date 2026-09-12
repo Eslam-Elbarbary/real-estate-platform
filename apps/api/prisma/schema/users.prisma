@@ -1,0 +1,36 @@
+// -----------------------------------------------------------------------------
+// Users
+// -----------------------------------------------------------------------------
+
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  passwordHash    String
+  firstName       String?
+  lastName        String?
+  phone           String?
+  avatarUrl       String?
+  avatarPublicId  String?
+  isEmailVerified Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  roles                 UserRole[]
+  refreshTokens         RefreshToken[]
+  verificationTokens    VerificationToken[]
+  ownedProperties       Property[]              @relation("PropertyOwner")
+  reviewedProperties    Property[]              @relation("PropertyReviewedBy")
+  propertyStatusChanges PropertyStatusHistory[] @relation("PropertyStatusChangedBy")
+  favorites             Favorite[]
+  leadsAsBuyer          Lead[]                  @relation("LeadBuyer")
+  leadsAsSeller         Lead[]                  @relation("LeadSeller")
+  notifications         Notification[]
+  mediaAssets           MediaAsset[]
+  propertyNotes         PropertyNote[]
+  savedSearchAlerts     SavedSearchAlert[]
+
+  @@index([phone])
+  @@index([isActive])
+  @@map("users")
+}

@@ -1,0 +1,53 @@
+// -----------------------------------------------------------------------------
+// Media library
+// -----------------------------------------------------------------------------
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+}
+
+/// Cloudinary-backed reusable media library asset.
+model MediaAsset {
+  id           String   @id @default(cuid())
+  url          String
+  publicId     String   @unique
+  fileName     String?
+  mimeType     String?
+  size         Int?
+  width        Int?
+  height       Int?
+  folder       String?
+  uploadedById String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  uploadedBy     User            @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  propertyImages PropertyImage[]
+
+  @@index([uploadedById])
+  @@index([folder])
+  @@index([createdAt])
+  @@map("media_assets")
+}
+
+/// Property gallery entry — Cloudinary metadata lives on MediaAsset.
+model PropertyImage {
+  id           String    @id @default(cuid())
+  propertyId   String
+  mediaAssetId String
+  type         MediaType @default(IMAGE)
+  sortOrder    Int       @default(0)
+  isPrimary    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  property   Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  mediaAsset MediaAsset @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+
+  @@index([propertyId, sortOrder])
+  @@index([propertyId, type])
+  @@index([mediaAssetId])
+  @@map("property_images")
+}

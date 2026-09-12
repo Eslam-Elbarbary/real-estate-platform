@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { MediaAsset, User } from '@prisma/client';
+import { MediaAsset, User } from '@/prisma/generated/prisma-client';
 
 export class AdminMediaUploaderDto {
   @ApiProperty()

@@ -4,7 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { MediaType, Prisma, PropertyStatus } from '@prisma/client';
+import { MediaType, Prisma, PropertyStatus } from '@/prisma/generated/prisma-client';
 import { PrismaService } from '../../database/prisma.service';
 import { slugifyTitle } from '../properties/utils/slug.util';
 import { AdminPropertiesService } from './admin-properties.service';

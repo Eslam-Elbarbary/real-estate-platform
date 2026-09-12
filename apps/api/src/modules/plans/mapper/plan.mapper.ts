@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Plan, PlanStatus, Prisma } from '@prisma/client';
+import { Plan, PlanStatus, Prisma } from '@/prisma/generated/prisma-client';
 
 export class PlanResponseDto {
   @ApiProperty()

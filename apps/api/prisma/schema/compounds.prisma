@@ -1,0 +1,29 @@
+// -----------------------------------------------------------------------------
+// Content: compounds (admin-managed)
+// -----------------------------------------------------------------------------
+
+/// Compounds own listings via Property.compoundId — no compound_units table.
+model Compound {
+  id            String   @id @default(cuid())
+  developerId   String?
+  areaId        String
+  slug          String   @unique
+  nameEn        String
+  nameAr        String?
+  description   String?
+  latitude      Decimal? @db.Decimal(10, 7)
+  longitude     Decimal? @db.Decimal(10, 7)
+  coverUrl      String?
+  coverPublicId String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  developer  Developer? @relation(fields: [developerId], references: [id], onDelete: SetNull)
+  area       Area       @relation(fields: [areaId], references: [id], onDelete: Restrict)
+  properties Property[]
+
+  @@index([developerId])
+  @@index([areaId])
+  @@map("compounds")
+}
