@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PaymentStatus, Prisma } from '@prisma/client';
+import { PaymentStatus, Prisma } from '@/prisma/generated/prisma-client';
 import { PrismaService } from '../../database/prisma.service';
 import { ListAdminPaymentsQueryDto } from './dto/list-admin-payments-query.dto';
 import {

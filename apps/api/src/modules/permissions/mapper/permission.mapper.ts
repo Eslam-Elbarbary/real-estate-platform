@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Permission } from '@prisma/client';
+import { Permission } from '@/prisma/generated/prisma-client';
 
 export class AdminPermissionDto {
   @ApiProperty()

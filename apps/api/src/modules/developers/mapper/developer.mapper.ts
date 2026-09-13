@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Developer, Prisma } from '@prisma/client';
+import { Developer, Prisma } from '@/prisma/generated/prisma-client';
 
 export class PublicDeveloperCardDto {
   @ApiProperty()

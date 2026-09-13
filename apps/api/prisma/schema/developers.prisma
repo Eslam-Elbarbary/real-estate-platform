@@ -1,0 +1,21 @@
+// -----------------------------------------------------------------------------
+// Content: developers (admin-managed)
+// -----------------------------------------------------------------------------
+
+model Developer {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  nameEn       String
+  nameAr       String?
+  description  String?
+  logoUrl      String?
+  logoPublicId String?
+  website      String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  compounds Compound[]
+
+  @@map("developers")
+}

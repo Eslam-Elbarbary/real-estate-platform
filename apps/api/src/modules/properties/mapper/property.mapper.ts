@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Feature, Property, PropertyStatus, RentPeriod } from '@prisma/client';
+import { Feature, Property, PropertyStatus, RentPeriod } from '@/prisma/generated/prisma-client';
 import { FeatureResponseDto, toFeatureResponse } from './feature.mapper';
 
 export class PropertyResponseDto {

@@ -1,8 +1,10 @@
-import { PlanStatus, PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PlanStatus, PrismaClient } from './generated/prisma-client';
 import * as bcrypt from 'bcrypt';
 import { seedPermissionsAndRoleMappings } from './seeds/permissions.seed';
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter });
 
 /** Same cost factor as AuthService password hashing. */
 const BCRYPT_ROUNDS = 12;

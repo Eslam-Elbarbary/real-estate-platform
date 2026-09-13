@@ -1,0 +1,64 @@
+// -----------------------------------------------------------------------------
+// Business: payments & invoices
+// -----------------------------------------------------------------------------
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum PaymentProvider {
+  MOCK
+  PAYMOB
+  STRIPE
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  VOID
+}
+
+model Payment {
+  id             String          @id @default(cuid())
+  subscriptionId String
+  provider       PaymentProvider @default(MOCK)
+  providerRef    String?
+  amount         Decimal         @db.Decimal(12, 2)
+  status         PaymentStatus   @default(PENDING)
+  metadata       Json?
+  paidAt         DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  invoice      Invoice?
+
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([provider, providerRef])
+  @@index([paidAt])
+  @@map("payments")
+}
+
+model Invoice {
+  id             String        @id @default(cuid())
+  number         String        @unique
+  subscriptionId String        @unique
+  paymentId      String?       @unique
+  amount         Decimal       @db.Decimal(12, 2)
+  currency       String        @default("EGP")
+  status         InvoiceStatus @default(DRAFT)
+  issuedAt       DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Restrict)
+  payment      Payment?     @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@map("invoices")
+}

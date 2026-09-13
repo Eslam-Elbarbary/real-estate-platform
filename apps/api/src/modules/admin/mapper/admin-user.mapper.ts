@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { User } from '@prisma/client';
+import { User } from '@/prisma/generated/prisma-client';
 
 export class AdminUserListItemDto {
   @ApiProperty()

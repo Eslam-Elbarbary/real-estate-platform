@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Feature, PropertyType, TransactionType } from '@prisma/client';
+import { Feature, PropertyType, TransactionType } from '@/prisma/generated/prisma-client';
 
 export class CatalogPropertyTypeDto {
   @ApiProperty()

@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@/prisma/generated/prisma-client';
 
 /** Saved-search filter keys stored in SavedSearchAlert.filters JSON. */
 export type AlertFilters = {

@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { MediaType, Property, PropertyStatus } from '@prisma/client';
+import { MediaType, Property, PropertyStatus } from '@/prisma/generated/prisma-client';
 import { PrismaService } from '../../../database/prisma.service';
 import { MediaService } from '../../media/media.service';
 import { ReorderMediaDto } from '../dto/reorder-media.dto';

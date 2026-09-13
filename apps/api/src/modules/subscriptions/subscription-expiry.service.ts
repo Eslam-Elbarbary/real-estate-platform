@@ -3,7 +3,7 @@ import {
   PropertyStatus,
   Subscription,
   SubscriptionStatus,
-} from '@prisma/client';
+} from '@/prisma/generated/prisma-client';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 

@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { PlanStatus } from '@prisma/client';
+import { PlanStatus } from '@/prisma/generated/prisma-client';
 import { Type } from 'class-transformer';
 import {
   IsEnum,

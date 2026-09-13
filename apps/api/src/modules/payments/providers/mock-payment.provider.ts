@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PaymentProvider as PaymentProviderEnum } from '@prisma/client';
+import { PaymentProvider as PaymentProviderEnum } from '@/prisma/generated/prisma-client';
 import { randomUUID } from 'crypto';
 import {
   ChargePaymentInput,

@@ -4,7 +4,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { VerificationTokenType } from '@prisma/client';
+import { VerificationTokenType } from '@/prisma/generated/prisma-client';
 import * as bcrypt from 'bcrypt';
 import { AppLoggerService } from '../../common/logger/app-logger.service';
 import { PrismaService } from '../../database/prisma.service';

@@ -5,6 +5,7 @@
     "rootDir": "./src",
     "baseUrl": "./",
     "paths": {
+      "@/prisma/*": ["prisma/*"],
       "@/*": ["src/*"]
     }
   },

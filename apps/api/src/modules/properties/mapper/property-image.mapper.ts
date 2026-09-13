@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { MediaAsset, PropertyImage } from '@prisma/client';
+import { MediaAsset, PropertyImage } from '@/prisma/generated/prisma-client';
 
 export class PropertyImageResponseDto {
   @ApiProperty()

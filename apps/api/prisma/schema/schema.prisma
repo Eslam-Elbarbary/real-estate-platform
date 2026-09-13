@@ -1,0 +1,16 @@
+// =============================================================================
+// Aqarmap marketplace — Prisma schema (Phase 2: Database Design)
+// PostgreSQL · no business APIs · no compound_units (properties link to compounds)
+//
+// Schema is split across multiple files in this directory, one per feature —
+// Prisma merges every `*.prisma` file here into a single logical schema.
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma-client"
+}
+
+datasource db {
+  provider = "postgresql"
+}

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { LeadStatus, Prisma } from '@prisma/client';
+import { LeadStatus, Prisma } from '@/prisma/generated/prisma-client';
 import { PrismaService } from '../../database/prisma.service';
 import { ListAdminLeadsQueryDto } from './dto/list-admin-leads-query.dto';
 import { UpdateAdminLeadStatusDto } from './dto/update-admin-lead-status.dto';

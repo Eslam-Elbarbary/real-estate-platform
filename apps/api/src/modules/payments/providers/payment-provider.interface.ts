@@ -1,4 +1,4 @@
-import { PaymentProvider as PaymentProviderEnum, Prisma } from '@prisma/client';
+import { PaymentProvider as PaymentProviderEnum, Prisma } from '@/prisma/generated/prisma-client';
 
 export type ChargePaymentInput = {
   subscriptionId: string;

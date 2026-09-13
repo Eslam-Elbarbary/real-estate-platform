@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Area, City, Compound, Country, Developer, Prisma } from '@prisma/client';
+import { Area, City, Compound, Country, Developer, Prisma } from '@/prisma/generated/prisma-client';
 import {
   PublicNamedRefDto,
   PublicPropertyCardDto,

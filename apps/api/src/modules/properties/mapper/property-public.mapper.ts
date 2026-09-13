@@ -17,7 +17,7 @@ import {
   RentPeriod,
   TransactionType,
   User,
-} from '@prisma/client';
+} from '@/prisma/generated/prisma-client';
 import { FeatureResponseDto, toFeatureResponse } from './feature.mapper';
 
 export class PublicNamedRefDto {

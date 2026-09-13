@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { RentPeriod } from '@prisma/client';
+import { RentPeriod } from '@/prisma/generated/prisma-client';
 import {
   IsBoolean,
   IsEnum,

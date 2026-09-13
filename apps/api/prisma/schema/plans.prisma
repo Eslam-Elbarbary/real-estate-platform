@@ -1,0 +1,26 @@
+// -----------------------------------------------------------------------------
+// Business: plans
+// -----------------------------------------------------------------------------
+
+enum PlanStatus {
+  ACTIVE
+  INACTIVE
+}
+
+/// Dynamic admin-managed plans (Basic / Premium / Featured are seed data, not enums).
+model Plan {
+  id           String     @id @default(cuid())
+  name         String
+  code         String     @unique
+  price        Decimal    @db.Decimal(12, 2)
+  durationDays Int
+  features     Json       @default("[]")
+  status       PlanStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  subscriptions Subscription[]
+
+  @@index([status])
+  @@map("plans")
+}

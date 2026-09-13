@@ -1,0 +1,73 @@
+// -----------------------------------------------------------------------------
+// Locations: Country → City → Area → District
+// -----------------------------------------------------------------------------
+
+model Country {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  nameEn    String
+  nameAr    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cities City[]
+
+  @@map("countries")
+}
+
+model City {
+  id        String   @id @default(cuid())
+  countryId String
+  slug      String
+  nameEn    String
+  nameAr    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  country Country @relation(fields: [countryId], references: [id], onDelete: Restrict)
+  areas   Area[]
+
+  @@unique([countryId, slug])
+  @@index([countryId])
+  @@map("cities")
+}
+
+model Area {
+  id        String   @id @default(cuid())
+  cityId    String
+  slug      String
+  nameEn    String
+  nameAr    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  city       City       @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  districts  District[]
+  properties Property[]
+  compounds  Compound[]
+
+  @@unique([cityId, slug])
+  @@index([cityId])
+  @@map("areas")
+}
+
+model District {
+  id        String   @id @default(cuid())
+  areaId    String
+  slug      String
+  nameEn    String
+  nameAr    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  area       Area       @relation(fields: [areaId], references: [id], onDelete: Restrict)
+  properties Property[]
+
+  @@unique([areaId, slug])
+  @@index([areaId])
+  @@map("districts")
+}

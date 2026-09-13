@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { MediaAsset } from '@prisma/client';
+import { MediaAsset } from '@/prisma/generated/prisma-client';
 import { PrismaService } from '../../database/prisma.service';
 import { UserRolesService } from '../permissions/user-roles.service';
 import { ListMediaQueryDto } from './dto/list-media-query.dto';

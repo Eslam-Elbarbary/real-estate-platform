@@ -1,4 +1,4 @@
-import { Area, City, Country, District } from '@prisma/client';
+import { Area, City, Country, District } from '@/prisma/generated/prisma-client';
 import {
   AreaDto,
   AreaTreeNodeDto,

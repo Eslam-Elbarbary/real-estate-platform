@@ -1,5 +1,6 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '@/prisma/generated/prisma-client';
 import { AppLoggerService } from '../common/logger/app-logger.service';
 
 /**
@@ -12,7 +13,7 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor(private readonly logger: AppLoggerService) {
-    super();
+    super({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
     this.logger.setContext(PrismaService.name);
   }
 

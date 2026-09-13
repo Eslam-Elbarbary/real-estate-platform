@@ -1,0 +1,136 @@
+// -----------------------------------------------------------------------------
+// Real estate catalog: properties
+// -----------------------------------------------------------------------------
+
+enum PropertyStatus {
+  DRAFT
+  PENDING_PAYMENT
+  PENDING_REVIEW
+  PUBLISHED
+  REJECTED
+  ARCHIVED
+  EXPIRED
+}
+
+enum RentPeriod {
+  MONTHLY
+  YEARLY
+  DAILY
+}
+
+enum PaymentType {
+  CASH
+  INSTALLMENT
+  CASH_OR_INSTALLMENT
+}
+
+enum FinishingType {
+  UNFINISHED
+  SEMI_FINISHED
+  FINISHED
+  LUX
+  SUPER_LUX
+}
+
+/// Option A: exactly one owner user per property.
+/// Draft-first: title, price, type, transaction, and area are nullable until the wizard completes.
+model Property {
+  id                String  @id @default(cuid())
+  ownerId           String
+  propertyTypeId    String?
+  transactionTypeId String?
+  areaId            String?
+  districtId        String?
+  compoundId        String?
+
+  title           String?
+  slug            String         @unique
+  description     String?
+  referenceNumber String?        @unique
+  status          PropertyStatus @default(DRAFT)
+
+  price              Decimal?       @db.Decimal(14, 2)
+  currency           String         @default("EGP")
+  paymentType        PaymentType?
+  downPayment        Decimal?       @db.Decimal(14, 2)
+  installmentYears   Int?
+  monthlyInstallment Decimal?       @db.Decimal(14, 2)
+  furnished          Boolean?
+  rentPeriod         RentPeriod?
+  finishingType      FinishingType?
+
+  bedrooms  Int?
+  bathrooms Int?
+  areaSqm   Decimal? @db.Decimal(10, 2)
+  floor     Int?
+  yearBuilt Int?
+
+  address   String?
+  latitude  Decimal? @db.Decimal(10, 7)
+  longitude Decimal? @db.Decimal(10, 7)
+
+  viewCount Int @default(0)
+
+  submittedAt    DateTime?
+  reviewedAt     DateTime?
+  reviewedById   String?
+  archivedAt     DateTime?
+  publishedAt    DateTime?
+  rejectedReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner           User             @relation("PropertyOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  reviewedBy      User?            @relation("PropertyReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  propertyType    PropertyType?    @relation(fields: [propertyTypeId], references: [id], onDelete: Restrict)
+  transactionType TransactionType? @relation(fields: [transactionTypeId], references: [id], onDelete: Restrict)
+  area            Area?            @relation(fields: [areaId], references: [id], onDelete: Restrict)
+  district        District?        @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  compound        Compound?        @relation(fields: [compoundId], references: [id], onDelete: SetNull)
+
+  images        PropertyImage[]
+  features      PropertyFeature[]
+  favorites     Favorite[]
+  leads         Lead[]
+  subscriptions Subscription[]
+  statusHistory PropertyStatusHistory[]
+  notes         PropertyNote[]
+
+  @@index([ownerId])
+  @@index([status])
+  @@index([propertyTypeId])
+  @@index([transactionTypeId])
+  @@index([areaId])
+  @@index([districtId])
+  @@index([compoundId])
+  @@index([reviewedById])
+  @@index([price])
+  @@index([paymentType])
+  @@index([finishingType])
+  @@index([publishedAt])
+  @@index([submittedAt])
+  @@index([archivedAt])
+  @@index([latitude, longitude])
+  @@index([status, transactionTypeId, propertyTypeId, areaId])
+  @@map("properties")
+}
+
+/// Audit trail for property status transitions (draft → payment → review → published, etc.).
+model PropertyStatusHistory {
+  id          String          @id @default(cuid())
+  propertyId  String
+  fromStatus  PropertyStatus?
+  toStatus    PropertyStatus
+  changedById String?
+  reason      String?
+  createdAt   DateTime        @default(now())
+
+  property  Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  changedBy User?    @relation("PropertyStatusChangedBy", fields: [changedById], references: [id], onDelete: SetNull)
+
+  @@index([propertyId, createdAt])
+  @@index([changedById])
+  @@index([toStatus])
+  @@map("property_status_history")
+}

@@ -1,3 +1,4 @@
+import './register-aliases';
 import 'reflect-metadata';
 import { RequestMethod } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';

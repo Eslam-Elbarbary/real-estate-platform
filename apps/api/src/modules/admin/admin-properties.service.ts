@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, PropertyStatus, SubscriptionStatus } from '@prisma/client';
+import { Prisma, PropertyStatus, SubscriptionStatus } from '@/prisma/generated/prisma-client';
 import { PrismaService } from '../../database/prisma.service';
 import { SavedSearchMatchingService } from '../alerts/saved-search-matching.service';
 import { NotificationsService } from '../notifications/notifications.service';

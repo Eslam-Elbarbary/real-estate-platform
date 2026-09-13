@@ -1,0 +1,62 @@
+// -----------------------------------------------------------------------------
+// Catalogs: property types, transaction types & features
+// -----------------------------------------------------------------------------
+
+model PropertyType {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  nameEn    String
+  nameAr    String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  properties Property[]
+
+  @@map("property_types")
+}
+
+model TransactionType {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  nameEn    String
+  nameAr    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  properties Property[]
+
+  @@map("transaction_types")
+}
+
+model Feature {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  nameEn    String
+  nameAr    String?
+  category  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  properties PropertyFeature[]
+
+  @@index([category])
+  @@map("features")
+}
+
+model PropertyFeature {
+  propertyId String
+  featureId  String
+  value      String?
+  createdAt  DateTime @default(now())
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  feature  Feature  @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@id([propertyId, featureId])
+  @@index([featureId])
+  @@map("property_features")
+}
