@@ -5,9 +5,13 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ImagePlus, Loader2, X } from 'lucide-react';
 import { getButtonClassName } from '@/components/ui/button';
-import { uploadPropertyImageAction } from '@/features/media/actions';
-import { saveMediaStepAction } from '../../actions';
-import { DEMO_PROPERTY_IMAGES, listingCopy } from '../../config';
+import {
+  deleteListingMediaAction,
+  saveMediaStepAction,
+  setPrimaryListingMediaAction,
+  uploadListingMediaAction,
+} from '../../actions';
+import { listingCopy } from '../../config';
 import type { ListingDraft, ListingImageDraft } from '../../types';
 
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -25,26 +29,37 @@ function toLocalEntry(image: ListingImageDraft): LocalImageEntry {
   return { ...image, uploadStatus: 'uploaded' };
 }
 
+function applyServerImages(
+  images: ListingImageDraft[],
+): { entries: LocalImageEntry[]; previews: Record<string, string> } {
+  const entries = images.map(toLocalEntry);
+  const previews: Record<string, string> = {};
+  for (const img of images) {
+    previews[img.id] = img.url;
+  }
+  return { entries, previews };
+}
+
 export function MediaStepForm({ draft }: MediaStepFormProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [images, setImages] = useState<LocalImageEntry[]>(
-    draft.media.images.map(toLocalEntry),
+  const initial = applyServerImages(draft.media.images);
+  const [images, setImages] = useState<LocalImageEntry[]>(initial.entries);
+  const [previewUrls, setPreviewUrls] = useState<Record<string, string>>(
+    initial.previews,
   );
-  const [previewUrls, setPreviewUrls] = useState<Record<string, string>>(() => {
-    const map: Record<string, string> = {};
-    for (const img of draft.media.images) {
-      map[img.id] = img.url;
-    }
-    return map;
-  });
-  const [videoUrl, setVideoUrl] = useState(draft.media.videoUrl ?? '');
 
   const uploadingCount = images.filter((img) => img.uploadStatus === 'uploading').length;
 
-  async function uploadFile(file: File, order: number, isCover: boolean) {
-    const tempId = `img-${Date.now()}-${order}`;
+  function syncFromServer(next: ListingImageDraft[]) {
+    const applied = applyServerImages(next);
+    setImages(applied.entries);
+    setPreviewUrls(applied.previews);
+  }
+
+  async function uploadFile(file: File) {
+    const tempId = `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const objectUrl = URL.createObjectURL(file);
 
     setPreviewUrls((prev) => ({ ...prev, [tempId]: objectUrl }));
@@ -55,45 +70,30 @@ export function MediaStepForm({ draft }: MediaStepFormProps) {
         url: '',
         name: file.name,
         size: file.size,
-        order,
-        isCover,
+        order: prev.length,
+        isCover: false,
         uploadStatus: 'uploading',
       },
     ]);
 
     const formData = new FormData();
     formData.append('file', file);
-    const result = await uploadPropertyImageAction(formData);
+    const result = await uploadListingMediaAction(draft.id, formData);
+
+    URL.revokeObjectURL(objectUrl);
 
     if (!result.ok) {
-      URL.revokeObjectURL(objectUrl);
+      setImages((prev) => prev.filter((img) => img.id !== tempId));
       setPreviewUrls((prev) => {
         const copy = { ...prev };
         delete copy[tempId];
         return copy;
       });
-      setImages((prev) => prev.filter((img) => img.id !== tempId));
       setError(result.error);
       return;
     }
 
-    URL.revokeObjectURL(objectUrl);
-    setPreviewUrls((prev) => ({ ...prev, [tempId]: result.data.url }));
-    setImages((prev) =>
-      prev.map((img) =>
-        img.id === tempId
-          ? {
-              id: result.data.id,
-              url: result.data.url,
-              name: result.data.name,
-              size: result.data.size,
-              order: img.order,
-              isCover: img.isCover,
-              uploadStatus: 'uploaded',
-            }
-          : img,
-      ),
-    );
+    syncFromServer(result.data.images);
   }
 
   function onFilesSelected(fileList: FileList | null) {
@@ -101,12 +101,9 @@ export function MediaStepForm({ draft }: MediaStepFormProps) {
     setError(null);
 
     const files = Array.from(fileList);
-    const startOrder = images.filter((img) => img.uploadStatus !== 'failed').length;
-    const shouldSetCover = startOrder === 0;
 
     void (async () => {
-      for (let index = 0; index < files.length; index += 1) {
-        const file = files[index]!;
+      for (const file of files) {
         if (!ACCEPT.split(',').includes(file.type)) {
           setError('يُسمح فقط بصور JPEG أو PNG أو WebP');
           return;
@@ -115,31 +112,34 @@ export function MediaStepForm({ draft }: MediaStepFormProps) {
           setError('حجم الملف كبير جدًا. الحد الأقصى 5 ميجابايت.');
           return;
         }
-
-        await uploadFile(file, startOrder + index, shouldSetCover && index === 0);
+        await uploadFile(file);
       }
     })();
   }
 
   function removeImage(id: string) {
-    const url = previewUrls[id];
-    if (url?.startsWith('blob:')) {
-      URL.revokeObjectURL(url);
-    }
+    if (id.startsWith('img-')) return;
+    setError(null);
+    startTransition(async () => {
+      const result = await deleteListingMediaAction(draft.id, id);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      syncFromServer(result.data.images);
+    });
+  }
 
-    const filtered = images
-      .filter((img) => img.id !== id)
-      .map((img, index) => ({
-        ...img,
-        order: index,
-        isCover: index === 0,
-      }));
-
-    setImages(filtered);
-    setPreviewUrls((prev) => {
-      const copy = { ...prev };
-      delete copy[id];
-      return copy;
+  function setAsCover(id: string) {
+    if (id.startsWith('img-')) return;
+    setError(null);
+    startTransition(async () => {
+      const result = await setPrimaryListingMediaAction(draft.id, id);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      syncFromServer(result.data.images);
     });
   }
 
@@ -157,14 +157,13 @@ export function MediaStepForm({ draft }: MediaStepFormProps) {
     }
 
     if (uploadedImages.length < 1) {
-      setError('أضف صورة واحدةًا على الأقل');
+      setError('أضف صورة واحدةً على الأقل');
       return;
     }
 
     startTransition(async () => {
       const result = await saveMediaStepAction(draft.id, {
         images: uploadedImages,
-        videoUrl,
       });
       if (!result.ok) {
         setError(result.error);
@@ -240,10 +239,20 @@ export function MediaStepForm({ draft }: MediaStepFormProps) {
                     غلاف
                   </span>
                 ) : null}
+                {!img.isCover && img.uploadStatus === 'uploaded' ? (
+                  <button
+                    type="button"
+                    onClick={() => setAsCover(img.id)}
+                    disabled={pending}
+                    className="absolute start-2 top-2 rounded bg-white/90 px-2 py-0.5 text-[10px] font-bold text-ink-700 shadow disabled:opacity-50"
+                  >
+                    تعيين غلاف
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => removeImage(img.id)}
-                  disabled={img.uploadStatus === 'uploading'}
+                  disabled={img.uploadStatus === 'uploading' || pending}
                   className="absolute end-2 top-2 inline-flex size-7 items-center justify-center rounded-full bg-white/90 text-ink-700 shadow disabled:opacity-50"
                   aria-label="حذف الصورة"
                 >
@@ -252,49 +261,15 @@ export function MediaStepForm({ draft }: MediaStepFormProps) {
               </li>
             ))}
           </ul>
-        ) : (
-          <button
-            type="button"
-            data-testid="demo-add-image"
-            className="mt-3 text-sm font-bold text-brand-700 underline"
-            onClick={() => {
-              const demoPath = DEMO_PROPERTY_IMAGES[0];
-              const id = `img-demo-${Date.now()}`;
-              setImages([
-                {
-                  id,
-                  url: demoPath,
-                  name: 'demo-cover.webp',
-                  size: 120_000,
-                  order: 0,
-                  isCover: true,
-                  uploadStatus: 'uploaded',
-                },
-              ]);
-              setPreviewUrls({ [id]: demoPath });
-            }}
-          >
-            إضافة صورة تجريبية
-          </button>
-        )}
+        ) : null}
       </div>
 
-      <div>
-        <label
-          htmlFor="video-url"
-          className="mb-1.5 block text-sm font-semibold text-ink-800"
-        >
-          {listingCopy.videoUrl}
-        </label>
-        <input
-          id="video-url"
-          type="url"
-          value={videoUrl}
-          onChange={(e) => setVideoUrl(e.target.value)}
-          placeholder={listingCopy.videoPlaceholder}
-          className="h-12 w-full rounded-lg border border-[#d9d9d9] bg-white px-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
-          dir="ltr"
-        />
+      <div className="rounded-lg border border-[#e5e5e5] bg-surface-50 px-4 py-3">
+        <p className="text-sm font-semibold text-ink-800">{listingCopy.videoUrl}</p>
+        <p className="mt-1 text-xs text-ink-500">
+          رفع أو ربط الفيديو غير متاح في هذه المرحلة. سيتم دعمه لاحقًا عندما يوفر
+          الخادم واجهة إرفاق فيديو للإعلان.
+        </p>
       </div>
 
       {error ? (

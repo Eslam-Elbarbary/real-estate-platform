@@ -2,7 +2,11 @@ import { redirect } from 'next/navigation';
 import { createPageMetadata } from '@/lib/seo/metadata';
 import { routes } from '@/config/routes';
 import { getServerSession } from '@/features/auth/session';
-import { FavoritesPage, activityCopy } from '@/features/activity';
+import {
+  FavoritesPage,
+  activityCopy,
+  getFavoritesService,
+} from '@/features/activity';
 
 export const metadata = createPageMetadata({
   title: activityCopy.favorites.title,
@@ -19,5 +23,8 @@ export default async function FavoritesRoutePage() {
     );
   }
 
-  return <FavoritesPage />;
+  const resolved = await getFavoritesService().listResolved();
+  const properties = resolved.map((item) => item.property);
+
+  return <FavoritesPage properties={properties} />;
 }

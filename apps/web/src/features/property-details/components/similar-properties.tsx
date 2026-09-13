@@ -5,9 +5,13 @@ import type { Property } from '@/types';
 
 interface SimilarPropertiesProps {
   properties: Property[];
+  favoritePropertyIds?: Set<string>;
 }
 
-export function SimilarProperties({ properties }: SimilarPropertiesProps) {
+export function SimilarProperties({
+  properties,
+  favoritePropertyIds,
+}: SimilarPropertiesProps) {
   if (!properties.length) {
     return null;
   }
@@ -24,7 +28,11 @@ export function SimilarProperties({ properties }: SimilarPropertiesProps) {
           slideClassName="basis-[85%] pe-4 sm:basis-[46%] md:basis-[32%] lg:basis-[24%] xl:basis-[20%] 2xl:basis-[19.5%]"
         >
           {properties.map((property) => (
-            <PropertyCard key={property.id} property={property} />
+            <PropertyCard
+              key={property.id}
+              property={property}
+              initialIsFavorite={favoritePropertyIds?.has(property.id) ?? false}
+            />
           ))}
         </HorizontalCardsCarousel>
       </div>

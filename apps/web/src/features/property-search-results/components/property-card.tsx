@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Bath, BedDouble, Heart, Images, MapPin, Phone, Ruler } from 'lucide-react';
+import { Bath, BedDouble, Images, MapPin, Phone, Ruler } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa';
+import { FavoriteButton } from '@/features/activity/favorites/favorite-button';
 import { uiLabels } from '@/config/labels';
 import { routes } from '@/config/routes';
 import { formatArea } from '@/lib/formatting/area';
@@ -17,6 +17,8 @@ interface PropertyCardProps {
   className?: string;
   /** Search Results footer with WhatsApp / Call. Off by default for reuse. */
   showContactActions?: boolean;
+  /** Initial favorite state from server (authenticated users). */
+  initialIsFavorite?: boolean;
 }
 
 function digitsOnly(phone: string): string {
@@ -46,8 +48,8 @@ export function PropertyCard({
   property,
   className,
   showContactActions = false,
+  initialIsFavorite = false,
 }: PropertyCardProps) {
-  const [favorite, setFavorite] = useState(false);
   const href = routes.listing(property.id, property.slug);
   const cover =
     property.images.find((image) => image.isCover) ?? property.images[0];
@@ -67,7 +69,6 @@ export function PropertyCard({
         className,
       )}
     >
-      {/* ~1.5 width/height → taller dominant image on wide desktop cards */}
       <div className="relative aspect-[3/2] overflow-hidden bg-surface-100 xl:min-h-[250px]">
         <Link href={href} className="absolute inset-0" tabIndex={-1}>
           {cover ? (
@@ -81,17 +82,11 @@ export function PropertyCard({
           ) : null}
         </Link>
 
-        <button
-          type="button"
-          onClick={() => setFavorite((current) => !current)}
-          aria-label={favorite ? uiLabels.removeFavorite : uiLabels.addFavorite}
-          className="absolute top-3 start-3 z-10 inline-flex size-10 items-center justify-center rounded-full bg-white/95 text-ink-700 shadow-sm transition-colors hover:text-brand-700"
-        >
-          <Heart
-            className={cn('size-[18px]', favorite && 'fill-brand-600 text-brand-600')}
-            aria-hidden
-          />
-        </button>
+        <FavoriteButton
+          propertyId={property.id}
+          initialIsFavorite={initialIsFavorite}
+          variant="card"
+        />
 
         {property.verificationState === 'verified' ? (
           <span className="absolute top-3 end-3 z-10 rounded bg-success-700 px-2.5 py-1 text-xs font-bold text-white">
@@ -126,9 +121,11 @@ export function PropertyCard({
           <p className="text-[17px] font-bold leading-none text-ink-950 sm:text-lg">
             {formatCurrency(property.price, property.currency)}
           </p>
-          <p className="shrink-0 text-xs text-ink-500 sm:text-[13px]">
-            {formatCurrency(property.pricePerSqm, property.currency)}/م²
-          </p>
+          {property.pricePerSqm > 0 ? (
+            <p className="shrink-0 text-xs text-ink-500 sm:text-[13px]">
+              {formatCurrency(property.pricePerSqm, property.currency)}/م²
+            </p>
+          ) : null}
         </div>
 
         <Link
@@ -144,10 +141,12 @@ export function PropertyCard({
         </p>
 
         <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-[12px] text-ink-600">
-          <span className="inline-flex items-center gap-1">
-            <Ruler className="size-3.5 text-ink-400" aria-hidden />
-            {formatArea(property.area)}
-          </span>
+          {property.area > 0 ? (
+            <span className="inline-flex items-center gap-1">
+              <Ruler className="size-3.5 text-ink-400" aria-hidden />
+              {formatArea(property.area)}
+            </span>
+          ) : null}
           {property.bedrooms > 0 ? (
             <span className="inline-flex items-center gap-1">
               <BedDouble className="size-3.5 text-ink-400" aria-hidden />

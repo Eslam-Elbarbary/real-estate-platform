@@ -1,4 +1,5 @@
 import type { PropertyType, TransactionType } from '@/types';
+import type { ApiPropertyStatus } from '@/types/api/my-property';
 
 /** Marketplace listing management status — distinct from valuation PropertyPortfolio. */
 export type ManagedListingStatus =
@@ -20,13 +21,19 @@ export interface ManagedListing {
   slug: string;
   title: string;
   image?: string;
-  transaction: TransactionType;
-  propertyType: PropertyType;
+  transaction?: TransactionType;
+  propertyType?: PropertyType;
   locationLabel: string;
   priceEgp?: number;
   status: ManagedListingStatus;
+  /** Authoritative API status when loaded from backend. */
+  apiStatus?: ApiPropertyStatus;
   createdAt: string;
   updatedAt?: string;
+  publishedAt?: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  areaSqm?: number;
   views?: number;
   searchAppearances?: number;
   contacts?: number;

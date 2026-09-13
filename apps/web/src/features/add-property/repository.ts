@@ -56,6 +56,7 @@ export function createEmptyDraft(userId: string, id: string): ListingDraft {
   return {
     id,
     ownerUserId: userId,
+    apiStatus: 'DRAFT',
     transaction: 'sale',
     propertyType: null,
     details: {

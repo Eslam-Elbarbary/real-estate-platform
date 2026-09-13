@@ -8,7 +8,6 @@ import type { PropertySearchFilters, PropertySortOption } from '@/types';
 import { cn } from '@/lib/utils/cn';
 
 const sortOptions: Array<{ value: PropertySortOption; label: string }> = [
-  { value: 'recommended', label: uiLabels.sortRecommended },
   { value: 'newest', label: uiLabels.sortNewest },
   { value: 'price_asc', label: uiLabels.sortPriceAsc },
   { value: 'price_desc', label: uiLabels.sortPriceDesc },
@@ -21,7 +20,10 @@ interface SortControlProps {
 
 export function SortControl({ filters, className }: SortControlProps) {
   const router = useRouter();
-  const current = filters.sort ?? 'recommended';
+  const current =
+    filters.sort === 'price_asc' || filters.sort === 'price_desc'
+      ? filters.sort
+      : 'newest';
 
   return (
     <label

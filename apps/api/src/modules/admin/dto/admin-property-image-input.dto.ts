@@ -1,6 +1,14 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { MediaType } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsString, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class AdminPropertyImageInputDto {
   @ApiProperty()
@@ -16,4 +24,13 @@ export class AdminPropertyImageInputDto {
   @ApiProperty({ example: false })
   @IsBoolean()
   isPrimary!: boolean;
+
+  @ApiPropertyOptional({
+    enum: MediaType,
+    default: MediaType.IMAGE,
+    description: 'Defaults to IMAGE when omitted',
+  })
+  @IsOptional()
+  @IsEnum(MediaType)
+  type?: MediaType;
 }

@@ -20,13 +20,19 @@ interface PropertyMapExplorerProps {
   properties: Property[];
   filters: PropertySearchFilters;
   selectedLocation: LocationOption | null;
+  favoritePropertyIds?: Set<string> | string[];
 }
 
 export function PropertyMapExplorer({
   properties,
   filters,
   selectedLocation,
+  favoritePropertyIds,
 }: PropertyMapExplorerProps) {
+  const favoriteIds =
+    favoritePropertyIds instanceof Set
+      ? favoritePropertyIds
+      : new Set(favoritePropertyIds ?? []);
   const ordered = useMemo(
     () => groupPropertiesByMapProximity(properties),
     [properties],
@@ -178,6 +184,7 @@ export function PropertyMapExplorer({
             onFocusProperty={setActivePropertyId}
             onUserScroll={() => setPauseListFollow(false)}
             scrollRef={scrollRef}
+            favoritePropertyIds={favoriteIds}
           />
         </div>
       </div>

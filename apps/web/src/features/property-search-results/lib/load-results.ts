@@ -1,9 +1,12 @@
 import { buildPropertySearchPath } from '@/features/property-search/search-params';
-import { getLocationOptions, type LocationOption } from '@/features/locations';
+import { getSearchLocationOptions } from '@/features/locations/api-options';
+import type { LocationOption } from '@/features/locations';
+import { getFavoritesService } from '@/features/activity';
 import {
   getSearchSubtypeCounts,
   searchProperties,
 } from '@/features/properties';
+import { ApiRequestError } from '@/lib/api/errors';
 import type { PropertySearchFilters, PropertySearchResult } from '@/types';
 import {
   getResultsMetadataDescription,
@@ -17,6 +20,14 @@ import {
 
 type SearchParamsInput = Record<string, string | string[] | undefined>;
 
+const EMPTY_RESULT: PropertySearchResult = {
+  items: [],
+  total: 0,
+  page: 1,
+  pageSize: 12,
+  totalPages: 0,
+};
+
 export interface LoadedSearchResults {
   filters: PropertySearchFilters;
   result: PropertySearchResult;
@@ -26,6 +37,8 @@ export interface LoadedSearchResults {
   canonicalPath: string;
   metadataTitle: string;
   metadataDescription: string;
+  favoritePropertyIds: string[];
+  errorMessage?: string;
 }
 
 export function validateRouteParams(input: {
@@ -71,11 +84,41 @@ export async function loadSearchResults(input: {
       ? { ...resolved.filters, page: 1, pageSize: 48 }
       : resolved.filters;
 
-  const [result, locations, subtypeCounts] = await Promise.all([
-    searchProperties(filters),
-    getLocationOptions(),
-    getSearchSubtypeCounts(filters),
-  ]);
+  let result: PropertySearchResult = EMPTY_RESULT;
+  let locations: LocationOption[] = [];
+  let subtypeCounts: Record<string, number> = {};
+  let favoritePropertyIds: string[] = [];
+  let errorMessage: string | undefined;
+
+  try {
+    const [searchResult, locationOptions, counts, favoriteIds] =
+      await Promise.all([
+        searchProperties(filters),
+        getSearchLocationOptions(),
+        getSearchSubtypeCounts(filters),
+        getFavoritesService().listPropertyIdsIfAuthenticated(),
+      ]);
+    result = searchResult;
+    locations = locationOptions;
+    subtypeCounts = counts;
+    favoritePropertyIds = favoriteIds;
+  } catch (error) {
+    errorMessage =
+      error instanceof ApiRequestError
+        ? error.userMessage
+        : error instanceof Error
+          ? error.message
+          : 'تعذر تحميل نتائج البحث.';
+
+    try {
+      locations = await getSearchLocationOptions();
+    } catch {
+      locations = [];
+    }
+
+    favoritePropertyIds =
+      await getFavoritesService().listPropertyIdsIfAuthenticated();
+  }
 
   const selectedLocation =
     filters.locationSlugs?.length
@@ -102,5 +145,7 @@ export async function loadSearchResults(input: {
     canonicalPath,
     metadataTitle: getResultsMetadataTitle(filters),
     metadataDescription: getResultsMetadataDescription(filters, result.total),
+    favoritePropertyIds,
+    errorMessage,
   };
 }

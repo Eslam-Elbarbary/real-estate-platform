@@ -4,14 +4,17 @@ import {
   City,
   Compound,
   Country,
+  Developer,
   District,
   Feature,
   FinishingType,
   MediaAsset,
+  MediaType,
   PaymentType,
   Property,
   PropertyImage,
   PropertyType,
+  RentPeriod,
   TransactionType,
   User,
 } from '@prisma/client';
@@ -157,7 +160,16 @@ export class PublicPropertyCardDto {
 
 export class PublicPropertyImageDto {
   @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  mediaAssetId!: string;
+
+  @ApiProperty()
   url!: string;
+
+  @ApiProperty({ enum: MediaType })
+  type!: MediaType;
 
   @ApiProperty()
   sortOrder!: number;
@@ -196,6 +208,12 @@ export class PublicPropertyDetailsDto {
   @ApiPropertyOptional({ nullable: true })
   price!: number | null;
 
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Derived as price / areaSqm when both are present',
+  })
+  pricePerSqm!: number | null;
+
   @ApiProperty()
   currency!: string;
 
@@ -204,6 +222,9 @@ export class PublicPropertyDetailsDto {
 
   @ApiPropertyOptional({ enum: FinishingType, nullable: true })
   finishingType!: FinishingType | null;
+
+  @ApiPropertyOptional({ enum: RentPeriod, nullable: true })
+  rentPeriod!: RentPeriod | null;
 
   @ApiPropertyOptional({ type: PublicTypeRefDto, nullable: true })
   propertyType!: PublicTypeRefDto | null;
@@ -225,6 +246,9 @@ export class PublicPropertyDetailsDto {
 
   @ApiPropertyOptional({ type: PublicLocationRefDto, nullable: true })
   compound!: PublicLocationRefDto | null;
+
+  @ApiPropertyOptional({ type: PublicLocationRefDto, nullable: true })
+  developer!: PublicLocationRefDto | null;
 
   @ApiPropertyOptional({ nullable: true })
   address!: string | null;
@@ -288,7 +312,7 @@ export type PropertyCardSource = Property & {
 };
 
 export type PropertyDetailsSource = PropertyCardSource & {
-  compound: Compound | null;
+  compound: (Compound & { developer: Developer | null }) | null;
   owner: User;
   features: Array<{ feature: Feature }>;
   _count: { favorites: number };
@@ -450,9 +474,11 @@ export function toPublicPropertyDetails(
     description: property.description,
     referenceNumber: property.referenceNumber,
     price: decimalToNumber(property.price),
+    pricePerSqm: computePricePerSqm(property.price, property.areaSqm),
     currency: property.currency,
     payment: toPayment(property),
     finishingType: property.finishingType,
+    rentPeriod: property.rentPeriod,
     propertyType: toTypeRef(property.propertyType),
     transactionType: toTypeRef(property.transactionType),
     country: location.country,
@@ -460,6 +486,7 @@ export function toPublicPropertyDetails(
     area: location.area,
     district: location.district,
     compound: toLocationRef(property.compound),
+    developer: toLocationRef(property.compound?.developer ?? null),
     address: property.address,
     latitude: decimalToNumber(property.latitude),
     longitude: decimalToNumber(property.longitude),
@@ -474,7 +501,10 @@ export function toPublicPropertyDetails(
     images: [...property.images]
       .sort((a, b) => a.sortOrder - b.sortOrder)
       .map((img) => ({
+        id: img.id,
+        mediaAssetId: img.mediaAssetId,
         url: img.mediaAsset.url,
+        type: img.type,
         sortOrder: img.sortOrder,
         isPrimary: img.isPrimary,
       })),

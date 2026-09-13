@@ -11,7 +11,11 @@ export const metadata = createPageMetadata({
   noIndex: true,
 });
 
-export default async function AddPropertyPage() {
+interface PageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function AddPropertyPage({ searchParams }: PageProps) {
   const session = await getServerSession();
   if (!session) {
     redirect(
@@ -19,5 +23,14 @@ export default async function AddPropertyPage() {
     );
   }
 
-  return <StartListingClient />;
+  const params = await searchParams;
+  const rawError = params.error;
+  const error =
+    typeof rawError === 'string'
+      ? rawError
+      : Array.isArray(rawError)
+        ? rawError[0]
+        : undefined;
+
+  return <StartListingClient initialError={error} />;
 }

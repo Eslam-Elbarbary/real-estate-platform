@@ -1,14 +1,8 @@
 import { z } from 'zod';
-import { propertyTypeOptions } from '@/config/property-types';
-
-const propertyTypeValues = propertyTypeOptions.map((o) => o.value) as [
-  (typeof propertyTypeOptions)[number]['value'],
-  ...(typeof propertyTypeOptions)[number]['value'][],
-];
 
 export const basicStepSchema = z.object({
   transaction: z.enum(['sale', 'rent']),
-  propertyType: z.enum(propertyTypeValues),
+  propertyType: z.string().min(1),
   locationId: z.string().min(1),
   locationLabel: z.string().min(1),
   latitude: z.number().finite(),
@@ -79,30 +73,12 @@ export const descriptionStepSchema = z.object({
   }),
 });
 
-const uploadedImageUrlSchema = z
-  .string()
-  .min(1)
-  .refine(
-    (value) => {
-      if (value.startsWith('/assets/')) {
-        return true;
-      }
-      try {
-        const parsed = new URL(value);
-        return parsed.protocol === 'https:';
-      } catch {
-        return false;
-      }
-    },
-    { message: 'رابط الصورة غير صالح' },
-  );
-
 export const mediaStepSchema = z.object({
   images: z
     .array(
       z.object({
         id: z.string(),
-        url: uploadedImageUrlSchema,
+        url: z.string().min(1),
         name: z.string(),
         size: z.number(),
         order: z.number(),
@@ -110,18 +86,7 @@ export const mediaStepSchema = z.object({
       }),
     )
     .min(1),
-  videoUrl: z
-    .string()
-    .optional()
-    .transform((v) => {
-      if (!v || !v.trim()) return undefined;
-      try {
-        new URL(v);
-        return v;
-      } catch {
-        return undefined;
-      }
-    }),
+  videoUrl: z.string().optional(),
 });
 
 export type BasicStepInput = z.infer<typeof basicStepSchema>;

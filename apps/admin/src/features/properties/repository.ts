@@ -8,8 +8,12 @@ import type {
   AdminPropertiesListResult,
   AdminPropertyActionResult,
   AdminPropertyDetails,
+  AdminPropertyImage,
+  AdminPropertyStatusCounts,
+  AttachPropertyMediaInput,
   CreatePropertyInput,
   Property,
+  ReorderPropertyMediaInput,
   UpdatePropertyInput,
 } from './types';
 
@@ -22,10 +26,71 @@ interface ApiEnvelope<T> {
     limit: number;
     total: number;
     totalPages: number;
+    counts?: AdminPropertyStatusCounts;
   };
 }
 
 const PROPERTIES_PATH = '/api/v1/admin/properties';
+
+function emptyStatusCounts(): AdminPropertyStatusCounts {
+  return {
+    ALL: 0,
+    DRAFT: 0,
+    PENDING_REVIEW: 0,
+    PENDING_PAYMENT: 0,
+    PUBLISHED: 0,
+    REJECTED: 0,
+    ARCHIVED: 0,
+    EXPIRED: 0,
+  };
+}
+
+function parseCounts(
+  value: AdminPropertyStatusCounts | undefined,
+): AdminPropertyStatusCounts {
+  if (!value || typeof value.ALL !== 'number') {
+    return emptyStatusCounts();
+  }
+
+  return {
+    ALL: value.ALL,
+    DRAFT: value.DRAFT ?? 0,
+    PENDING_REVIEW: value.PENDING_REVIEW ?? 0,
+    PENDING_PAYMENT: value.PENDING_PAYMENT ?? 0,
+    PUBLISHED: value.PUBLISHED ?? 0,
+    REJECTED: value.REJECTED ?? 0,
+    ARCHIVED: value.ARCHIVED ?? 0,
+    EXPIRED: value.EXPIRED ?? 0,
+  };
+}
+
+function parseMediaListResponse(
+  response: ApiEnvelope<AdminPropertyImage[]>,
+  userMessage: string,
+): AdminPropertyImage[] {
+  if (!response.success || !Array.isArray(response.data)) {
+    throw createAdminError('UNKNOWN', {
+      message: 'Invalid property media list response',
+      userMessage,
+      details: response,
+    });
+  }
+  return response.data;
+}
+
+function parseMediaItemResponse(
+  response: ApiEnvelope<AdminPropertyImage>,
+  userMessage: string,
+): AdminPropertyImage {
+  if (!response.success || !response.data?.id) {
+    throw createAdminError('UNKNOWN', {
+      message: 'Invalid property media response',
+      userMessage,
+      details: response,
+    });
+  }
+  return response.data;
+}
 
 export async function fetchAdminProperties(
   filters: AdminPropertiesFilters,
@@ -36,6 +101,7 @@ export async function fetchAdminProperties(
       page: filters.page,
       limit: filters.limit,
       search: filters.search,
+      sort: filters.sort,
     },
   });
 
@@ -69,6 +135,7 @@ export async function fetchAdminProperties(
       limit: meta.limit,
       total: meta.total,
       totalPages: meta.totalPages,
+      counts: parseCounts(meta.counts),
     },
   };
 }
@@ -148,6 +215,48 @@ export async function archiveProperty(
   );
 }
 
+export async function publishProperty(
+  id: string,
+): Promise<AdminPropertyActionResult> {
+  const response = await authenticatedApiClient.post<ApiEnvelope<AdminPropertyActionResult>>(
+    `${PROPERTIES_PATH}/${id}/publish`,
+    undefined,
+  );
+
+  return parseActionResponse(
+    response.data,
+    'تعذر نشر العقار.',
+  );
+}
+
+export async function unpublishProperty(
+  id: string,
+): Promise<AdminPropertyActionResult> {
+  const response = await authenticatedApiClient.post<ApiEnvelope<AdminPropertyActionResult>>(
+    `${PROPERTIES_PATH}/${id}/unpublish`,
+    undefined,
+  );
+
+  return parseActionResponse(
+    response.data,
+    'تعذر إلغاء نشر العقار.',
+  );
+}
+
+export async function restoreProperty(
+  id: string,
+): Promise<AdminPropertyActionResult> {
+  const response = await authenticatedApiClient.post<ApiEnvelope<AdminPropertyActionResult>>(
+    `${PROPERTIES_PATH}/${id}/restore`,
+    undefined,
+  );
+
+  return parseActionResponse(
+    response.data,
+    'تعذر استعادة العقار.',
+  );
+}
+
 function parsePropertyDetailsResponse(
   response: ApiEnvelope<AdminPropertyDetails>,
   userMessage: string,
@@ -201,4 +310,67 @@ export async function updateProperty(
   );
 
   return parsePropertyDetailsResponse(response.data, 'تعذر تحديث العقار.');
+}
+
+export async function listPropertyMedia(
+  propertyId: string,
+): Promise<AdminPropertyImage[]> {
+  const response = await authenticatedApiClient.get<ApiEnvelope<AdminPropertyImage[]>>(
+    `${PROPERTIES_PATH}/${propertyId}/media`,
+  );
+
+  return parseMediaListResponse(response.data, 'تعذر تحميل وسائط العقار.');
+}
+
+export async function attachPropertyMedia(
+  propertyId: string,
+  input: AttachPropertyMediaInput,
+): Promise<AdminPropertyImage> {
+  const response = await authenticatedApiClient.post<ApiEnvelope<AdminPropertyImage>>(
+    `${PROPERTIES_PATH}/${propertyId}/media`,
+    input,
+  );
+
+  return parseMediaItemResponse(response.data, 'تعذر إرفاق الوسائط بالعقار.');
+}
+
+export async function reorderPropertyMedia(
+  propertyId: string,
+  input: ReorderPropertyMediaInput,
+): Promise<AdminPropertyImage[]> {
+  const response = await authenticatedApiClient.patch<ApiEnvelope<AdminPropertyImage[]>>(
+    `${PROPERTIES_PATH}/${propertyId}/media/reorder`,
+    input,
+  );
+
+  return parseMediaListResponse(response.data, 'تعذر إعادة ترتيب الوسائط.');
+}
+
+export async function setPrimaryPropertyMedia(
+  propertyId: string,
+  imageId: string,
+): Promise<AdminPropertyImage> {
+  const response = await authenticatedApiClient.patch<ApiEnvelope<AdminPropertyImage>>(
+    `${PROPERTIES_PATH}/${propertyId}/media/${imageId}/primary`,
+    {},
+  );
+
+  return parseMediaItemResponse(response.data, 'تعذر تعيين الصورة الرئيسية.');
+}
+
+export async function deletePropertyMedia(
+  propertyId: string,
+  imageId: string,
+): Promise<void> {
+  const response = await authenticatedApiClient.delete<ApiEnvelope<unknown>>(
+    `${PROPERTIES_PATH}/${propertyId}/media/${imageId}`,
+  );
+
+  if (!response.data.success) {
+    throw createAdminError('UNKNOWN', {
+      message: 'Invalid property media delete response',
+      userMessage: 'تعذر حذف الوسائط.',
+      details: response.data,
+    });
+  }
 }

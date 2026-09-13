@@ -55,8 +55,9 @@ export function ownerInstallmentAskingPrice(
   );
 }
 
-export function resolveListingDisplayPrice(draft: ListingDraft): number | undefined {
-  const pricing = draft.pricing;
+export function resolvePricingAmount(
+  pricing: ListingDraft['pricing'],
+): number | undefined {
   if (!pricing || pricing.mode == null) return undefined;
   if (pricing.mode === 'owner_cash') return pricing.price;
   if (pricing.mode === 'rent') return pricing.price;
@@ -67,4 +68,8 @@ export function resolveListingDisplayPrice(draft: ListingDraft): number | undefi
     return ownerInstallmentAskingPrice(pricing);
   }
   return undefined;
+}
+
+export function resolveListingDisplayPrice(draft: ListingDraft): number | undefined {
+  return resolvePricingAmount(draft.pricing);
 }

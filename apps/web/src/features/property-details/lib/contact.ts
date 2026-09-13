@@ -4,6 +4,10 @@ function digitsOnly(phone: string): string {
   return phone.replace(/\D/g, '');
 }
 
+export function hasSellerPhone(seller: PropertySeller): boolean {
+  return digitsOnly(seller.whatsapp ?? seller.phone).length > 0;
+}
+
 export function getCallHref(phone: string): string {
   return `tel:${phone}`;
 }

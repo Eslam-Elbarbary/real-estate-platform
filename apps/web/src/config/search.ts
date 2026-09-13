@@ -1,7 +1,7 @@
 export const SEARCH_DEFAULTS = {
   page: 1,
   pageSize: 12,
-  sort: 'recommended',
+  sort: 'newest',
 } as const;
 
 export const SEARCH_QUERY_KEYS = [

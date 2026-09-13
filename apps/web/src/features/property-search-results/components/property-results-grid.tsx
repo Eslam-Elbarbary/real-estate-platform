@@ -5,12 +5,18 @@ import { SearchPromoCard } from './search-promo-card';
 interface PropertyResultsGridProps {
   properties: Property[];
   showPromo?: boolean;
+  favoritePropertyIds?: Set<string> | string[];
 }
 
 export function PropertyResultsGrid({
   properties,
   showPromo = true,
+  favoritePropertyIds,
 }: PropertyResultsGridProps) {
+  const favoriteIds =
+    favoritePropertyIds instanceof Set
+      ? favoritePropertyIds
+      : new Set(favoritePropertyIds ?? []);
   const insertAt = Math.min(4, properties.length);
 
   return (
@@ -20,6 +26,7 @@ export function PropertyResultsGrid({
           key={property.id}
           property={property}
           showContactActions
+          initialIsFavorite={favoriteIds.has(property.id)}
         />
       ))}
 
@@ -30,6 +37,7 @@ export function PropertyResultsGrid({
           key={property.id}
           property={property}
           showContactActions
+          initialIsFavorite={favoriteIds.has(property.id)}
         />
       ))}
     </div>

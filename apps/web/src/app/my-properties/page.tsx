@@ -2,11 +2,15 @@ import { redirect } from 'next/navigation';
 import { createPageMetadata } from '@/lib/seo/metadata';
 import { routes } from '@/config/routes';
 import { getServerSession } from '@/features/auth/session';
+import { ApiRequestError } from '@/lib/api/errors';
 import { getPropertyManagementService } from '@/features/my-properties/service';
 import { parseMyPropertiesSearchParams } from '@/features/my-properties/search-params';
 import { MyPropertiesPage } from '@/features/my-properties/components/my-properties-page';
-import { getListingDraftService } from '@/features/add-property/service';
-import { listingDraftToManagedListing } from '@/features/my-properties/lib/draft-bridge';
+import type {
+  EngagementSummary,
+  ManagedListingSearchResult,
+  ManagedListingStatusCounts,
+} from '@/features/my-properties/types';
 
 export const metadata = createPageMetadata({
   title: 'عقاراتي',
@@ -17,6 +21,38 @@ export const metadata = createPageMetadata({
 
 interface MyPropertiesRouteProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+const EMPTY_COUNTS: ManagedListingStatusCounts = {
+  published: 0,
+  rejected: 0,
+  expired: 0,
+  pending: 0,
+  deleted: 0,
+  draft: 0,
+  all: 0,
+};
+
+const EMPTY_ENGAGEMENT: EngagementSummary = {
+  totalSearchAppearances: null,
+  totalViews: null,
+  totalContacts: null,
+  averageViewRate: null,
+  averageContactRate: null,
+  averageContactCost: null,
+};
+
+function emptyResult(
+  page: number,
+  pageSize: number,
+): ManagedListingSearchResult {
+  return {
+    items: [],
+    total: 0,
+    page,
+    pageSize,
+    totalPages: 0,
+  };
 }
 
 export default async function MyPropertiesRoutePage({
@@ -32,52 +68,54 @@ export default async function MyPropertiesRoutePage({
   const params = await searchParams;
   const filters = parseMyPropertiesSearchParams(params);
   const service = getPropertyManagementService();
-  const draftService = getListingDraftService();
 
-  const [result, counts, engagement, drafts] = await Promise.all([
-    service.searchListings({
-      userId: session.user.id,
-      status: filters.status,
-      query: filters.q,
-      sort: filters.sort,
-      page: filters.page,
-      pageSize: filters.pageSize,
-    }),
-    service.getStatusCounts(session.user.id),
-    service.getEngagementSummary(session.user.id),
-    draftService.listDrafts(session.user.id),
-  ]);
+  try {
+    const [result, counts, engagement] = await Promise.all([
+      service.searchListings({
+        userId: session.user.id,
+        status: filters.status,
+        query: filters.q,
+        sort: filters.sort,
+        page: filters.page,
+        pageSize: filters.pageSize,
+      }),
+      service.getStatusCounts(session.user.id),
+      service.getEngagementSummary(session.user.id),
+    ]);
 
-  const draftManaged = drafts.map(listingDraftToManagedListing);
-  const mergedCounts = {
-    ...counts,
-    draft: counts.draft + draftManaged.length,
-    all: counts.all + draftManaged.length,
-  };
+    return (
+      <MyPropertiesPage
+        user={session.user}
+        filters={filters}
+        result={result}
+        counts={counts}
+        engagement={engagement}
+      />
+    );
+  } catch (error) {
+    if (
+      error instanceof ApiRequestError &&
+      (error.code === 'UNAUTHORIZED' || error.status === 401)
+    ) {
+      redirect(
+        `${routes.auth.login}?returnTo=${encodeURIComponent(routes.myProperties)}`,
+      );
+    }
 
-  let mergedResult = result;
-  if (filters.status === 'draft') {
-    const combined = [...draftManaged, ...result.items];
-    const total = combined.length;
-    const totalPages = Math.max(1, Math.ceil(total / filters.pageSize));
-    const page = Math.min(filters.page, totalPages);
-    const start = (page - 1) * filters.pageSize;
-    mergedResult = {
-      items: combined.slice(start, start + filters.pageSize),
-      total,
-      page,
-      pageSize: filters.pageSize,
-      totalPages,
-    };
+    const message =
+      error instanceof ApiRequestError && error.code === 'NETWORK'
+        ? error.userMessage
+        : 'تعذر تحميل عقاراتك حاليًا';
+
+    return (
+      <MyPropertiesPage
+        user={session.user}
+        filters={filters}
+        result={emptyResult(filters.page, filters.pageSize)}
+        counts={EMPTY_COUNTS}
+        engagement={EMPTY_ENGAGEMENT}
+        errorMessage={message}
+      />
+    );
   }
-
-  return (
-    <MyPropertiesPage
-      user={session.user}
-      filters={filters}
-      result={mergedResult}
-      counts={mergedCounts}
-      engagement={engagement}
-    />
-  );
 }

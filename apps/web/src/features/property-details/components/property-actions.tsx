@@ -1,18 +1,24 @@
 'use client';
 
 import { useState } from 'react';
-import { Bookmark, Flag, NotebookPen, Share2 } from 'lucide-react';
+import { Flag, NotebookPen, Share2 } from 'lucide-react';
+import { FavoriteButton } from '@/features/activity/favorites/favorite-button';
 import { uiLabels } from '@/config/labels';
 import { cn } from '@/lib/utils/cn';
 
 interface PropertyActionsProps {
+  propertyId: string;
   title: string;
+  initialIsFavorite?: boolean;
   className?: string;
 }
 
-export function PropertyActions({ title, className }: PropertyActionsProps) {
-  const [saved, setSaved] = useState(false);
-  const [noted, setNoted] = useState(false);
+export function PropertyActions({
+  propertyId,
+  title,
+  initialIsFavorite = false,
+  className,
+}: PropertyActionsProps) {
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const share = async () => {
@@ -38,72 +44,45 @@ export function PropertyActions({ title, className }: PropertyActionsProps) {
     }
   };
 
-  const actions = [
-    {
-      key: 'save',
-      label: uiLabels.saveAction,
-      icon: Bookmark,
-      tone: 'brand' as const,
-      active: saved,
-      onClick: () => setSaved((value) => !value),
-    },
-    {
-      key: 'note',
-      label: uiLabels.noteAction,
-      icon: NotebookPen,
-      tone: 'brand' as const,
-      active: noted,
-      onClick: () => setNoted((value) => !value),
-    },
-    {
-      key: 'share',
-      label: uiLabels.shareAction,
-      icon: Share2,
-      tone: 'brand' as const,
-      active: false,
-      onClick: () => {
-        void share();
-      },
-    },
-    {
-      key: 'report',
-      label: uiLabels.reportAction,
-      icon: Flag,
-      tone: 'danger' as const,
-      active: false,
-      onClick: () => undefined,
-    },
-  ];
-
   return (
     <div className={cn('relative', className)}>
       <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-        {actions.map((action) => {
-          const Icon = action.icon;
-          return (
-            <button
-              key={action.key}
-              type="button"
-              onClick={action.onClick}
-              className={cn(
-                'inline-flex items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-semibold transition-colors hover:bg-surface-50',
-                action.tone === 'danger'
-                  ? 'text-danger-600 hover:text-danger-700'
-                  : 'text-brand-700 hover:text-brand-600',
-                action.active && 'bg-brand-50',
-              )}
-            >
-              <Icon
-                className={cn(
-                  'size-[18px]',
-                  action.active && action.tone !== 'danger' && 'fill-brand-600',
-                )}
-                aria-hidden
-              />
-              {action.label}
-            </button>
-          );
-        })}
+        <FavoriteButton
+          propertyId={propertyId}
+          initialIsFavorite={initialIsFavorite}
+          variant="action"
+        />
+
+        <button
+          type="button"
+          disabled
+          aria-disabled
+          className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-semibold text-ink-400"
+        >
+          <NotebookPen className="size-[18px]" aria-hidden />
+          {uiLabels.noteAction}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            void share();
+          }}
+          className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-semibold text-brand-700 transition-colors hover:bg-surface-50 hover:text-brand-600"
+        >
+          <Share2 className="size-[18px]" aria-hidden />
+          {uiLabels.shareAction}
+        </button>
+
+        <button
+          type="button"
+          disabled
+          aria-disabled
+          className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-md px-2.5 py-2 text-sm font-semibold text-ink-400"
+        >
+          <Flag className="size-[18px]" aria-hidden />
+          {uiLabels.reportAction}
+        </button>
       </div>
       {feedback ? (
         <p className="absolute top-full start-0 mt-1 text-xs font-medium text-brand-700">

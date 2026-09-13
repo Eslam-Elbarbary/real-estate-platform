@@ -19,6 +19,7 @@ interface MapResultsPanelProps {
   onFocusProperty: (id: string) => void;
   onUserScroll?: () => void;
   scrollRef: RefObject<HTMLDivElement | null>;
+  favoritePropertyIds?: Set<string>;
 }
 
 export function MapResultsPanel({
@@ -31,6 +32,7 @@ export function MapResultsPanel({
   onFocusProperty,
   onUserScroll,
   scrollRef,
+  favoritePropertyIds,
 }: MapResultsPanelProps) {
   return (
     <section className="flex h-full min-h-0 flex-col border-s border-border bg-white">
@@ -74,6 +76,7 @@ export function MapResultsPanel({
                   active={property.id === activePropertyId}
                   onHover={onHover}
                   onFocusProperty={onFocusProperty}
+                  initialIsFavorite={favoritePropertyIds?.has(property.id) ?? false}
                 />
               </li>
             ))}

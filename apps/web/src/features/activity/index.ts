@@ -14,6 +14,11 @@ export { NotesPage } from './components/notes-page';
 export { NotificationsPage } from './components/notifications-page';
 export { AlertsPage } from './components/alerts-page';
 export { getFavoritesService } from './favorites/service';
+export { FavoriteButton } from './favorites/favorite-button';
+export {
+  addFavoriteAction,
+  removeFavoriteAction,
+} from './favorites/actions';
 export { getAlertsService } from './alerts/service';
 export { getNotesService } from './notes/service';
 export { getNotificationsService } from './notifications/service';

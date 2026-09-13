@@ -1,5 +1,4 @@
 import type {
-  ListingAmenityId,
   ListingDraftStep,
   ListingRegistrationStatus,
   ListingViewType,
@@ -15,7 +14,7 @@ export const LISTING_STEPS: {
   { id: 'price', label: 'سعر العقار' },
   { id: 'description', label: 'وصف العقار' },
   { id: 'media', label: 'الفيديوهات والصور' },
-  { id: 'publish', label: 'النشر' },
+  { id: 'publish', label: 'مراجعة البيانات والباقة' },
 ];
 
 export const listingCopy = {
@@ -75,17 +74,52 @@ export const listingCopy = {
   maxSize: 'أكبر حجم: 30 ميجابايت',
   videoUrl: 'رابط الفيديو (اختياري)',
   videoPlaceholder: 'أضف رابط الفيديو يوتيوب',
-  publishTitle: 'نشر الإعلان',
+  publishTitle: 'مراجعة البيانات والباقة',
   listingFeeLabel: 'تكلفة الإعلان',
   payNow: 'ادفع الآن',
-  checkoutPaymentTitle: 'بيانات الدفع',
-  checkoutSummaryTitle: 'ملخص الدفع',
+  checkoutPaymentTitle: 'إتمام الدفع',
+  checkoutSummaryTitle: 'ملخص الباقة',
   addCard: 'اضف بطاقة جديدة',
   totalDue: 'إجمالي المستحق',
-  payAndPublish: 'ادفع وانشر إعلانك',
+  payAndPublish: 'ادفع وأرسل للمراجعة',
   tipsTitle: 'نصائح لإعلان أفضل',
   egp: 'جنيه مصري',
+  completionTitle: 'اكتمال بيانات الإعلان',
+  completionReady: 'بيانات الإعلان مكتملة ويمكن اختيار الباقة.',
+  completionIncomplete: 'أكمل الحقول التالية قبل اختيار الباقة أو الإرسال.',
+  plansTitle: 'اختر باقة النشر',
+  selectPlan: 'اختيار هذه الباقة',
+  planDuration: (days: number) => `المدة: ${days} يوم`,
+  planFree: 'مجانية',
+  submittedTitle: 'تم إرسال العقار للمراجعة',
+  submittedBody:
+    'إعلانك الآن في انتظار مراجعة الإدارة. لن يظهر في السوق قبل الموافقة.',
+  viewMyProperties: 'عرض عقاراتي',
+  viewPropertyStatus: 'عرض حالة العقار',
+  waitingReviewTitle: 'الإعلان قيد المراجعة',
+  waitingReviewBody: 'تم استلام إعلانك وهو الآن في انتظار موافقة الإدارة.',
+  publishedTitle: 'الإعلان منشور',
+  publishedBody: 'تمت الموافقة على إعلانك وهو ظاهر في السوق.',
+  rejectedTitle: 'تم رفض العقار',
+  rejectedBody:
+    'تم رفض العقار. يرجى مراجعة بيانات العقار وتعديلها ثم إعادة الإرسال.',
+  resubmit: 'إعادة الإرسال للمراجعة',
+  editListing: 'تعديل الإعلان',
+  paySubscription: 'إتمام الدفع',
+  paymentSuccessTitle: 'تم الدفع بنجاح',
+  paymentSuccessBody: 'تم إرسال العقار للمراجعة بعد إتمام الدفع.',
+  pendingPaymentTitle: 'بانتظار الدفع',
+  pendingPaymentBody: 'اختر باقة مدفوعة. أكمل الدفع لإرسال الإعلان للمراجعة.',
 } as const;
+
+export const completionFieldLabels: Record<string, string> = {
+  title: 'عنوان الإعلان',
+  propertyTypeId: 'نوع العقار',
+  transactionTypeId: 'نوع العملية (بيع / إيجار)',
+  areaId: 'المنطقة',
+  price: 'السعر',
+  images: 'صورة واحدةً على الأقل',
+};
 
 export const listingViewOptions: { value: ListingViewType; label: string }[] = [
   { value: 'main_street', label: 'شارع رئيسي' },
@@ -124,27 +158,7 @@ export const listingRegistrationOptions: {
   { value: 'unsure', label: 'لست متأكدًا' },
 ];
 
-export const listingAmenityOptions: {
-  value: ListingAmenityId;
-  label: string;
-}[] = [
-  { value: 'security', label: 'أمن' },
-  { value: 'elevator', label: 'مصعد' },
-  { value: 'landline', label: 'هاتف أرضي' },
-  { value: 'private_garden', label: 'حديقة خاصة' },
-  { value: 'natural_gas', label: 'عداد غاز طبيعي' },
-  { value: 'balcony', label: 'شرفة' },
-  { value: 'maid_room', label: 'غرفة خدم' },
-  { value: 'covered_garage', label: 'جراج مغطى' },
-  { value: 'kitchen_appliances', label: 'أجهزة مطبخ' },
-  { value: 'kids_area', label: 'منطقة ألعاب للأطفال' },
-  { value: 'ac', label: 'تكييف' },
-  { value: 'water_meter', label: 'عداد مياه' },
-  { value: 'pool', label: 'حمام سباحة' },
-  { value: 'electricity_meter', label: 'عداد كهرباء' },
-  { value: 'pets_allowed', label: 'مسموح بالحيوانات الأليفة' },
-];
-
+/** Legacy demo assets for unfinished publish/checkout cookie shell only. */
 export const DEMO_PROPERTY_IMAGES = [
   '/assets/properties/property-01.webp',
   '/assets/properties/property-02.webp',

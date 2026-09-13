@@ -1,9 +1,10 @@
 import { createPageMetadata } from '@/lib/seo/metadata';
 import { routes } from '@/config/routes';
-import { ListingCheckoutClient } from '@/features/add-property/components/steps/listing-checkout-client';
+import { ListingPaymentClient } from '@/features/add-property/components/steps/listing-payment-client';
 import { loadListingDraftForStep } from '@/features/add-property/lib/load-draft-page';
-import { getListingPublicationFee } from '@/features/add-property/lib/pricing';
+import { getListingDraftService } from '@/features/add-property/service';
 import { listingCopy } from '@/features/add-property/config';
+import { redirect } from 'next/navigation';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -13,7 +14,7 @@ export async function generateMetadata({ params }: PageProps) {
   const { id } = await params;
   return createPageMetadata({
     title: listingCopy.checkoutPaymentTitle,
-    description: 'ادفع رسوم نشر الإعلان.',
+    description: 'أكمل دفع باقة نشر الإعلان.',
     path: routes.addProperty.step(id, 'checkout'),
     noIndex: true,
   });
@@ -22,11 +23,13 @@ export async function generateMetadata({ params }: PageProps) {
 export default async function ListingCheckoutPage({ params }: PageProps) {
   const { id } = await params;
   const draft = await loadListingDraftForStep(id, 'checkout');
-  const fee = getListingPublicationFee({
-    transaction: draft.transaction,
-    propertyType: draft.propertyType,
-    locationId: draft.locationId,
-  });
+  const subscription = await getListingDraftService().getOpenSubscription(id);
 
-  return <ListingCheckoutClient draftId={draft.id} fee={fee} />;
+  if (!subscription || subscription.status !== 'PENDING') {
+    redirect(routes.addProperty.step(id, 'publish'));
+  }
+
+  return (
+    <ListingPaymentClient propertyId={draft.id} subscription={subscription} />
+  );
 }

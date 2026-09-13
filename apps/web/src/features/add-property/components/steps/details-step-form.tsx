@@ -4,10 +4,10 @@ import { useMemo, useState, useTransition, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { getButtonClassName } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
+import type { CatalogFeatureDto } from '@/types/api/public-property';
 import { saveDetailsStepAction } from '../../actions';
 import {
   detailsFieldVisibility,
-  listingAmenityOptions,
   listingCopy,
   listingFinishingOptions,
   listingRegistrationOptions,
@@ -15,7 +15,6 @@ import {
 } from '../../config';
 import { getListingPublicationFee } from '../../lib/pricing';
 import type {
-  ListingAmenityId,
   ListingDraft,
   ListingRegistrationStatus,
   ListingViewType,
@@ -27,9 +26,14 @@ const inputClass =
 
 interface DetailsStepFormProps {
   draft: ListingDraft;
+  features: CatalogFeatureDto[];
 }
 
-export function DetailsStepForm({ draft }: DetailsStepFormProps) {
+function featureLabel(feature: CatalogFeatureDto): string {
+  return feature.nameAr?.trim() || feature.nameEn;
+}
+
+export function DetailsStepForm({ draft, features }: DetailsStepFormProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +73,7 @@ export function DetailsStepForm({ draft }: DetailsStepFormProps) {
   const [mortgageEligible, setMortgageEligible] = useState(
     draft.details.mortgageEligible ?? false,
   );
-  const [amenities, setAmenities] = useState<ListingAmenityId[]>(
+  const [selectedFeatureIds, setSelectedFeatureIds] = useState<string[]>(
     draft.details.amenities ?? [],
   );
 
@@ -79,9 +83,11 @@ export function DetailsStepForm({ draft }: DetailsStepFormProps) {
     );
   }
 
-  function toggleAmenity(value: ListingAmenityId) {
-    setAmenities((prev) =>
-      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value],
+  function toggleFeature(featureId: string) {
+    setSelectedFeatureIds((prev) =>
+      prev.includes(featureId)
+        ? prev.filter((id) => id !== featureId)
+        : [...prev, featureId],
     );
   }
 
@@ -100,7 +106,7 @@ export function DetailsStepForm({ draft }: DetailsStepFormProps) {
         finishing,
         registrationStatus,
         mortgageEligible,
-        amenities,
+        amenities: selectedFeatureIds,
       });
       if (!result.ok) {
         setError(result.error);
@@ -131,7 +137,7 @@ export function DetailsStepForm({ draft }: DetailsStepFormProps) {
             className={cn(inputClass, 'pe-16')}
             required
           />
-          <span className="pointer-events-none absolute top-1/2 end-3 -translate-y-1/2 text-xs font-semibold text-ink-500">
+          <span className="pointer-events-none absolute top-0.5 end-3 -translate-y-1/2 text-xs font-semibold text-ink-500">
             متر²
           </span>
         </div>
@@ -239,25 +245,29 @@ export function DetailsStepForm({ draft }: DetailsStepFormProps) {
         <legend className="mb-3 text-sm font-semibold text-ink-800">
           {listingCopy.amenities}
         </legend>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {listingAmenityOptions.map((option) => {
-            const checked = amenities.includes(option.value);
-            return (
-              <label
-                key={option.value}
-                className="flex cursor-pointer items-center gap-2 text-sm text-ink-800"
-              >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => toggleAmenity(option.value)}
-                  className="size-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500"
-                />
-                {option.label}
-              </label>
-            );
-          })}
-        </div>
+        {features.length === 0 ? (
+          <p className="text-sm text-ink-500">لا تتوفر مزايا من الكتالوج حاليًا.</p>
+        ) : (
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {features.map((feature) => {
+              const checked = selectedFeatureIds.includes(feature.id);
+              return (
+                <label
+                  key={feature.id}
+                  className="flex cursor-pointer items-center gap-2 text-sm text-ink-800"
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleFeature(feature.id)}
+                    className="size-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500"
+                  />
+                  {featureLabel(feature)}
+                </label>
+              );
+            })}
+          </div>
+        )}
       </fieldset>
 
       {error ? (

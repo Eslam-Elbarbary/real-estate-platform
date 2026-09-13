@@ -8,13 +8,27 @@ import { hasPermission } from '@/features/auth/permissions';
 import { getAdminErrorMessage } from '@/lib/errors';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/utils/cn';
-import type { UserRole } from '@/types';
-import { createPropertyAction, updatePropertyAction } from '../actions';
+import {
+  createPropertyAction,
+  listPropertyCompoundsAction,
+  updatePropertyAction,
+  type CompoundSelectOption,
+} from '../actions';
+import {
+  formatFinishingType,
+  formatPaymentType,
+  formatPrice,
+  formatRentPeriod,
+  formatTypeLabel,
+} from '../format';
 import type {
   AdminPropertyDetails,
   CreatePropertyInput,
+  FinishingType,
+  PaymentType,
   PropertyFormCatalogs,
   PropertyImageInput,
+  RentPeriod,
   UpdatePropertyInput,
 } from '../types';
 import { PropertyFeaturesField } from './property-features-field';
@@ -23,11 +37,13 @@ import {
   PropertyLocationField,
   type PropertyLocationValue,
 } from './property-location-field';
+import { PropertyMediaManager } from './property-media-manager';
 import { PropertyOwnerSelect } from './property-owner-select';
 
 interface PropertyFormState {
   ownerId: string;
   title: string;
+  referenceNumber: string;
   description: string;
   propertyTypeId: string;
   transactionTypeId: string;
@@ -39,6 +55,13 @@ interface PropertyFormState {
   floor: string;
   yearBuilt: string;
   furnished: boolean;
+  rentPeriod: RentPeriod | '';
+  paymentType: PaymentType | '';
+  downPayment: string;
+  installmentYears: string;
+  monthlyInstallment: string;
+  finishingType: FinishingType | '';
+  compoundId: string;
   featureIds: string[];
 }
 
@@ -66,6 +89,7 @@ export interface PropertyFormProps {
 const EMPTY_FORM: PropertyFormState = {
   ownerId: '',
   title: '',
+  referenceNumber: '',
   description: '',
   propertyTypeId: '',
   transactionTypeId: '',
@@ -77,6 +101,13 @@ const EMPTY_FORM: PropertyFormState = {
   floor: '',
   yearBuilt: '',
   furnished: false,
+  rentPeriod: '',
+  paymentType: '',
+  downPayment: '',
+  installmentYears: '',
+  monthlyInstallment: '',
+  finishingType: '',
+  compoundId: '',
   featureIds: [],
 };
 
@@ -90,14 +121,42 @@ const EMPTY_LOCATION: PropertyLocationValue = {
   longitude: '',
 };
 
+const PAYMENT_TYPE_OPTIONS = [
+  { value: '', label: 'غير محدد' },
+  { value: 'CASH', label: 'نقدي' },
+  { value: 'INSTALLMENT', label: 'تقسيط' },
+  { value: 'CASH_OR_INSTALLMENT', label: 'نقدي أو تقسيط' },
+];
+
+const FINISHING_TYPE_OPTIONS = [
+  { value: '', label: 'غير محدد' },
+  { value: 'UNFINISHED', label: 'بدون تشطيب' },
+  { value: 'SEMI_FINISHED', label: 'نصف تشطيب' },
+  { value: 'FINISHED', label: 'تشطيب كامل' },
+  { value: 'LUX', label: 'فاخر' },
+  { value: 'SUPER_LUX', label: 'فاخر جداً' },
+];
+
+const RENT_PERIOD_OPTIONS = [
+  { value: '', label: 'غير محدد' },
+  { value: 'MONTHLY', label: 'شهري' },
+  { value: 'YEARLY', label: 'سنوي' },
+  { value: 'DAILY', label: 'يومي' },
+];
+
 function formatCatalogLabel(item: { nameAr: string | null; nameEn: string }): string {
   return item.nameAr ?? item.nameEn;
+}
+
+function showsInstallmentFields(paymentType: PaymentType | ''): boolean {
+  return paymentType === 'INSTALLMENT' || paymentType === 'CASH_OR_INSTALLMENT';
 }
 
 function detailsToForm(property: AdminPropertyDetails): PropertyFormState {
   return {
     ownerId: property.owner.id,
     title: property.title ?? '',
+    referenceNumber: property.referenceNumber ?? '',
     description: property.description ?? '',
     propertyTypeId: property.propertyType?.id ?? '',
     transactionTypeId: property.transactionType?.id ?? '',
@@ -109,6 +168,15 @@ function detailsToForm(property: AdminPropertyDetails): PropertyFormState {
     floor: property.floor != null ? String(property.floor) : '',
     yearBuilt: property.yearBuilt != null ? String(property.yearBuilt) : '',
     furnished: property.furnished ?? false,
+    rentPeriod: property.rentPeriod ?? '',
+    paymentType: property.paymentType ?? '',
+    downPayment: property.downPayment != null ? String(property.downPayment) : '',
+    installmentYears:
+      property.installmentYears != null ? String(property.installmentYears) : '',
+    monthlyInstallment:
+      property.monthlyInstallment != null ? String(property.monthlyInstallment) : '',
+    finishingType: property.finishingType ?? '',
+    compoundId: property.compound?.id ?? '',
     featureIds: property.features.map((feature) => feature.id),
   };
 }
@@ -151,7 +219,21 @@ function buildImagePayload(
     mediaAssetId: asset.id,
     sortOrder: index,
     isPrimary: asset.id === primaryId,
+    type: 'IMAGE',
   }));
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return <h3 className="text-sm font-semibold text-ink-900">{children}</h3>;
+}
+
+function ReviewRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-3 border-b border-border/70 py-2 text-sm last:border-b-0">
+      <span className="text-ink-500">{label}</span>
+      <span className="max-w-[65%] text-end font-medium text-ink-900">{value}</span>
+    </div>
+  );
 }
 
 export function PropertyForm({
@@ -174,9 +256,10 @@ export function PropertyForm({
   const [location, setLocation] = useState<PropertyLocationValue>(EMPTY_LOCATION);
   const [images, setImages] = useState<MediaAsset[]>([]);
   const [primaryId, setPrimaryId] = useState<string | null>(null);
-  const [imagesDirty, setImagesDirty] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<PropertyFormFieldErrors>({});
+  const [compounds, setCompounds] = useState<CompoundSelectOption[]>([]);
+  const [compoundsLoading, setCompoundsLoading] = useState(false);
 
   useEffect(() => {
     if (isEdit && initialData) {
@@ -184,7 +267,6 @@ export function PropertyForm({
       setLocation(detailsToLocation(initialData));
       setImages([]);
       setPrimaryId(null);
-      setImagesDirty(false);
       setFieldErrors({});
       return;
     }
@@ -193,9 +275,42 @@ export function PropertyForm({
     setLocation(EMPTY_LOCATION);
     setImages([]);
     setPrimaryId(null);
-    setImagesDirty(false);
     setFieldErrors({});
   }, [isEdit, initialData]);
+
+  useEffect(() => {
+    const areaId = location.areaId.trim();
+    if (!areaId) {
+      setCompounds([]);
+      setForm((current) =>
+        current.compoundId ? { ...current, compoundId: '' } : current,
+      );
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadCompounds() {
+      setCompoundsLoading(true);
+      const result = await listPropertyCompoundsAction(areaId);
+      if (cancelled) {
+        return;
+      }
+
+      if (result.ok) {
+        setCompounds(result.items);
+      } else {
+        setCompounds([]);
+      }
+      setCompoundsLoading(false);
+    }
+
+    void loadCompounds();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [location.areaId]);
 
   const propertyTypeOptions = useMemo(
     () =>
@@ -215,11 +330,56 @@ export function PropertyForm({
     [catalogs.transactionTypes],
   );
 
+  const selectedPropertyType = catalogs.propertyTypes.find(
+    (type) => type.id === form.propertyTypeId,
+  );
+  const selectedTransactionType = catalogs.transactionTypes.find(
+    (type) => type.id === form.transactionTypeId,
+  );
+  const selectedFeatures = catalogs.features.filter((feature) =>
+    form.featureIds.includes(feature.id),
+  );
+
+  const compoundOptions = useMemo(() => {
+    const options = [
+      { value: '', label: 'بدون كمباوند' },
+      ...compounds.map((compound) => ({
+        value: compound.id,
+        label: formatCatalogLabel(compound),
+      })),
+    ];
+
+    const selected = initialData?.compound;
+    if (
+      selected &&
+      form.compoundId === selected.id &&
+      !options.some((option) => option.value === selected.id)
+    ) {
+      options.splice(1, 0, {
+        value: selected.id,
+        label: formatCatalogLabel(selected),
+      });
+    }
+
+    return options;
+  }, [compounds, form.compoundId, initialData?.compound]);
+
   function updateField<K extends keyof PropertyFormState>(
     key: K,
     value: PropertyFormState[K],
   ) {
-    setForm((current) => ({ ...current, [key]: value }));
+    setForm((current) => {
+      const next = { ...current, [key]: value };
+
+      if (key === 'paymentType' && value === 'CASH') {
+        next.downPayment = '';
+        next.installmentYears = '';
+        next.monthlyInstallment = '';
+      }
+
+      return next;
+    });
+
     if (key in fieldErrors) {
       setFieldErrors((current) => ({ ...current, [key]: undefined }));
     }
@@ -227,7 +387,6 @@ export function PropertyForm({
 
   function handleImagesChange(assets: MediaAsset[]) {
     setImages(assets);
-    setImagesDirty(true);
 
     if (assets.length === 0) {
       setPrimaryId(null);
@@ -267,7 +426,7 @@ export function PropertyForm({
       nextErrors.areaId = 'المنطقة مطلوبة.';
     }
 
-    if (images.length > 0) {
+    if (!isEdit && images.length > 0) {
       const primaryCount = images.filter((asset) => asset.id === primaryId).length;
       if (primaryCount !== 1) {
         nextErrors.images = 'يجب تحديد صورة رئيسية واحدة.';
@@ -293,17 +452,29 @@ export function PropertyForm({
     onLoadingChange?.(true);
 
     const price = Number.parseFloat(form.price.trim());
-    const imagePayload =
-      images.length > 0 ? buildImagePayload(images, primaryId) : undefined;
+    const includeInstallment = showsInstallmentFields(form.paymentType);
 
     if (isEdit && initialData) {
       const payload: UpdatePropertyInput = {
         title: form.title.trim(),
         description: form.description.trim() || null,
+        referenceNumber: form.referenceNumber.trim() || null,
         propertyTypeId: form.propertyTypeId,
         transactionTypeId: form.transactionTypeId,
         price,
         currency: form.currency.trim() || 'EGP',
+        paymentType: form.paymentType || null,
+        downPayment: includeInstallment
+          ? parseOptionalFloat(form.downPayment) ?? null
+          : null,
+        installmentYears: includeInstallment
+          ? parseOptionalInt(form.installmentYears) ?? null
+          : null,
+        monthlyInstallment: includeInstallment
+          ? parseOptionalFloat(form.monthlyInstallment) ?? null
+          : null,
+        finishingType: form.finishingType || null,
+        rentPeriod: form.rentPeriod || null,
         furnished: form.furnished,
         bedrooms: parseOptionalInt(form.bedrooms) ?? null,
         bathrooms: parseOptionalInt(form.bathrooms) ?? null,
@@ -314,15 +485,12 @@ export function PropertyForm({
         cityId: location.cityId || undefined,
         areaId: location.areaId,
         districtId: location.districtId || null,
+        compoundId: form.compoundId || null,
         address: location.address.trim() || null,
         latitude: parseOptionalFloat(location.latitude) ?? null,
         longitude: parseOptionalFloat(location.longitude) ?? null,
         featureIds: form.featureIds,
       };
-
-      if (imagesDirty && imagePayload) {
-        payload.images = imagePayload;
-      }
 
       const result = await updatePropertyAction(initialData.id, payload);
 
@@ -340,14 +508,30 @@ export function PropertyForm({
       return;
     }
 
+    const imagePayload =
+      images.length > 0 ? buildImagePayload(images, primaryId) : undefined;
+
     const createPayload: CreatePropertyInput = {
       ownerId: form.ownerId.trim(),
       title: form.title.trim(),
       description: form.description.trim() || undefined,
+      referenceNumber: form.referenceNumber.trim() || undefined,
       propertyTypeId: form.propertyTypeId,
       transactionTypeId: form.transactionTypeId,
       price,
       currency: form.currency.trim() || 'EGP',
+      paymentType: form.paymentType || undefined,
+      downPayment: includeInstallment
+        ? parseOptionalFloat(form.downPayment)
+        : undefined,
+      installmentYears: includeInstallment
+        ? parseOptionalInt(form.installmentYears)
+        : undefined,
+      monthlyInstallment: includeInstallment
+        ? parseOptionalFloat(form.monthlyInstallment)
+        : undefined,
+      finishingType: form.finishingType || undefined,
+      rentPeriod: form.rentPeriod || undefined,
       furnished: form.furnished,
       bedrooms: parseOptionalInt(form.bedrooms),
       bathrooms: parseOptionalInt(form.bathrooms),
@@ -358,6 +542,7 @@ export function PropertyForm({
       cityId: location.cityId || undefined,
       areaId: location.areaId,
       districtId: location.districtId || undefined,
+      compoundId: form.compoundId || undefined,
       address: location.address.trim() || undefined,
       latitude: parseOptionalFloat(location.latitude),
       longitude: parseOptionalFloat(location.longitude),
@@ -365,26 +550,9 @@ export function PropertyForm({
       images: imagePayload,
     };
 
-    if (process.env.NODE_ENV === 'development') {
-      console.info('[admin:property-create:form-submit]', {
-        ownerId: createPayload.ownerId,
-        title: createPayload.title,
-        areaId: createPayload.areaId,
-        imageCount: createPayload.images?.length ?? 0,
-      });
-    }
-
     const result = await createPropertyAction(createPayload);
 
     if (result.ok) {
-      if (process.env.NODE_ENV === 'development') {
-        console.info('[admin:property-create:form-success]', {
-          id: result.data.id,
-          status: result.data.status,
-          title: result.data.title,
-        });
-      }
-
       toast.success('تم إنشاء العقار بنجاح.');
       onSuccess(result.data);
       setLoading(false);
@@ -398,6 +566,11 @@ export function PropertyForm({
   }
 
   const formDisabled = disabled || loading;
+  const showInstallment = showsInstallmentFields(form.paymentType);
+  const pricePreview = Number.parseFloat(form.price.trim());
+  const reviewPrice = Number.isFinite(pricePreview)
+    ? formatPrice(pricePreview, form.currency.trim() || 'EGP')
+    : '—';
 
   return (
     <form
@@ -405,10 +578,10 @@ export function PropertyForm({
       onSubmit={(event) => {
         void handleSubmit(event);
       }}
-      className="max-h-[min(70vh,42rem)] space-y-6 overflow-y-auto pe-1"
+      className="max-h-[min(75vh,48rem)] space-y-8 overflow-y-auto pe-1"
     >
       <section className="space-y-4">
-        <h3 className="text-sm font-semibold text-ink-900">المعلومات الأساسية</h3>
+        <SectionTitle>01 — البيانات الأساسية</SectionTitle>
 
         {!isEdit ? (
           <PropertyOwnerSelect
@@ -421,12 +594,23 @@ export function PropertyForm({
 
         <Input
           name="title"
-          label="عنوان الإعلان"
+          label="العنوان"
           placeholder="شقة فاخرة في…"
           value={form.title}
           disabled={formDisabled}
           error={fieldErrors.title}
           onChange={(event) => updateField('title', event.target.value)}
+        />
+
+        <Input
+          name="referenceNumber"
+          label="الرقم المرجعي"
+          placeholder="REF-1001"
+          dir="ltr"
+          className="text-start"
+          value={form.referenceNumber}
+          disabled={formDisabled}
+          onChange={(event) => updateField('referenceNumber', event.target.value)}
         />
 
         <label className="flex w-full flex-col gap-1.5 text-sm" htmlFor="description">
@@ -473,7 +657,7 @@ export function PropertyForm({
       </section>
 
       <section className="space-y-4">
-        <h3 className="text-sm font-semibold text-ink-900">تفاصيل العقار</h3>
+        <SectionTitle>02 — السعر والدفع</SectionTitle>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
@@ -499,6 +683,79 @@ export function PropertyForm({
             disabled={formDisabled}
             onChange={(event) => updateField('currency', event.target.value)}
           />
+        </div>
+
+        <Select
+          name="paymentType"
+          label="طريقة الدفع"
+          options={PAYMENT_TYPE_OPTIONS}
+          value={form.paymentType}
+          disabled={formDisabled}
+          onChange={(event) =>
+            updateField('paymentType', event.target.value as PaymentType | '')
+          }
+        />
+
+        <Select
+          name="rentPeriod"
+          label="فترة الإيجار"
+          options={RENT_PERIOD_OPTIONS}
+          value={form.rentPeriod}
+          disabled={formDisabled}
+          onChange={(event) =>
+            updateField('rentPeriod', event.target.value as RentPeriod | '')
+          }
+        />
+
+        {showInstallment ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              name="downPayment"
+              label="المقدم"
+              type="number"
+              min={0}
+              step="any"
+              dir="ltr"
+              className="text-start"
+              value={form.downPayment}
+              disabled={formDisabled}
+              onChange={(event) => updateField('downPayment', event.target.value)}
+            />
+            <Input
+              name="installmentYears"
+              label="سنوات التقسيط"
+              type="number"
+              min={1}
+              dir="ltr"
+              className="text-start"
+              value={form.installmentYears}
+              disabled={formDisabled}
+              onChange={(event) =>
+                updateField('installmentYears', event.target.value)
+              }
+            />
+            <Input
+              name="monthlyInstallment"
+              label="القسط الشهري"
+              type="number"
+              min={0}
+              step="any"
+              dir="ltr"
+              className="text-start"
+              value={form.monthlyInstallment}
+              disabled={formDisabled}
+              onChange={(event) =>
+                updateField('monthlyInstallment', event.target.value)
+              }
+            />
+          </div>
+        ) : null}
+      </section>
+
+      <section className="space-y-4">
+        <SectionTitle>03 — تفاصيل العقار</SectionTitle>
+
+        <div className="grid gap-4 sm:grid-cols-2">
           <Input
             name="areaSqm"
             label="المساحة (م²)"
@@ -534,7 +791,7 @@ export function PropertyForm({
           />
           <Input
             name="floor"
-            label="الطابق"
+            label="الدور"
             type="number"
             dir="ltr"
             className="text-start"
@@ -553,6 +810,16 @@ export function PropertyForm({
             disabled={formDisabled}
             onChange={(event) => updateField('yearBuilt', event.target.value)}
           />
+          <Select
+            name="finishingType"
+            label="التشطيب"
+            options={FINISHING_TYPE_OPTIONS}
+            value={form.finishingType}
+            disabled={formDisabled}
+            onChange={(event) =>
+              updateField('finishingType', event.target.value as FinishingType | '')
+            }
+          />
         </div>
 
         <label className="inline-flex items-center gap-2 text-sm text-ink-800">
@@ -567,30 +834,145 @@ export function PropertyForm({
         </label>
       </section>
 
-      <PropertyLocationField
-        value={location}
-        onChange={setLocation}
-        disabled={formDisabled}
-        areaError={fieldErrors.areaId}
-      />
+      <section className="space-y-4">
+        <PropertyLocationField
+          value={location}
+          onChange={setLocation}
+          disabled={formDisabled}
+          areaError={fieldErrors.areaId}
+          title="04 — الموقع"
+        />
 
-      <PropertyImagesField
-        value={images}
-        primaryId={primaryId}
-        onChange={handleImagesChange}
-        onPrimaryChange={setPrimaryId}
-        existingImages={isEdit ? initialData?.images : undefined}
-        permissions={permissions}
-        disabled={formDisabled}
-        error={fieldErrors.images}
-      />
+        <Select
+          name="compoundId"
+          label="الكمبوند"
+          options={compoundOptions}
+          value={form.compoundId}
+          disabled={formDisabled || !location.areaId || compoundsLoading}
+          onChange={(event) => updateField('compoundId', event.target.value)}
+        />
+        {!location.areaId ? (
+          <p className="text-xs text-ink-500">اختر المنطقة أولاً لعرض الكمبوندات.</p>
+        ) : compoundsLoading ? (
+          <p className="text-xs text-ink-500">جاري تحميل الكمبوندات…</p>
+        ) : null}
+      </section>
 
       <PropertyFeaturesField
         features={catalogs.features}
         value={form.featureIds}
         onChange={(featureIds) => updateField('featureIds', featureIds)}
         disabled={formDisabled}
+        title="05 — المميزات"
       />
+
+      {isEdit && initialData ? (
+        <PropertyMediaManager
+          propertyId={initialData.id}
+          initialImages={initialData.images}
+          permissions={permissions}
+          disabled={formDisabled}
+          title="06 — الوسائط"
+        />
+      ) : (
+        <PropertyImagesField
+          value={images}
+          primaryId={primaryId}
+          onChange={handleImagesChange}
+          onPrimaryChange={setPrimaryId}
+          permissions={permissions}
+          disabled={formDisabled}
+          error={fieldErrors.images}
+          title="06 — الوسائط"
+        />
+      )}
+
+      <section className="space-y-3 rounded-xl border border-border bg-surface-50/60 p-4">
+        <SectionTitle>07 — مراجعة</SectionTitle>
+        <p className="text-xs text-ink-500">
+          راجع البيانات قبل الإرسال. التحقق النهائي يتم عبر واجهة الـ API.
+        </p>
+        <div>
+          <ReviewRow label="العنوان" value={form.title.trim() || '—'} />
+          <ReviewRow
+            label="الرقم المرجعي"
+            value={form.referenceNumber.trim() || '—'}
+          />
+          <ReviewRow
+            label="نوع العقار"
+            value={
+              selectedPropertyType
+                ? formatCatalogLabel(selectedPropertyType)
+                : '—'
+            }
+          />
+          <ReviewRow
+            label="نوع المعاملة"
+            value={
+              selectedTransactionType
+                ? formatCatalogLabel(selectedTransactionType)
+                : '—'
+            }
+          />
+          <ReviewRow label="السعر" value={reviewPrice} />
+          <ReviewRow
+            label="طريقة الدفع"
+            value={formatPaymentType(form.paymentType || null)}
+          />
+          <ReviewRow
+            label="فترة الإيجار"
+            value={formatRentPeriod(form.rentPeriod || null)}
+          />
+          <ReviewRow
+            label="التشطيب"
+            value={formatFinishingType(form.finishingType || null)}
+          />
+          <ReviewRow
+            label="المميزات"
+            value={
+              selectedFeatures.length > 0
+                ? selectedFeatures
+                    .map((feature) => feature.nameAr ?? feature.nameEn)
+                    .join('، ')
+                : '—'
+            }
+          />
+          <ReviewRow
+            label="الوسائط"
+            value={
+              isEdit
+                ? `${(initialData?.images.length ?? 0).toLocaleString('ar-EG')} عنصر (إدارة منفصلة)`
+                : `${images.length.toLocaleString('ar-EG')} صورة جاهزة للإرفاق`
+            }
+          />
+          {isEdit ? (
+            <ReviewRow
+              label="المالك"
+              value={
+                initialData
+                  ? initialData.owner.name ?? initialData.owner.email
+                  : '—'
+              }
+            />
+          ) : null}
+          <ReviewRow
+            label="الموقع"
+            value={location.areaId ? 'تم تحديد المنطقة' : 'لم تُحدد المنطقة بعد'}
+          />
+          {initialData?.compound || form.compoundId ? (
+            <ReviewRow
+              label="الكمبوند"
+              value={
+                formatTypeLabel(
+                  compounds.find((compound) => compound.id === form.compoundId) ??
+                    initialData?.compound ??
+                    null,
+                )
+              }
+            />
+          ) : null}
+        </div>
+      </section>
     </form>
   );
 }

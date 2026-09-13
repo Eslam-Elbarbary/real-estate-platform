@@ -9,7 +9,7 @@ interface DescriptionSectionProps {
 
 const COLLAPSE_LENGTH = 240;
 
-export function DescriptionSection({ description }: DescriptionSectionProps) {
+function DescriptionBody({ description }: { description: string }) {
   const [expanded, setExpanded] = useState(false);
   const canCollapse = description.length > COLLAPSE_LENGTH;
   const visibleText =
@@ -36,4 +36,13 @@ export function DescriptionSection({ description }: DescriptionSectionProps) {
       ) : null}
     </section>
   );
+}
+
+export function DescriptionSection({ description }: DescriptionSectionProps) {
+  const trimmed = description.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  return <DescriptionBody description={trimmed} />;
 }

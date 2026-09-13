@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { FinishingType, PaymentType } from '@prisma/client';
+import { FinishingType, PaymentType, RentPeriod } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   ArrayUnique,
@@ -90,6 +90,11 @@ export class CreateAdminPropertyDto {
   @IsOptional()
   @IsEnum(FinishingType)
   finishingType?: FinishingType;
+
+  @ApiPropertyOptional({ enum: RentPeriod })
+  @IsOptional()
+  @IsEnum(RentPeriod)
+  rentPeriod?: RentPeriod;
 
   @ApiPropertyOptional()
   @IsOptional()

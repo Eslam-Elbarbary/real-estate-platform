@@ -8,7 +8,23 @@ interface LocationMapProps {
   location: PropertyLocation;
 }
 
+function hasValidCoordinates(location: PropertyLocation): boolean {
+  const { latitude, longitude } = location;
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return false;
+  }
+  // Treat unset defaults as missing (Egypt listings are never at 0,0).
+  if (latitude === 0 && longitude === 0) {
+    return false;
+  }
+  return true;
+}
+
 export function LocationMap({ location }: LocationMapProps) {
+  if (!hasValidCoordinates(location)) {
+    return null;
+  }
+
   const { latitude, longitude } = location;
   const delta = 0.018;
   const bbox = [

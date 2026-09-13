@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { uiLabels } from '@/config/labels';
 import type { LocationOption } from '@/features/locations';
-import { LocationField } from '@/features/property-search';
+import { LocationField } from '@/features/property-search/components/location-field';
 import { buildPropertySearchPath } from '@/features/property-search/search-params';
 import type { PropertySearchFilters } from '@/types';
 

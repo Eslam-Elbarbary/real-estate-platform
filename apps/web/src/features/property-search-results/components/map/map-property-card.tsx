@@ -2,8 +2,9 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Bath, BedDouble, Heart, MapPin, Phone, Ruler } from 'lucide-react';
+import { Bath, BedDouble, MapPin, Phone, Ruler } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa';
+import { FavoriteButton } from '@/features/activity/favorites/favorite-button';
 import { uiLabels } from '@/config/labels';
 import { routes } from '@/config/routes';
 import { formatArea } from '@/lib/formatting/area';
@@ -16,6 +17,7 @@ interface MapPropertyCardProps {
   active?: boolean;
   onHover?: (id: string | null) => void;
   onFocusProperty?: (id: string) => void;
+  initialIsFavorite?: boolean;
 }
 
 function digitsOnly(phone: string): string {
@@ -27,6 +29,7 @@ export function MapPropertyCard({
   active = false,
   onHover,
   onFocusProperty,
+  initialIsFavorite = false,
 }: MapPropertyCardProps) {
   const href = routes.listing(property.id, property.slug);
   const cover = property.images.find((image) => image.isCover) ?? property.images[0];
@@ -70,14 +73,11 @@ export function MapPropertyCard({
           <p className="text-sm font-extrabold text-ink-950">
             {formatCurrency(property.price, property.currency, property.pricingPeriod)}
           </p>
-          <button
-            type="button"
-            aria-label={uiLabels.addFavorite}
-            className="inline-flex size-7 items-center justify-center text-ink-500 hover:text-brand-700"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <Heart className="size-3.5" aria-hidden />
-          </button>
+          <FavoriteButton
+            propertyId={property.id}
+            initialIsFavorite={initialIsFavorite}
+            variant="map"
+          />
         </div>
         <Link href={href} className="line-clamp-2 text-xs font-medium leading-5 text-ink-800 hover:text-brand-700">
           {property.title}

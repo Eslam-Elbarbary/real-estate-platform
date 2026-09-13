@@ -23,8 +23,10 @@ import { AdminMediaController } from './controllers/admin-media.controller';
 import { AdminPaymentsController } from './controllers/admin-payments.controller';
 import { AdminPlansController } from './controllers/admin-plans.controller';
 import { AdminPropertiesController } from './controllers/admin-properties.controller';
+import { AdminPropertyMediaController } from './controllers/admin-property-media.controller';
 import { AdminUsersController } from './controllers/admin-users.controller';
 import { AdminAuthModule } from './auth/admin-auth.module';
+import { AdminPropertyMediaService } from './admin-property-media.service';
 
 @Module({
   imports: [
@@ -39,6 +41,7 @@ import { AdminAuthModule } from './auth/admin-auth.module';
   ],
   controllers: [
     AdminDashboardController,
+    AdminPropertyMediaController,
     AdminPropertiesController,
     AdminUsersController,
     AdminDevelopersController,
@@ -52,6 +55,7 @@ import { AdminAuthModule } from './auth/admin-auth.module';
     AdminService,
     AdminPropertiesService,
     AdminPropertyManagementService,
+    AdminPropertyMediaService,
     AdminUsersService,
     AdminPaymentsService,
     AdminLeadsService,

@@ -2,17 +2,20 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Check, ChevronDown } from 'lucide-react';
-import {
-  propertyTypeOptions,
-  type PropertyTypeOption,
-} from '@/config/property-types';
 import type { PropertyType } from '@/types';
 import { cn } from '@/lib/utils/cn';
 import { listingCopy } from '../config';
 
+export interface CatalogPropertyTypeOption {
+  value: string;
+  label: string;
+  id: string;
+}
+
 interface PropertyTypeComboboxProps {
-  value: PropertyType | null;
+  value: PropertyType | string | null;
   onChange: (value: PropertyType) => void;
+  options: CatalogPropertyTypeOption[];
   id?: string;
   className?: string;
 }
@@ -20,6 +23,7 @@ interface PropertyTypeComboboxProps {
 export function PropertyTypeCombobox({
   value,
   onChange,
+  options,
   id,
   className,
 }: PropertyTypeComboboxProps) {
@@ -31,16 +35,16 @@ export function PropertyTypeCombobox({
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
 
-  const selected = propertyTypeOptions.find((o) => o.value === value) ?? null;
+  const selected = options.find((o) => o.value === value) ?? null;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return propertyTypeOptions;
-    return propertyTypeOptions.filter(
+    if (!q) return options;
+    return options.filter(
       (o) =>
         o.label.toLowerCase().includes(q) || o.value.toLowerCase().includes(q),
     );
-  }, [query]);
+  }, [query, options]);
 
   const safeActiveIndex =
     filtered.length === 0 ? 0 : Math.min(activeIndex, filtered.length - 1);
@@ -56,8 +60,8 @@ export function PropertyTypeCombobox({
     return () => document.removeEventListener('mousedown', onPointerDown);
   }, []);
 
-  function selectOption(option: PropertyTypeOption) {
-    onChange(option.value);
+  function selectOption(option: CatalogPropertyTypeOption) {
+    onChange(option.value as PropertyType);
     setQuery('');
     setOpen(false);
   }
@@ -130,7 +134,7 @@ export function PropertyTypeCombobox({
               const isActive = index === safeActiveIndex;
               return (
                 <li
-                  key={option.value}
+                  key={option.id}
                   id={`${listboxId}-${option.value}`}
                   role="option"
                   aria-selected={isSelected}

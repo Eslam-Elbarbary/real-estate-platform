@@ -8,9 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { PageHeader } from '@/components/layout/page-header';
 import { hasPermission } from '@/features/auth/permissions';
-import type { PropertyStatus, UserRole } from '@/types';
-import type { AdminPropertiesListResult, PropertyFormCatalogs } from '../types';
+import type { PropertyStatus } from '@/types';
+import type {
+  AdminPropertiesListResult,
+  AdminPropertySort,
+  PropertyFormCatalogs,
+} from '../types';
 import { PropertiesFilters } from './properties-filters';
+import { PropertiesStatusCards } from './properties-status-cards';
 import { PropertiesTable } from './properties-table';
 import { PropertyCreateDialog } from './property-create-dialog';
 
@@ -23,20 +28,19 @@ interface CreatedPropertySummary {
 interface PropertiesListProps {
   result: AdminPropertiesListResult;
   catalogs: PropertyFormCatalogs;
-  roles: string[];
   permissions: string[];
   filters: {
-    status: PropertyStatus;
+    status?: PropertyStatus;
     page: number;
     limit: number;
     search: string;
+    sort: AdminPropertySort;
   };
 }
 
 export function PropertiesList({
   result,
   catalogs,
-  roles,
   permissions,
   filters,
 }: PropertiesListProps) {
@@ -45,12 +49,8 @@ export function PropertiesList({
   const [createOpen, setCreateOpen] = useState(false);
   const canCreate = hasPermission(permissions, 'properties.create');
 
-  function handleCreateSuccess(created: CreatedPropertySummary) {
-    const params = new URLSearchParams();
-    params.set('status', created.status);
-    params.set('page', '1');
-
-    router.replace(`/properties?${params.toString()}`);
+  function handleCreateSuccess(_created: CreatedPropertySummary) {
+    router.replace('/properties?sort=newest');
     router.refresh();
   }
 
@@ -58,7 +58,7 @@ export function PropertiesList({
     <div>
       <PageHeader
         title="العقارات"
-        description="مراجعة واعتماد الإعلانات وفق مسار المسودة → الاشتراك → الدفع → المراجعة → النشر."
+        description="إدارة إعلانات العقارات، المراجعة، والنشر من لوحة التحكم."
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="brand">
@@ -73,7 +73,16 @@ export function PropertiesList({
         }
       />
 
-      <PropertiesFilters status={filters.status} search={filters.search} />
+      <PropertiesStatusCards
+        counts={meta.counts}
+        activeStatus={filters.status}
+      />
+
+      <PropertiesFilters
+        status={filters.status}
+        search={filters.search}
+        sort={filters.sort}
+      />
 
       <Card>
         <CardHeader>
@@ -84,7 +93,7 @@ export function PropertiesList({
           </p>
         </CardHeader>
         <CardContent className="space-y-4 p-0 pb-4">
-          <PropertiesTable items={items} />
+          <PropertiesTable items={items} permissions={permissions} />
 
           {meta.totalPages > 1 ? (
             <Pagination page={meta.page} totalPages={meta.totalPages} />

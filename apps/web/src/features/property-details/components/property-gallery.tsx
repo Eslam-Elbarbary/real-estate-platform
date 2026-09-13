@@ -51,7 +51,13 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
   }, [lightboxIndex, ordered.length]);
 
   if (!cover) {
-    return null;
+    return (
+      <section id="photos" className="scroll-mt-28">
+        <div className="flex h-[240px] items-center justify-center rounded-[12px] border border-dashed border-border bg-surface-50 text-sm font-medium text-ink-500 lg:h-[320px]">
+          {uiLabels.galleryEmptyTitle}
+        </div>
+      </section>
+    );
   }
 
   const openAt = (imageId: string) => {

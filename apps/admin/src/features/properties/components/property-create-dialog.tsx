@@ -5,7 +5,6 @@ import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { hasPermission } from '@/features/auth/permissions';
-import type { UserRole } from '@/types';
 import type { PropertyFormCatalogs } from '../types';
 import { PropertyForm } from './property-form';
 
@@ -51,8 +50,8 @@ export function PropertyCreateDialog({
       open={open}
       onOpenChange={handleOpenChange}
       title="إضافة عقار"
-      description="أنشئ إعلان عقار جديد كمسودة."
-      className="w-[min(100%-2rem,42rem)]"
+      description="إنشاء عقار من لوحة التحكم ينشر مباشرة (منشور)."
+      className="w-[min(100%-2rem,56rem)]"
       footer={
         <>
           <Button

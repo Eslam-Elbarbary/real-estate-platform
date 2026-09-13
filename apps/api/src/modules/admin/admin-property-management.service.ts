@@ -4,7 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { MediaType, Prisma, PropertyStatus } from '@prisma/client';
+import { MediaType, PaymentType, Prisma, PropertyStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { slugifyTitle } from '../properties/utils/slug.util';
 import { AdminPropertiesService } from './admin-properties.service';
@@ -12,6 +12,7 @@ import { CreateAdminPropertyDto } from './dto/create-admin-property.dto';
 import { AdminPropertyImageInputDto } from './dto/admin-property-image-input.dto';
 import { UpdateAdminPropertyDto } from './dto/update-admin-property.dto';
 import { AdminPropertyReviewDetailsDto } from './mapper/admin-property.mapper';
+import { assertPaymentFieldsConsistency } from './utils/payment-fields.validation';
 
 @Injectable()
 export class AdminPropertyManagementService {
@@ -47,6 +48,13 @@ export class AdminPropertyManagementService {
     const featureIds = [...new Set(dto.featureIds ?? [])];
     await this.assertFeatureIds(featureIds);
 
+    assertPaymentFieldsConsistency({
+      paymentType: dto.paymentType,
+      downPayment: dto.downPayment,
+      installmentYears: dto.installmentYears,
+      monthlyInstallment: dto.monthlyInstallment,
+    });
+
     const images = dto.images ?? [];
     await this.assertMediaAssets(
       images.map((image) => image.mediaAssetId),
@@ -61,6 +69,7 @@ export class AdminPropertyManagementService {
 
     const title = dto.title.trim();
     const slug = await this.ensureUniqueSlug(slugifyTitle(title));
+    const now = new Date();
 
     const propertyId = await this.prisma.$transaction(async (tx) => {
       const property = await tx.property.create({
@@ -69,7 +78,8 @@ export class AdminPropertyManagementService {
           title,
           slug,
           description: dto.description?.trim() || null,
-          status: PropertyStatus.DRAFT,
+          status: PropertyStatus.PUBLISHED,
+          publishedAt: now,
           propertyTypeId: dto.propertyTypeId,
           transactionTypeId: dto.transactionTypeId,
           price: dto.price,
@@ -80,6 +90,7 @@ export class AdminPropertyManagementService {
           installmentYears: dto.installmentYears,
           monthlyInstallment: dto.monthlyInstallment,
           finishingType: dto.finishingType,
+          rentPeriod: dto.rentPeriod,
           furnished: dto.furnished,
           bedrooms: dto.bedrooms,
           bathrooms: dto.bathrooms,
@@ -111,7 +122,7 @@ export class AdminPropertyManagementService {
             mediaAssetId: image.mediaAssetId,
             sortOrder: image.sortOrder,
             isPrimary: image.isPrimary,
-            type: MediaType.IMAGE,
+            type: image.type ?? MediaType.IMAGE,
           })),
         });
       }
@@ -120,9 +131,9 @@ export class AdminPropertyManagementService {
         data: {
           propertyId: property.id,
           fromStatus: null,
-          toStatus: PropertyStatus.DRAFT,
+          toStatus: PropertyStatus.PUBLISHED,
           changedById: adminId,
-          reason: 'Created by administrator',
+          reason: 'Created and published by administrator',
         },
       });
 
@@ -130,7 +141,9 @@ export class AdminPropertyManagementService {
     });
 
     if (process.env.NODE_ENV !== 'production') {
-      this.logger.debug(`Created admin property id=${propertyId} status=DRAFT`);
+      this.logger.debug(
+        `Created admin property id=${propertyId} status=PUBLISHED`,
+      );
     }
 
     return this.adminPropertiesService.getPropertyDetails(propertyId);
@@ -185,11 +198,30 @@ export class AdminPropertyManagementService {
     }
 
     if (dto.images !== undefined) {
-      await this.assertMediaAssets(
-        dto.images.map((image) => image.mediaAssetId),
+      throw new BadRequestException(
+        'Property gallery cannot be replaced via PATCH. Use /admin/properties/:id/media endpoints to add, reorder, set primary, or delete media.',
       );
-      this.assertPrimaryImageRules(dto.images);
     }
+
+    assertPaymentFieldsConsistency({
+      paymentType:
+        dto.paymentType !== undefined ? dto.paymentType : property.paymentType,
+      downPayment:
+        dto.downPayment !== undefined ? dto.downPayment : undefined,
+      installmentYears:
+        dto.installmentYears !== undefined ? dto.installmentYears : undefined,
+      monthlyInstallment:
+        dto.monthlyInstallment !== undefined
+          ? dto.monthlyInstallment
+          : undefined,
+    });
+
+    // When switching to CASH, clear installment fields if not explicitly provided.
+    const clearingCashInstallments =
+      dto.paymentType === PaymentType.CASH &&
+      dto.downPayment === undefined &&
+      dto.installmentYears === undefined &&
+      dto.monthlyInstallment === undefined;
 
     await this.prisma.$transaction(async (tx) => {
       const data: Prisma.PropertyUpdateInput = {};
@@ -230,18 +262,28 @@ export class AdminPropertyManagementService {
 
       if (dto.downPayment !== undefined) {
         data.downPayment = dto.downPayment;
+      } else if (clearingCashInstallments) {
+        data.downPayment = null;
       }
 
       if (dto.installmentYears !== undefined) {
         data.installmentYears = dto.installmentYears;
+      } else if (clearingCashInstallments) {
+        data.installmentYears = null;
       }
 
       if (dto.monthlyInstallment !== undefined) {
         data.monthlyInstallment = dto.monthlyInstallment;
+      } else if (clearingCashInstallments) {
+        data.monthlyInstallment = null;
       }
 
       if (dto.finishingType !== undefined) {
         data.finishingType = dto.finishingType;
+      }
+
+      if (dto.rentPeriod !== undefined) {
+        data.rentPeriod = dto.rentPeriod;
       }
 
       if (dto.furnished !== undefined) {
@@ -313,21 +355,6 @@ export class AdminPropertyManagementService {
             data: featureIds.map((featureId) => ({
               propertyId,
               featureId,
-            })),
-          });
-        }
-      }
-
-      if (dto.images !== undefined) {
-        await tx.propertyImage.deleteMany({ where: { propertyId } });
-        if (dto.images.length > 0) {
-          await tx.propertyImage.createMany({
-            data: dto.images.map((image) => ({
-              propertyId,
-              mediaAssetId: image.mediaAssetId,
-              sortOrder: image.sortOrder,
-              isPrimary: image.isPrimary,
-              type: MediaType.IMAGE,
             })),
           });
         }

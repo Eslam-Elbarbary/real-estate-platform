@@ -26,8 +26,9 @@ export {
   toPropertySearchFilters,
 } from './search-params';
 
-export { PropertySearch } from './components/property-search';
-export {
-  PropertySearchForm,
-  type PropertySearchVariant,
-} from './components/property-search-form';
+export { PropertySearchForm } from './components/property-search-form';
+export type { PropertySearchVariant } from './components/property-search-form';
+
+// PropertySearch (async server wrapper) — import from
+// `@/features/property-search/components/property-search` to avoid
+// pulling server-only code into client barrels.

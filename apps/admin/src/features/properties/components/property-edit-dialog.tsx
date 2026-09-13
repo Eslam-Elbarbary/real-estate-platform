@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { hasPermission } from '@/features/auth/permissions';
-import type { UserRole } from '@/types';
 import type { AdminPropertyDetails, PropertyFormCatalogs } from '../types';
 import { PropertyForm } from './property-form';
 
@@ -48,7 +47,7 @@ export function PropertyEditDialog({
       onOpenChange={handleOpenChange}
       title="تعديل العقار"
       description={property.title ?? property.slug}
-      className="w-[min(100%-2rem,42rem)]"
+      className="w-[min(100%-2rem,56rem)]"
       footer={
         <>
           <Button

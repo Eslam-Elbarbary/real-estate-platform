@@ -1,4 +1,4 @@
-import { getLocationOptions } from '@/features/locations';
+import { getSearchLocationOptions } from '@/features/locations/api-options';
 import { cn } from '@/lib/utils/cn';
 import type { TransactionType } from '@/types';
 import {
@@ -17,7 +17,12 @@ export async function PropertySearch({
   className,
   initialTransactionType,
 }: PropertySearchProps) {
-  const locations = await getLocationOptions();
+  let locations: Awaited<ReturnType<typeof getSearchLocationOptions>> = [];
+  try {
+    locations = await getSearchLocationOptions();
+  } catch {
+    locations = [];
+  }
 
   return (
     <PropertySearchForm

@@ -13,6 +13,10 @@ export interface LocationOption {
   /** Arabic breadcrumb label for the selector UI. */
   breadcrumb: string;
   propertyCount: number;
+  /** Backend area id when selectable for property.areaId */
+  areaId?: string;
+  /** Backend district id when level is neighborhood */
+  districtId?: string;
 }
 
 const levelOrder: Record<LocationLevel, number> = {

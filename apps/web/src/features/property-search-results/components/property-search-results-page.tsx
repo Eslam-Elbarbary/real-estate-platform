@@ -10,6 +10,7 @@ import {
 import { buildSubtypeChips } from '../lib/subtype-chips';
 import { AiRecommendationBanner } from './ai-recommendation-banner';
 import { EmptyState } from './empty-state';
+import { SearchErrorState } from './search-error-state';
 import { PropertyMapExplorer } from './map/property-map-explorer';
 import { MapListToggle } from './map/map-list-toggle';
 import { Pagination } from './pagination';
@@ -27,6 +28,8 @@ interface PropertySearchResultsPageProps {
   locations: LocationOption[];
   selectedLocation: LocationOption | null;
   subtypeCounts: Record<string, number>;
+  favoritePropertyIds?: string[];
+  errorMessage?: string;
 }
 
 export function PropertySearchResultsPage({
@@ -35,15 +38,15 @@ export function PropertySearchResultsPage({
   locations,
   selectedLocation,
   subtypeCounts,
+  favoritePropertyIds = [],
+  errorMessage,
 }: PropertySearchResultsPageProps) {
   const heading = getResultsHeading(filters);
-  const countLabel = getResultsCountLabel(
-    result.marketEstimate ?? result.total,
-    filters,
-  );
+  const countLabel = getResultsCountLabel(result.total, filters);
   const chips = buildSubtypeChips(filters, subtypeCounts);
   const seo = getSearchSeoContent(filters);
   const transaction = filters.transactionType ?? 'sale';
+  const favoriteIds = new Set(favoritePropertyIds);
 
   const breadcrumbItems = selectedLocation
     ? [
@@ -72,7 +75,7 @@ export function PropertySearchResultsPage({
             filters={filters}
             locations={locations}
             selectedLocation={selectedLocation}
-            resultCount={result.marketEstimate ?? result.total}
+            resultCount={result.total}
           />
         </div>
 
@@ -103,22 +106,33 @@ export function PropertySearchResultsPage({
             properties={result.items}
             filters={filters}
             selectedLocation={selectedLocation}
+            favoritePropertyIds={favoriteIds}
           />
         ) : (
           <>
             <div className="mt-5">
-              {result.items.length === 0 ? (
+              {errorMessage ? (
+                <SearchErrorState
+                  message={errorMessage}
+                  transactionType={transaction}
+                />
+              ) : result.items.length === 0 ? (
                 <EmptyState transactionType={transaction} />
               ) : (
-                <PropertyResultsGrid properties={result.items} />
+                <PropertyResultsGrid
+                  properties={result.items}
+                  favoritePropertyIds={favoriteIds}
+                />
               )}
             </div>
-            <Pagination
-              className="mt-7"
-              filters={filters}
-              page={result.page}
-              totalPages={result.totalPages}
-            />
+            {errorMessage ? null : (
+              <Pagination
+                className="mt-7"
+                filters={filters}
+                page={result.page}
+                totalPages={result.totalPages}
+              />
+            )}
           </>
         )}
       </Container>

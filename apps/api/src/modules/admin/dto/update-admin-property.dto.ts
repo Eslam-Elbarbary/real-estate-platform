@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { FinishingType, PaymentType } from '@prisma/client';
+import { FinishingType, PaymentType, RentPeriod } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   ArrayUnique,
@@ -91,6 +91,11 @@ export class UpdateAdminPropertyDto {
   @IsEnum(FinishingType)
   finishingType?: FinishingType | null;
 
+  @ApiPropertyOptional({ enum: RentPeriod, nullable: true })
+  @IsOptional()
+  @IsEnum(RentPeriod)
+  rentPeriod?: RentPeriod | null;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsBoolean()
@@ -180,7 +185,12 @@ export class UpdateAdminPropertyDto {
   @IsString({ each: true })
   featureIds?: string[];
 
-  @ApiPropertyOptional({ type: [AdminPropertyImageInputDto] })
+  @ApiPropertyOptional({
+    type: [AdminPropertyImageInputDto],
+    description:
+      'Deprecated for PATCH — gallery changes must use /admin/properties/:id/media. Sending images returns 400.',
+    deprecated: true,
+  })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })

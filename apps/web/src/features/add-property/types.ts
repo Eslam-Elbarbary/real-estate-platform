@@ -1,4 +1,5 @@
 import type { FinishingType, PropertyType, TransactionType } from '@/types';
+import type { ApiPropertyStatus } from '@/types/api/my-property';
 
 export type ListingDraftStep =
   | 'basic'
@@ -8,6 +9,7 @@ export type ListingDraftStep =
   | 'media'
   | 'publish';
 
+/** Legacy cookie status — prefer `apiStatus` from the backend. */
 export type ListingDraftStatus =
   | 'draft'
   | 'ready_to_publish'
@@ -40,22 +42,8 @@ export type ListingViewType =
   | 'club'
   | 'other';
 
-export type ListingAmenityId =
-  | 'security'
-  | 'elevator'
-  | 'landline'
-  | 'private_garden'
-  | 'natural_gas'
-  | 'balcony'
-  | 'maid_room'
-  | 'covered_garage'
-  | 'kitchen_appliances'
-  | 'kids_area'
-  | 'ac'
-  | 'water_meter'
-  | 'pool'
-  | 'electricity_meter'
-  | 'pets_allowed';
+/** @deprecated Prefer catalog feature UUIDs in amenities. */
+export type ListingAmenityId = string;
 
 export interface ListingDetailsDraft {
   areaSqm?: number;
@@ -63,11 +51,14 @@ export interface ListingDetailsDraft {
   bathrooms?: number;
   floor?: number | string;
   buildOrDeliveryYear?: number;
+  furnished?: boolean;
+  rentPeriod?: 'DAILY' | 'MONTHLY' | 'YEARLY';
   views: ListingViewType[];
   finishing?: FinishingType | 'extra_super_lux';
   registrationStatus?: ListingRegistrationStatus;
   mortgageEligible?: boolean;
-  amenities: ListingAmenityId[];
+  /** Selected Feature catalog UUIDs (PUT /properties/me/:id/features). */
+  amenities: string[];
 }
 
 export interface DeveloperPricing {
@@ -136,8 +127,15 @@ export interface ListingMediaDraft {
 export interface ListingDraft {
   id: string;
   ownerUserId: string;
+  /** Authoritative backend property status. */
+  apiStatus: ApiPropertyStatus;
   transaction: TransactionType | null;
   propertyType: PropertyType | null;
+  /** Backend catalog UUIDs when known from API. */
+  propertyTypeId?: string;
+  transactionTypeId?: string;
+  areaId?: string;
+  districtId?: string;
   locationId?: string;
   locationLabel?: string;
   latitude?: number;
@@ -147,6 +145,7 @@ export interface ListingDraft {
   description: ListingDescriptionDraft;
   media: ListingMediaDraft;
   currentStep: ListingDraftStep;
+  /** @deprecated Prefer apiStatus */
   status: ListingDraftStatus;
   createdAt: string;
   updatedAt: string;

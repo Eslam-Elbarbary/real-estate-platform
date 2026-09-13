@@ -3,7 +3,11 @@ import { FaWhatsapp } from 'react-icons/fa';
 import { uiLabels } from '@/config/labels';
 import { cn } from '@/lib/utils/cn';
 import type { PropertySeller } from '@/types';
-import { getCallHref, getWhatsAppHref } from '../lib/contact';
+import {
+  getCallHref,
+  getWhatsAppHref,
+  hasSellerPhone,
+} from '../lib/contact';
 
 interface ContactActionsProps {
   seller: PropertySeller;
@@ -18,6 +22,10 @@ export function ContactActions({
   size = 'md',
   className,
 }: ContactActionsProps) {
+  if (!hasSellerPhone(seller)) {
+    return null;
+  }
+
   const height =
     size === 'lg'
       ? 'h-12 min-w-[148px] px-6 text-[15px]'

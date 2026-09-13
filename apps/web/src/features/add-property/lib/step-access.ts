@@ -1,5 +1,12 @@
 import type { ListingDraft, ListingDraftStep } from '../types';
-import { basicStepSchema, detailsStepSchema, descriptionStepSchema, mediaStepSchema, pricingStepSchema } from '../schemas';
+import {
+  basicStepSchema,
+  detailsStepSchema,
+  descriptionStepSchema,
+  mediaStepSchema,
+  pricingStepSchema,
+} from '../schemas';
+import type { ApiPropertyStatus } from '@/types/api/my-property';
 
 const STEP_ORDER: ListingDraftStep[] = [
   'basic',
@@ -10,15 +17,22 @@ const STEP_ORDER: ListingDraftStep[] = [
   'publish',
 ];
 
+export function isPropertyEditable(status: ApiPropertyStatus): boolean {
+  return status === 'DRAFT' || status === 'REJECTED';
+}
+
 export function isBasicComplete(draft: ListingDraft): boolean {
-  return basicStepSchema.safeParse({
-    transaction: draft.transaction,
-    propertyType: draft.propertyType,
-    locationId: draft.locationId,
-    locationLabel: draft.locationLabel,
-    latitude: draft.latitude,
-    longitude: draft.longitude,
-  }).success;
+  return Boolean(
+    draft.transaction &&
+      draft.propertyType &&
+      draft.areaId &&
+      draft.locationId &&
+      draft.locationLabel &&
+      draft.latitude != null &&
+      draft.longitude != null &&
+      Number.isFinite(draft.latitude) &&
+      Number.isFinite(draft.longitude),
+  );
 }
 
 export function isDetailsComplete(draft: ListingDraft): boolean {
@@ -47,16 +61,55 @@ export function earliestIncompleteStep(draft: ListingDraft): ListingDraftStep {
   return 'publish';
 }
 
+/**
+ * Wizard navigation rules driven by API status + field completeness.
+ */
 export function canAccessListingStep(
   draft: ListingDraft,
   step: ListingDraftStep,
 ): boolean {
+  const status = draft.apiStatus;
+
+  if (status === 'PENDING_PAYMENT') {
+    return step === 'publish';
+  }
+
+  if (
+    status === 'PENDING_REVIEW' ||
+    status === 'PUBLISHED' ||
+    status === 'ARCHIVED' ||
+    status === 'EXPIRED'
+  ) {
+    return step === 'publish';
+  }
+
+  // DRAFT | REJECTED — sequential wizard
   const targetIndex = STEP_ORDER.indexOf(step);
   const allowed = earliestIncompleteStep(draft);
   const allowedIndex = STEP_ORDER.indexOf(allowed);
   return targetIndex <= allowedIndex;
 }
 
+export function resolveCheckoutAccess(draft: ListingDraft): boolean {
+  return draft.apiStatus === 'PENDING_PAYMENT';
+}
+
 export function stepHref(id: string, step: ListingDraftStep | 'checkout'): string {
   return `/my-properties/${id}/${step}`;
+}
+
+export function preferredStepForStatus(draft: ListingDraft): ListingDraftStep | 'checkout' {
+  switch (draft.apiStatus) {
+    case 'PENDING_PAYMENT':
+      return 'checkout';
+    case 'PENDING_REVIEW':
+    case 'PUBLISHED':
+    case 'ARCHIVED':
+    case 'EXPIRED':
+      return 'publish';
+    case 'REJECTED':
+    case 'DRAFT':
+    default:
+      return earliestIncompleteStep(draft);
+  }
 }

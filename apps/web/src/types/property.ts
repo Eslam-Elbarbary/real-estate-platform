@@ -124,12 +124,14 @@ export interface Property {
   bedrooms: number;
   bathrooms: number;
   floor?: number;
-  finishingType: FinishingType;
-  paymentType: PaymentType;
+  finishingType?: FinishingType;
+  paymentType?: PaymentType;
   downPayment?: number;
   installmentYears?: number;
   monthlyInstallment?: number;
   deliveryYear?: number;
+  yearBuilt?: number;
+  furnished?: boolean;
   /** Arabic label for view / orientation (إطلالة). */
   viewType?: string;
   gardenArea?: number;

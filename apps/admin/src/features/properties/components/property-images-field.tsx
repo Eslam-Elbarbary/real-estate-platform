@@ -1,74 +1,44 @@
 'use client';
 
-import Image from 'next/image';
 import { Star } from 'lucide-react';
 import { MediaPicker } from '@/components/media-picker';
 import type { MediaAsset } from '@/components/media-picker';
 import { formatMediaFileName } from '@/features/media/format';
 import { cn } from '@/lib/utils/cn';
-import type { AdminPropertyImage } from '../types';
 
 interface PropertyImagesFieldProps {
   value: MediaAsset[];
   primaryId: string | null;
   onChange: (assets: MediaAsset[]) => void;
   onPrimaryChange: (id: string) => void;
-  existingImages?: AdminPropertyImage[];
   permissions: string[];
   disabled?: boolean;
   error?: string;
+  title?: string;
 }
 
+/** Create-only media picker. Edit flow uses PropertyMediaManager. */
 export function PropertyImagesField({
   value,
   primaryId,
   onChange,
   onPrimaryChange,
-  existingImages = [],
   permissions,
   disabled = false,
   error,
+  title = 'الوسائط',
 }: PropertyImagesFieldProps) {
-  const hasExisting = existingImages.length > 0;
-  const hasNewSelection = value.length > 0;
+  const hasSelection = value.length > 0;
 
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-semibold text-ink-900">الصور</h3>
+        <h3 className="text-sm font-semibold text-ink-900">{title}</h3>
         <p className="mt-1 text-xs text-ink-500">
-          {hasExisting
-            ? 'الصور الحالية معروضة أدناه. عند اختيار صور جديدة سيتم استبدال جميع الصور الحالية.'
-            : 'اختر صور العقار من مكتبة الوسائط. يجب تحديد صورة رئيسية واحدة.'}
+          اختر صور العقار من مكتبة الوسائط عند الإنشاء. يجب تحديد صورة رئيسية واحدة عند
+          إضافة صور.
         </p>
       </div>
-
-      {hasExisting ? (
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-ink-600">الصور الحالية</p>
-          <div className="flex flex-wrap gap-3">
-            {existingImages.map((image) => (
-              <div
-                key={`${image.url}-${image.sortOrder}`}
-                className="relative size-24 overflow-hidden rounded-xl border border-border bg-white shadow-sm"
-              >
-                <Image
-                  src={image.url}
-                  alt=""
-                  fill
-                  sizes="96px"
-                  className="object-cover"
-                />
-                {image.isPrimary ? (
-                  <span className="absolute bottom-1 start-1 rounded-full bg-accent-600 px-1.5 py-0.5 text-[10px] font-medium text-white">
-                    رئيسية
-                  </span>
-                ) : null}
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
 
       <MediaPicker
         value={value}
@@ -80,7 +50,7 @@ export function PropertyImagesField({
         permissions={permissions}
       />
 
-      {hasNewSelection ? (
+      {hasSelection ? (
         <div className="space-y-2">
           <p className="text-xs font-medium text-ink-600">تحديد الصورة الرئيسية</p>
           <div className="flex flex-wrap gap-2">

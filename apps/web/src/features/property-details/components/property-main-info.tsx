@@ -8,18 +8,24 @@ import { PropertyActions } from './property-actions';
 
 interface PropertyMainInfoProps {
   property: Property;
+  initialIsFavorite?: boolean;
 }
 
-export function PropertyMainInfo({ property }: PropertyMainInfoProps) {
+export function PropertyMainInfo({
+  property,
+  initialIsFavorite = false,
+}: PropertyMainInfoProps) {
   const locationLine = [property.location.areaName, property.location.cityName]
     .filter(Boolean)
     .join('، ');
 
   const specs = [
-    {
-      icon: Ruler,
-      label: formatArea(property.area),
-    },
+    property.area > 0
+      ? {
+          icon: Ruler,
+          label: formatArea(property.area),
+        }
+      : null,
     property.bedrooms
       ? {
           icon: BedDouble,
@@ -32,10 +38,12 @@ export function PropertyMainInfo({ property }: PropertyMainInfoProps) {
           label: `${property.bathrooms} ${uiLabels.bathroomsShort}`,
         }
       : null,
-    {
-      icon: Paintbrush,
-      label: getFinishingLabel(property.finishingType),
-    },
+    property.finishingType
+      ? {
+          icon: Paintbrush,
+          label: getFinishingLabel(property.finishingType),
+        }
+      : null,
   ].filter(Boolean) as Array<{ icon: typeof Ruler; label: string }>;
 
   return (
@@ -44,33 +52,46 @@ export function PropertyMainInfo({ property }: PropertyMainInfoProps) {
         {property.title}
       </h2>
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-ink-600">
-        <span className="inline-flex items-center gap-1.5">
-          <MapPin className="size-4 text-ink-500" aria-hidden />
-          {locationLine}
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <CalendarDays className="size-4 text-ink-500" aria-hidden />
-          {formatDate(property.createdAt)}
-        </span>
-        <span className="text-ink-500">{property.referenceNumber}</span>
+        {locationLine ? (
+          <span className="inline-flex items-center gap-1.5">
+            <MapPin className="size-4 text-ink-500" aria-hidden />
+            {locationLine}
+          </span>
+        ) : null}
+        {property.createdAt && property.createdAt !== new Date(0).toISOString() ? (
+          <span className="inline-flex items-center gap-1.5">
+            <CalendarDays className="size-4 text-ink-500" aria-hidden />
+            {formatDate(property.createdAt)}
+          </span>
+        ) : null}
+        {property.referenceNumber ? (
+          <span className="text-ink-500">{property.referenceNumber}</span>
+        ) : null}
       </div>
 
-      <ul className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2.5">
-        {specs.map((spec) => {
-          const Icon = spec.icon;
-          return (
-            <li
-              key={spec.label}
-              className="inline-flex items-center gap-2 text-[15px] font-semibold text-ink-800"
-            >
-              <Icon className="size-[18px] text-ink-500" aria-hidden />
-              {spec.label}
-            </li>
-          );
-        })}
-      </ul>
+      {specs.length > 0 ? (
+        <ul className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2.5">
+          {specs.map((spec) => {
+            const Icon = spec.icon;
+            return (
+              <li
+                key={spec.label}
+                className="inline-flex items-center gap-2 text-[15px] font-semibold text-ink-800"
+              >
+                <Icon className="size-[18px] text-ink-500" strokeWidth={1.75} aria-hidden />
+                {spec.label}
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
 
-      <PropertyActions title={property.title} className="mt-5" />
+      <PropertyActions
+        propertyId={property.id}
+        title={property.title}
+        initialIsFavorite={initialIsFavorite}
+        className="mt-5"
+      />
     </section>
   );
 }

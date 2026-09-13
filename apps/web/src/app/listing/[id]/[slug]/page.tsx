@@ -3,10 +3,8 @@ import { notFound } from 'next/navigation';
 import { getPropertyTypeLabel } from '@/config/property-types';
 import { routes } from '@/config/routes';
 import { uiLabels } from '@/config/labels';
-import {
-  getPropertyByIdAndSlug,
-  getSimilarProperties,
-} from '@/features/properties';
+import { getFavoritesService } from '@/features/activity';
+import { getPropertyDetailsByIdAndSlug } from '@/features/properties';
 import { PropertyDetailsPage } from '@/features/property-details';
 import { createPageMetadata } from '@/lib/seo/metadata';
 
@@ -16,10 +14,16 @@ interface PageProps {
 
 function buildListingDescription(args: {
   title: string;
+  description: string;
   areaName: string;
   transactionType: 'sale' | 'rent';
   propertyTypeLabel: string;
 }): string {
+  const trimmed = args.description.trim();
+  if (trimmed) {
+    return trimmed.length > 160 ? `${trimmed.slice(0, 157)}…` : trimmed;
+  }
+
   const transactionLabel =
     args.transactionType === 'sale' ? uiLabels.forSale : uiLabels.forRent;
 
@@ -30,9 +34,9 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { id, slug } = await params;
-  const property = await getPropertyByIdAndSlug(id, slug);
+  const result = await getPropertyDetailsByIdAndSlug(id, slug);
 
-  if (!property) {
+  if (!result) {
     return createPageMetadata({
       title: uiLabels.listingPlaceholderTitle,
       description: uiLabels.listingPlaceholderBody,
@@ -41,6 +45,7 @@ export async function generateMetadata({
     });
   }
 
+  const { property } = result;
   const propertyTypeLabel = getPropertyTypeLabel(property.propertyType);
   const cover =
     property.images.find((image) => image.isCover) ?? property.images[0];
@@ -49,6 +54,7 @@ export async function generateMetadata({
     title: property.title,
     description: buildListingDescription({
       title: property.title,
+      description: property.description,
       areaName: property.location.areaName,
       transactionType: property.transactionType,
       propertyTypeLabel,
@@ -61,18 +67,22 @@ export async function generateMetadata({
 
 export default async function ListingDetailsPage({ params }: PageProps) {
   const { id, slug } = await params;
-  const property = await getPropertyByIdAndSlug(id, slug);
+  const result = await getPropertyDetailsByIdAndSlug(id, slug);
 
-  if (!property) {
+  if (!result) {
     notFound();
   }
 
-  const similarProperties = await getSimilarProperties(property.id, 5);
+  const favoritePropertyIds =
+    await getFavoritesService().listPropertyIdsIfAuthenticated();
+  const isFavorite = favoritePropertyIds.includes(result.property.id);
 
   return (
     <PropertyDetailsPage
-      property={property}
-      similarProperties={similarProperties}
+      property={result.property}
+      similarProperties={result.similar}
+      initialIsFavorite={isFavorite}
+      favoritePropertyIds={favoritePropertyIds}
     />
   );
 }

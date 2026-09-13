@@ -12,6 +12,7 @@ export type AdminPermission =
   | 'properties.approve'
   | 'properties.reject'
   | 'properties.archive'
+  | 'properties.publish'
   // Leads
   | 'leads.view'
   | 'leads.update_status'

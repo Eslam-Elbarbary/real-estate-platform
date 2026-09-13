@@ -9,6 +9,8 @@ interface PropertyFeaturesFieldProps {
   value: string[];
   onChange: (featureIds: string[]) => void;
   disabled?: boolean;
+  title?: string;
+  description?: string;
 }
 
 function formatFeatureLabel(feature: CatalogFeature): string {
@@ -20,6 +22,8 @@ export function PropertyFeaturesField({
   value,
   onChange,
   disabled = false,
+  title = 'المميزات',
+  description = 'اختر المميزات المتاحة لهذا العقار.',
 }: PropertyFeaturesFieldProps) {
   const grouped = useMemo(() => {
     const map = new Map<string, CatalogFeature[]>();
@@ -50,10 +54,8 @@ export function PropertyFeaturesField({
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-sm font-semibold text-ink-900">المميزات</h3>
-        <p className="mt-1 text-xs text-ink-500">
-          اختر المميزات المتاحة لهذا العقار.
-        </p>
+        <h3 className="text-sm font-semibold text-ink-900">{title}</h3>
+        <p className="mt-1 text-xs text-ink-500">{description}</p>
       </div>
 
       {features.length === 0 ? (

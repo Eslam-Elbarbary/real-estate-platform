@@ -4,10 +4,12 @@ import {
   City,
   Compound,
   Country,
+  Developer,
   District,
   Feature,
   FinishingType,
   MediaAsset,
+  MediaType,
   Payment,
   PaymentStatus,
   PaymentType,
@@ -17,6 +19,7 @@ import {
   PropertyStatus,
   PropertyStatusHistory,
   PropertyType,
+  RentPeriod,
   Subscription,
   TransactionType,
   User,
@@ -25,6 +28,7 @@ import { FeatureResponseDto, toFeatureResponse } from '../../properties/mapper/f
 import {
   PublicLocationRefDto,
   PublicLocationSummaryDto,
+  PublicPrimaryImageDto,
   PublicTypeRefDto,
 } from '../../properties/mapper/property-public.mapper';
 import {
@@ -60,6 +64,9 @@ export class AdminPropertyReviewCardDto {
   title!: string | null;
 
   @ApiPropertyOptional({ nullable: true })
+  referenceNumber!: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
   price!: number | null;
 
   @ApiProperty()
@@ -67,6 +74,21 @@ export class AdminPropertyReviewCardDto {
 
   @ApiProperty({ enum: PropertyStatus })
   status!: PropertyStatus;
+
+  @ApiPropertyOptional({ enum: PaymentType, nullable: true })
+  paymentType!: PaymentType | null;
+
+  @ApiPropertyOptional({ enum: FinishingType, nullable: true })
+  finishingType!: FinishingType | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  bedrooms!: number | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  bathrooms!: number | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  areaSqm!: number | null;
 
   @ApiPropertyOptional({ type: PublicTypeRefDto, nullable: true })
   propertyType!: PublicTypeRefDto | null;
@@ -77,19 +99,52 @@ export class AdminPropertyReviewCardDto {
   @ApiProperty({ type: PublicLocationSummaryDto })
   location!: PublicLocationSummaryDto;
 
+  @ApiPropertyOptional({ type: PublicLocationRefDto, nullable: true })
+  compound!: PublicLocationRefDto | null;
+
   @ApiProperty({ type: AdminPropertyOwnerDto })
   owner!: AdminPropertyOwnerDto;
+
+  @ApiPropertyOptional({ type: PublicPrimaryImageDto, nullable: true })
+  primaryImage!: PublicPrimaryImageDto | null;
+
+  @ApiProperty({ example: 0 })
+  imageCount!: number;
+
+  @ApiProperty({ example: 0 })
+  videoCount!: number;
+
+  @ApiProperty({ example: 0 })
+  viewCount!: number;
+
+  @ApiProperty({ example: 0 })
+  favoritesCount!: number;
 
   @ApiPropertyOptional({ nullable: true })
   submittedAt!: string | null;
 
+  @ApiPropertyOptional({ nullable: true })
+  publishedAt!: string | null;
+
   @ApiProperty()
   createdAt!: string;
+
+  @ApiProperty()
+  updatedAt!: string;
 }
 
 export class AdminPropertyImageDto {
   @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  mediaAssetId!: string;
+
+  @ApiProperty()
   url!: string;
+
+  @ApiProperty({ enum: MediaType })
+  type!: MediaType;
 
   @ApiProperty()
   sortOrder!: number;
@@ -160,6 +215,12 @@ export class AdminPropertyReviewDetailsDto {
   @ApiPropertyOptional({ nullable: true })
   price!: number | null;
 
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Derived as price / areaSqm when both are present and positive',
+  })
+  pricePerSqm!: number | null;
+
   @ApiProperty()
   currency!: string;
 
@@ -177,6 +238,9 @@ export class AdminPropertyReviewDetailsDto {
 
   @ApiPropertyOptional({ enum: FinishingType, nullable: true })
   finishingType!: FinishingType | null;
+
+  @ApiPropertyOptional({ enum: RentPeriod, nullable: true })
+  rentPeriod!: RentPeriod | null;
 
   @ApiPropertyOptional({ nullable: true })
   furnished!: boolean | null;
@@ -216,6 +280,15 @@ export class AdminPropertyReviewDetailsDto {
 
   @ApiPropertyOptional({ type: PublicLocationRefDto, nullable: true })
   compound!: PublicLocationRefDto | null;
+
+  @ApiPropertyOptional({ type: PublicLocationRefDto, nullable: true })
+  developer!: PublicLocationRefDto | null;
+
+  @ApiProperty({ example: 0 })
+  viewCount!: number;
+
+  @ApiProperty({ example: 0 })
+  favoritesCount!: number;
 
   @ApiProperty({ type: AdminPropertyOwnerDto })
   owner!: AdminPropertyOwnerDto;
@@ -272,11 +345,17 @@ export type AdminPropertyCardSource = Property & {
   transactionType: TransactionType | null;
   area: AreaWithCityCountry | null;
   district: District | null;
+  compound: (Compound & { developer: Developer | null }) | null;
   owner: Pick<User, 'id' | 'firstName' | 'lastName' | 'email' | 'phone' | 'avatarUrl'>;
+  images: Array<
+    Pick<PropertyImage, 'type' | 'isPrimary' | 'sortOrder'> & {
+      mediaAsset: Pick<MediaAsset, 'url'>;
+    }
+  >;
+  _count: { favorites: number };
 };
 
-export type AdminPropertyDetailsSource = AdminPropertyCardSource & {
-  compound: Compound | null;
+export type AdminPropertyDetailsSource = Omit<AdminPropertyCardSource, 'images'> & {
   features: Array<{ feature: Feature }>;
   images: Array<PropertyImage & { mediaAsset: MediaAsset }>;
   subscriptions: Array<Subscription & { plan: Plan }>;
@@ -378,22 +457,78 @@ function toUserDisplayName(
   return [user.firstName, user.lastName].filter(Boolean).join(' ') || null;
 }
 
+function computePricePerSqm(
+  price: Property['price'],
+  areaSqm: Property['areaSqm'],
+): number | null {
+  const priceNumber = decimalToNumber(price);
+  const areaNumber = decimalToNumber(areaSqm);
+  if (
+    priceNumber == null ||
+    areaNumber == null ||
+    priceNumber <= 0 ||
+    areaNumber <= 0
+  ) {
+    return null;
+  }
+  return Math.round(priceNumber / areaNumber);
+}
+
+function pickPrimaryImage(
+  images: AdminPropertyCardSource['images'],
+): PublicPrimaryImageDto | null {
+  if (!images.length) {
+    return null;
+  }
+  const sorted = [...images].sort((a, b) => a.sortOrder - b.sortOrder);
+  const primary = sorted.find((img) => img.isPrimary) ?? sorted[0];
+  if (!primary) {
+    return null;
+  }
+  return {
+    url: primary.mediaAsset.url,
+    isPrimary: primary.isPrimary,
+    sortOrder: primary.sortOrder,
+  };
+}
+
 export function toAdminPropertyReviewCard(
   property: AdminPropertyCardSource,
 ): AdminPropertyReviewCardDto {
+  const imageCount = property.images.filter(
+    (image) => image.type === MediaType.IMAGE,
+  ).length;
+  const videoCount = property.images.filter(
+    (image) => image.type === MediaType.VIDEO,
+  ).length;
+
   return {
     id: property.id,
     slug: property.slug,
     title: property.title,
+    referenceNumber: property.referenceNumber,
     price: decimalToNumber(property.price),
     currency: property.currency,
     status: property.status,
+    paymentType: property.paymentType,
+    finishingType: property.finishingType,
+    bedrooms: property.bedrooms,
+    bathrooms: property.bathrooms,
+    areaSqm: decimalToNumber(property.areaSqm),
     propertyType: toTypeRef(property.propertyType),
     transactionType: toTypeRef(property.transactionType),
     location: toLocationSummary(property.area, property.district),
+    compound: toNamedRef(property.compound),
     owner: toOwnerDto(property.owner),
+    primaryImage: pickPrimaryImage(property.images),
+    imageCount,
+    videoCount,
+    viewCount: property.viewCount,
+    favoritesCount: property._count.favorites,
     submittedAt: dateToIso(property.submittedAt),
+    publishedAt: dateToIso(property.publishedAt),
     createdAt: property.createdAt.toISOString(),
+    updatedAt: property.updatedAt.toISOString(),
   };
 }
 
@@ -434,12 +569,14 @@ export function toAdminPropertyReviewDetails(
     referenceNumber: property.referenceNumber,
     status: property.status,
     price: decimalToNumber(property.price),
+    pricePerSqm: computePricePerSqm(property.price, property.areaSqm),
     currency: property.currency,
     paymentType: property.paymentType,
     downPayment: decimalToNumber(property.downPayment),
     installmentYears: property.installmentYears,
     monthlyInstallment: decimalToNumber(property.monthlyInstallment),
     finishingType: property.finishingType,
+    rentPeriod: property.rentPeriod,
     furnished: property.furnished,
     bedrooms: property.bedrooms,
     bathrooms: property.bathrooms,
@@ -453,12 +590,18 @@ export function toAdminPropertyReviewDetails(
     transactionType: toTypeRef(property.transactionType),
     location: toLocationSummary(property.area, property.district),
     compound: toNamedRef(property.compound),
+    developer: toNamedRef(property.compound?.developer ?? null),
+    viewCount: property.viewCount,
+    favoritesCount: property._count.favorites,
     owner: toOwnerDto(property.owner),
     images: property.images
       .slice()
       .sort((a, b) => a.sortOrder - b.sortOrder)
       .map((image) => ({
+        id: image.id,
+        mediaAssetId: image.mediaAssetId,
         url: image.mediaAsset.url,
+        type: image.type,
         sortOrder: image.sortOrder,
         isPrimary: image.isPrimary,
       })),

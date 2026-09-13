@@ -1,14 +1,18 @@
 import Image from 'next/image';
 import { Container } from '@/components/ui/container';
 import { uiLabels } from '@/config/labels';
-import { getLocationOptions } from '@/features/locations';
+import { getSearchLocationOptions } from '@/features/locations/api-options';
 import { getHomepageStats } from '@/features/properties';
 import { PropertySearchForm } from '@/features/property-search';
 
 export async function HomeHero() {
   const [locations, stats] = await Promise.all([
-    getLocationOptions(),
-    getHomepageStats(),
+    getSearchLocationOptions().catch(() => []),
+    getHomepageStats().catch(() => ({
+      totalProperties: 0,
+      saleCount: 0,
+      rentCount: 0,
+    })),
   ]);
 
   return (

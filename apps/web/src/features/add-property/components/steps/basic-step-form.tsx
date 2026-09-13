@@ -12,7 +12,10 @@ import { saveBasicStepAction } from '../../actions';
 import { listingCopy } from '../../config';
 import type { ListingDraft } from '../../types';
 import { ListingMapPicker } from '../listing-map-picker';
-import { PropertyTypeCombobox } from '../property-type-combobox';
+import {
+  PropertyTypeCombobox,
+  type CatalogPropertyTypeOption,
+} from '../property-type-combobox';
 
 const DEFAULT_LAT = 30.0444;
 const DEFAULT_LNG = 31.2357;
@@ -20,9 +23,14 @@ const DEFAULT_LNG = 31.2357;
 interface BasicStepFormProps {
   draft: ListingDraft;
   locations: LocationOption[];
+  propertyTypeOptions: CatalogPropertyTypeOption[];
 }
 
-export function BasicStepForm({ draft, locations }: BasicStepFormProps) {
+export function BasicStepForm({
+  draft,
+  locations,
+  propertyTypeOptions,
+}: BasicStepFormProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +47,11 @@ export function BasicStepForm({ draft, locations }: BasicStepFormProps) {
   );
   const [latitude, setLatitude] = useState(draft.latitude ?? DEFAULT_LAT);
   const [longitude, setLongitude] = useState(draft.longitude ?? DEFAULT_LNG);
+
+  // Prefer area/neighborhood — city alone cannot set areaId.
+  const selectableLocations = locations.filter(
+    (item) => item.level === 'area' || item.level === 'neighborhood',
+  );
 
   function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -98,6 +111,7 @@ export function BasicStepForm({ draft, locations }: BasicStepFormProps) {
           id="listing-property-type"
           value={propertyType}
           onChange={setPropertyType}
+          options={propertyTypeOptions}
         />
       </div>
 
@@ -106,7 +120,7 @@ export function BasicStepForm({ draft, locations }: BasicStepFormProps) {
           {listingCopy.location}
         </label>
         <LocationAutocomplete
-          locations={locations}
+          locations={selectableLocations}
           valueSlug={locationSlug}
           onSelect={(location) => {
             setLocationId(location.id);

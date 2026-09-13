@@ -100,4 +100,30 @@ export class AdminPropertiesController {
   archiveProperty(@CurrentUser() user: AuthUserPayload, @Param('id') id: string) {
     return this.adminPropertiesService.archiveProperty(user.sub, id);
   }
+
+  @Post(':id/publish')
+  @Permissions('properties.publish')
+  @ApiOperation({
+    summary: 'Publish a draft/rejected/archived/expired property (admin)',
+  })
+  publishProperty(@CurrentUser() user: AuthUserPayload, @Param('id') id: string) {
+    return this.adminPropertiesService.publishProperty(user.sub, id);
+  }
+
+  @Post(':id/unpublish')
+  @Permissions('properties.publish')
+  @ApiOperation({ summary: 'Unpublish a published property back to draft' })
+  unpublishProperty(
+    @CurrentUser() user: AuthUserPayload,
+    @Param('id') id: string,
+  ) {
+    return this.adminPropertiesService.unpublishProperty(user.sub, id);
+  }
+
+  @Post(':id/restore')
+  @Permissions('properties.archive')
+  @ApiOperation({ summary: 'Restore an archived property to draft' })
+  restoreProperty(@CurrentUser() user: AuthUserPayload, @Param('id') id: string) {
+    return this.adminPropertiesService.restoreProperty(user.sub, id);
+  }
 }

@@ -28,10 +28,8 @@ import {
 import { appIcons, ICON_SIZE_UI } from '@/config/icons';
 import { uiLabels } from '@/config/labels';
 import type { LocationOption } from '@/features/locations';
-import {
-  AdvancedSearchDrawer,
-  RangeHistogram,
-} from '@/features/property-search';
+import { AdvancedSearchDrawer } from '@/features/property-search/components/advanced-search-drawer';
+import { RangeHistogram } from '@/features/property-search/components/range-histogram';
 import { buildPropertySearchPath } from '@/features/property-search/search-params';
 import { formatArea } from '@/lib/formatting/area';
 import { formatCompactCurrency } from '@/lib/formatting/currency';

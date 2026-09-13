@@ -29,6 +29,7 @@ interface PropertyLocationFieldProps {
   onChange: (value: PropertyLocationValue) => void;
   disabled?: boolean;
   areaError?: string;
+  title?: string;
 }
 
 function formatLocationLabel(item: { nameAr: string | null; nameEn: string }): string {
@@ -40,6 +41,7 @@ export function PropertyLocationField({
   onChange,
   disabled = false,
   areaError,
+  title = 'الموقع',
 }: PropertyLocationFieldProps) {
   const [loading, setLoading] = useState(false);
   const [countries, setCountries] = useState<Country[]>([]);
@@ -214,7 +216,7 @@ export function PropertyLocationField({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-ink-900">الموقع</h3>
+      <h3 className="text-sm font-semibold text-ink-900">{title}</h3>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Select

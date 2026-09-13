@@ -12,23 +12,17 @@ export function getPaymentPlan(property: Property): PropertyPaymentPlan | null {
   if (
     !supportsInstallment ||
     property.downPayment === undefined ||
-    property.installmentYears === undefined
+    property.installmentYears === undefined ||
+    property.monthlyInstallment === undefined
   ) {
     return null;
   }
-
-  const monthlyInstallment =
-    property.monthlyInstallment ??
-    Math.round(
-      (property.price - property.downPayment) /
-        (property.installmentYears * 12),
-    );
 
   return {
     totalPrice: property.price,
     downPayment: property.downPayment,
     installmentYears: property.installmentYears,
-    monthlyInstallment,
+    monthlyInstallment: property.monthlyInstallment,
     currency: property.currency,
   };
 }

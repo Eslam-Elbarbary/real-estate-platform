@@ -70,7 +70,9 @@ export class PropertyPublicService {
       },
       include: {
         ...cardInclude,
-        compound: true,
+        compound: {
+          include: { developer: true },
+        },
         owner: true,
         features: {
           include: { feature: true },
