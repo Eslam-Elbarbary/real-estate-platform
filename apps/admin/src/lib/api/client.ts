@@ -36,6 +36,7 @@ export interface ApiSuccess<T> {
 interface NestErrorBody {
   message?: string | string[];
   error?: string;
+  errors?: unknown;
   statusCode?: number;
 }
 
@@ -79,17 +80,51 @@ function mapHttpErrorUserMessage(code: AdminErrorCode, message: string): string 
   return undefined;
 }
 
+function formatErrorList(errors: unknown): string | null {
+  if (!Array.isArray(errors) || errors.length === 0) {
+    return null;
+  }
+
+  const parts = errors
+    .map((item) => {
+      if (typeof item === 'string') {
+        return item.trim();
+      }
+      if (item && typeof item === 'object' && 'message' in item) {
+        const message = (item as { message?: unknown }).message;
+        return typeof message === 'string' ? message.trim() : '';
+      }
+      return '';
+    })
+    .filter(Boolean);
+
+  return parts.length > 0 ? parts.join(' — ') : null;
+}
+
 function extractErrorMessage(body: unknown, fallback: string): string {
   if (!body || typeof body !== 'object') {
     return fallback;
   }
 
   const nestBody = body as NestErrorBody;
+
+  const fromErrors = formatErrorList(nestBody.errors);
+  if (fromErrors) {
+    return fromErrors;
+  }
+
   if (Array.isArray(nestBody.message)) {
     return nestBody.message.filter(Boolean).join(' — ') || fallback;
   }
 
   if (typeof nestBody.message === 'string' && nestBody.message.trim()) {
+    // Prefer detailed `errors` when message is the generic Nest/API wrapper.
+    if (
+      nestBody.message === 'Validation failed' ||
+      nestBody.message === 'Bad Request'
+    ) {
+      return fromErrors ?? nestBody.message;
+    }
     return nestBody.message;
   }
 
@@ -175,7 +210,11 @@ async function performApiRequest<T>(
 
       throw createAdminError(code, {
         message,
-        userMessage: mapHttpErrorUserMessage(code, message),
+        userMessage:
+          mapHttpErrorUserMessage(code, message) ??
+          (code === 'VALIDATION' && message !== 'Validation failed'
+            ? message
+            : undefined),
         status: response.status,
         details: parsed,
       });

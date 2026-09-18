@@ -29,6 +29,16 @@ export default async function ListingPublishPage({ params }: PageProps) {
     redirect(routes.addProperty.step(id, 'checkout'));
   }
 
+  // PENDING_REVIEW / PUBLISHED / etc. never stay on the publish wizard step.
+  if (
+    draft.apiStatus === 'PENDING_REVIEW' ||
+    draft.apiStatus === 'PUBLISHED' ||
+    draft.apiStatus === 'ARCHIVED' ||
+    draft.apiStatus === 'EXPIRED'
+  ) {
+    redirect(routes.myProperty(id));
+  }
+
   const service = getListingDraftService();
   const [completion, plans, subscription] = await Promise.all([
     service.getCompletion(id),

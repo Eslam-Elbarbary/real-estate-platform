@@ -8,12 +8,14 @@ import { PropertyLocationController } from './controllers/property-location.cont
 import { PropertyMediaController } from './controllers/property-media.controller';
 import { PropertyPublicController } from './controllers/property-public.controller';
 import { PropertySubmitController } from './controllers/property-submit.controller';
+import { PropertyContactController } from './controllers/property-contact.controller';
 import { PropertiesController } from './properties.controller';
 import { PropertiesService } from './properties.service';
 import { PropertyMediaService } from './services/property-media.service';
 import { PropertyPublicService } from './services/property-public.service';
 import { PropertySubmitService } from './services/property-submit.service';
 import { PropertyValidationService } from './services/property-validation.service';
+import { PropertyContactService } from './services/property-contact.service';
 
 @Module({
   imports: [MediaModule, LeadsModule],
@@ -26,6 +28,7 @@ import { PropertyValidationService } from './services/property-validation.servic
     PropertyFeaturesController,
     PropertyMediaController,
     PropertySubmitController,
+    PropertyContactController,
     PropertyPublicController,
   ],
   providers: [
@@ -34,6 +37,7 @@ import { PropertyValidationService } from './services/property-validation.servic
     PropertyValidationService,
     PropertySubmitService,
     PropertyPublicService,
+    PropertyContactService,
   ],
   exports: [
     PropertiesService,
@@ -41,6 +45,7 @@ import { PropertyValidationService } from './services/property-validation.servic
     PropertyValidationService,
     PropertySubmitService,
     PropertyPublicService,
+    PropertyContactService,
   ],
 })
 export class PropertiesModule {}

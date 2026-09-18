@@ -1,6 +1,14 @@
-import { getAdminPropertyDetails, getPropertyFormCatalogs } from '@/features/properties';
-import { PropertyDetails } from '@/features/properties/components/property-details';
+import { notFound } from 'next/navigation';
+import {
+  PagePermissionDenied,
+  hasPagePermission,
+} from '@/components/layout/page-permission-gate';
 import { getAdminSession } from '@/features/auth/service';
+import { getAdminPropertyDetails } from '@/features/properties';
+import { getPropertyContact } from '@/features/properties/api-property-contact';
+import { PropertyDetails } from '@/features/properties/components/property-details';
+import { AdminError } from '@/lib/errors';
+import { handleAdminPageError } from '@/lib/server/handle-admin-page-error';
 import { createPageMetadata } from '@/lib/seo/metadata';
 
 export const metadata = createPageMetadata({
@@ -14,15 +22,31 @@ export default async function PropertyDetailsPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
-  const [property, catalogs, session] = await Promise.all([
-    getAdminPropertyDetails(id),
-    getPropertyFormCatalogs(),
-    getAdminSession(),
-  ]);
+  const session = await getAdminSession();
   const permissions = session?.user.permissions ?? [];
 
-  return (
-    <PropertyDetails property={property} catalogs={catalogs} permissions={permissions} />
-  );
+  if (!hasPagePermission(permissions, 'properties.view')) {
+    return <PagePermissionDenied />;
+  }
+
+  const { id } = await params;
+
+  try {
+    const [property, contact] = await Promise.all([
+      getAdminPropertyDetails(id),
+      getPropertyContact(id).catch(() => null),
+    ]);
+    return (
+      <PropertyDetails
+        property={property}
+        permissions={permissions}
+        contact={contact}
+      />
+    );
+  } catch (error) {
+    if (error instanceof AdminError && error.code === 'NOT_FOUND') {
+      notFound();
+    }
+    handleAdminPageError(error);
+  }
 }

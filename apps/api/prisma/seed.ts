@@ -1,10 +1,26 @@
 import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 import { PlanStatus, PrismaClient } from './generated/prisma-client';
 import * as bcrypt from 'bcrypt';
 import { seedPermissionsAndRoleMappings } from './seeds/permissions.seed';
+import { PLATFORM_SETTINGS_DEFAULTS } from '../src/modules/settings/platform-settings.defaults';
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
-const prisma = new PrismaClient({ adapter });
+function createSeedClient(): { prisma: PrismaClient; pool: Pool } {
+  const connectionString = process.env.DATABASE_URL?.trim();
+  if (!connectionString) {
+    throw new Error('DATABASE_URL is not set');
+  }
+
+  const url = new URL(connectionString);
+  const schema = url.searchParams.get('schema')?.trim() || 'public';
+  url.searchParams.delete('schema');
+
+  const pool = new Pool({ connectionString: url.toString() });
+  const adapter = new PrismaPg(pool, { schema });
+  return { prisma: new PrismaClient({ adapter }), pool };
+}
+
+const { prisma, pool } = createSeedClient();
 
 /** Same cost factor as AuthService password hashing. */
 const BCRYPT_ROUNDS = 12;
@@ -105,6 +121,38 @@ const FEATURES = [
   { code: 'GYM', nameEn: 'Gym', nameAr: 'جيم', category: 'amenities' },
   { code: 'AC', nameEn: 'AC', nameAr: 'تكييف', category: 'indoor' },
   { code: 'STORAGE', nameEn: 'Storage', nameAr: 'مخزن', category: 'amenities' },
+];
+
+const PROPERTY_VIEWS = [
+  { code: 'MAIN_STREET', nameEn: 'Main street', nameAr: 'شارع رئيسي' },
+  { code: 'NILE', nameEn: 'Nile', nameAr: 'النيل' },
+  { code: 'SEA', nameEn: 'Sea', nameAr: 'بحر' },
+  { code: 'GARDEN', nameEn: 'Garden', nameAr: 'حديقة' },
+  { code: 'POOL', nameEn: 'Pool', nameAr: 'حمام سباحة' },
+  { code: 'CITY_VIEW', nameEn: 'City view', nameAr: 'إطلالة على المدينة' },
+  { code: 'OPEN_VIEW', nameEn: 'Open view', nameAr: 'إطلالة مفتوحة' },
+];
+
+const LEGAL_STATUSES = [
+  {
+    code: 'REGISTERED_MONTHLY',
+    nameEn: 'Registered at the notary office',
+    nameAr: 'مسجل بالشهر العقاري',
+  },
+  { code: 'INITIAL_CONTRACT', nameEn: 'Initial contract', nameAr: 'عقد ابتدائي' },
+  { code: 'REGISTRABLE', nameEn: 'Registrable', nameAr: 'قابل للتسجيل' },
+  {
+    code: 'NEW_COMMUNITIES_AUTHORITY',
+    nameEn: 'New Urban Communities Authority allocation',
+    nameAr: 'تخصيص هيئة المجتمعات العمرانية',
+  },
+  {
+    code: 'ALLOCATION_DECISION',
+    nameEn: 'Allocation decision',
+    nameAr: 'قرار تخصيص',
+  },
+  { code: 'POWER_OF_ATTORNEY', nameEn: 'Power of attorney', nameAr: 'توكيل' },
+  { code: 'NOT_REGISTERED', nameEn: 'Not registered', nameAr: 'غير مسجل' },
 ];
 
 const PLANS: Array<{
@@ -260,6 +308,26 @@ async function seedFeatures() {
         category: item.category,
         isActive: true,
       },
+      create: item,
+    });
+  }
+}
+
+async function seedPropertyViews() {
+  for (const item of PROPERTY_VIEWS) {
+    await prisma.propertyView.upsert({
+      where: { code: item.code },
+      update: { nameEn: item.nameEn, nameAr: item.nameAr },
+      create: item,
+    });
+  }
+}
+
+async function seedLegalStatuses() {
+  for (const item of LEGAL_STATUSES) {
+    await prisma.propertyLegalStatus.upsert({
+      where: { code: item.code },
+      update: { nameEn: item.nameEn, nameAr: item.nameAr },
       create: item,
     });
   }
@@ -452,6 +520,19 @@ async function seedDevelopersAndCompounds() {
   }
 }
 
+async function seedPlatformSettings() {
+  const existing = await prisma.platformSetting.findFirst({
+    orderBy: { createdAt: 'asc' },
+  });
+  if (existing) {
+    return;
+  }
+
+  await prisma.platformSetting.create({
+    data: { ...PLATFORM_SETTINGS_DEFAULTS },
+  });
+}
+
 async function main() {
   console.log('Seeding reference data…');
   await seedRoles();
@@ -460,10 +541,13 @@ async function main() {
   await seedTransactionTypes();
   await seedPropertyTypes();
   await seedFeatures();
+  await seedPropertyViews();
+  await seedLegalStatuses();
   await seedPlans();
   await seedDevelopersAndCompounds();
+  await seedPlatformSettings();
   console.log(
-    'Seed complete (roles, permissions, super admin, transaction types, property types, features, plans, developers, compounds).',
+    'Seed complete (roles, permissions, super admin, transaction types, property types, features, property views, legal statuses, plans, developers, compounds, platform settings).',
   );
 }
 
@@ -474,4 +558,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    await pool.end();
   });

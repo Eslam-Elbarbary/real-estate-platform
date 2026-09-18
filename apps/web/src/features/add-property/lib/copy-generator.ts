@@ -1,6 +1,6 @@
 import { getPropertyTypeLabel } from '@/config/property-types';
 import type { ListingDraft } from '../types';
-import { listingFinishingOptions, listingViewOptions } from '../config';
+import { listingFinishingOptions } from '../config';
 
 function stablePick(seed: string, values: string[]): string {
   let hash = 0;
@@ -13,6 +13,8 @@ function stablePick(seed: string, values: string[]): string {
 export function generateListingCopy(
   draft: ListingDraft,
   locale: 'ar' | 'en',
+  /** Resolved PropertyView catalog label, when the caller has the catalog. */
+  viewLabel?: string | null,
 ): { title: string; description: string; address: string } {
   const typeLabel = draft.propertyType
     ? getPropertyTypeLabel(draft.propertyType)
@@ -26,8 +28,7 @@ export function generateListingCopy(
   const finishing = listingFinishingOptions.find(
     (o) => o.value === draft.details.finishing,
   )?.label;
-  const view = listingViewOptions.find((o) => o.value === draft.details.views[0])
-    ?.label;
+  const view = viewLabel ?? null;
   const tx =
     draft.transaction === 'rent'
       ? locale === 'ar'

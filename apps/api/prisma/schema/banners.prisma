@@ -1,0 +1,27 @@
+// -----------------------------------------------------------------------------
+// Marketing banners (homepage hero, sections, properties page)
+// -----------------------------------------------------------------------------
+
+enum BannerPosition {
+  HOME_HERO
+  HOME_SECTION
+  PROPERTIES_PAGE
+}
+
+model Banner {
+  id             String         @id @default(cuid())
+  title          String
+  description    String?
+  imageUrl       String
+  mobileImageUrl String?
+  buttonText     String?
+  buttonUrl      String?
+  position       BannerPosition
+  sortOrder      Int            @default(0)
+  isActive       Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([position, isActive, sortOrder])
+  @@map("banners")
+}

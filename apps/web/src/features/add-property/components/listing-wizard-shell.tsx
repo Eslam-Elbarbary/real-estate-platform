@@ -23,6 +23,8 @@ export interface ListingWizardShellProps {
   children: ReactNode;
   tips?: ReactNode;
   className?: string;
+  /** Skip the inner white card — used by full listing preview. */
+  unboxed?: boolean;
 }
 
 export function ListingWizardShell({
@@ -32,6 +34,7 @@ export function ListingWizardShell({
   children,
   tips,
   className,
+  unboxed = false,
 }: ListingWizardShellProps) {
   const completedThrough = completedThroughFor(draft);
 
@@ -52,9 +55,13 @@ export function ListingWizardShell({
             <h1 className="text-xl font-extrabold text-ink-950 sm:text-2xl">
               {title}
             </h1>
-            <div className="mt-5 rounded-xl border border-[#e5e5e5] bg-white p-4 sm:p-6">
-              {children}
-            </div>
+            {unboxed ? (
+              <div className="mt-5">{children}</div>
+            ) : (
+              <div className="mt-5 rounded-xl border border-[#e5e5e5] bg-white p-4 sm:p-6">
+                {children}
+              </div>
+            )}
             {tips ? (
               <aside className="mt-5 rounded-xl border border-[#e5e5e5] bg-white p-4 sm:p-5">
                 <h2 className="text-sm font-extrabold text-ink-900">

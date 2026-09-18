@@ -3,7 +3,6 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getPropertyTypeLabel } from '@/config/property-types';
 import { uiLabels } from '@/config/labels';
 import { formatCurrency } from '@/lib/formatting/currency';
 import { cn } from '@/lib/utils/cn';
@@ -15,9 +14,10 @@ import type { PropertyAlert } from '../types';
 interface AlertRowProps {
   alert: PropertyAlert;
   zebra: boolean;
+  propertyTypeLabel?: string;
 }
 
-export function AlertRow({ alert, zebra }: AlertRowProps) {
+export function AlertRow({ alert, zebra, propertyTypeLabel }: AlertRowProps) {
   const router = useRouter();
   const [enabled, setEnabled] = useState(alert.enabled);
   const [pending, startTransition] = useTransition();
@@ -51,7 +51,7 @@ export function AlertRow({ alert, zebra }: AlertRowProps) {
         </Link>
       </td>
       <td className="px-3 py-3 text-ink-700">
-        {getPropertyTypeLabel(alert.propertyType)}
+        {propertyTypeLabel ?? alert.propertyType}
       </td>
       <td className="px-3 py-3 text-ink-700">
         {alert.transaction === 'sale' ? uiLabels.buy : uiLabels.rent}

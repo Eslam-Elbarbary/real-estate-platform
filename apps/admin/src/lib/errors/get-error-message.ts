@@ -25,6 +25,28 @@ export function getAdminErrorMessage(error: unknown): string {
     if (error.code === 'SERVER' || error.code === 'NETWORK' || error.code === 'TIMEOUT') {
       return error.userMessage;
     }
+
+    // Surface concrete validation / domain messages (e.g. DTO whitelist errors).
+    if (error.code === 'VALIDATION') {
+      if (isMeaningfulMessage(error.message) && error.message !== 'Validation failed') {
+        return error.message;
+      }
+      if (error.details && typeof error.details === 'object') {
+        const details = error.details as { errors?: unknown };
+        if (Array.isArray(details.errors) && details.errors.length > 0) {
+          const parts = details.errors
+            .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+            .map((item) => item.trim());
+          if (parts.length > 0) {
+            return parts.join(' — ');
+          }
+        }
+      }
+      if (isMeaningfulMessage(error.userMessage)) {
+        return error.userMessage;
+      }
+    }
+
     return CODE_MESSAGES[error.code] ?? error.userMessage;
   }
 

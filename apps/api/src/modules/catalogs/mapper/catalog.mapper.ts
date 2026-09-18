@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Feature, PropertyType, TransactionType } from '@/prisma/generated/prisma-client';
+import {
+  Feature,
+  PropertyLegalStatus,
+  PropertyType,
+  PropertyView,
+  TransactionType,
+} from '@/prisma/generated/prisma-client';
 
 export class CatalogPropertyTypeDto {
   @ApiProperty()
@@ -46,6 +52,34 @@ export class CatalogFeatureDto {
   category!: string | null;
 }
 
+export class CatalogPropertyViewDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty({ example: 'NILE' })
+  code!: string;
+
+  @ApiProperty({ example: 'Nile' })
+  nameEn!: string;
+
+  @ApiPropertyOptional({ nullable: true, example: 'النيل' })
+  nameAr!: string | null;
+}
+
+export class CatalogLegalStatusDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty({ example: 'REGISTERED_MONTHLY' })
+  code!: string;
+
+  @ApiProperty({ example: 'Registered at the notary office' })
+  nameEn!: string;
+
+  @ApiPropertyOptional({ nullable: true, example: 'مسجل بالشهر العقاري' })
+  nameAr!: string | null;
+}
+
 export function toCatalogPropertyType(type: PropertyType): CatalogPropertyTypeDto {
   return {
     id: type.id,
@@ -73,5 +107,25 @@ export function toCatalogFeature(feature: Feature): CatalogFeatureDto {
     nameEn: feature.nameEn,
     nameAr: feature.nameAr,
     category: feature.category,
+  };
+}
+
+export function toCatalogPropertyView(view: PropertyView): CatalogPropertyViewDto {
+  return {
+    id: view.id,
+    code: view.code,
+    nameEn: view.nameEn,
+    nameAr: view.nameAr,
+  };
+}
+
+export function toCatalogLegalStatus(
+  status: PropertyLegalStatus,
+): CatalogLegalStatusDto {
+  return {
+    id: status.id,
+    code: status.code,
+    nameEn: status.nameEn,
+    nameAr: status.nameAr,
   };
 }

@@ -1,13 +1,14 @@
-import { redirect } from 'next/navigation';
-import { routes } from '@/config/routes';
-import { hasPermission } from '@/features/auth/permissions';
+import {
+  PagePermissionDenied,
+  hasPagePermission,
+} from '@/components/layout/page-permission-gate';
 import { getAdminSession } from '@/features/auth/service';
 import { getAdminRoles } from '@/features/roles';
 import { RolesList } from '@/features/roles/components/roles-list';
 import { createPageMetadata } from '@/lib/seo/metadata';
 
 export const metadata = createPageMetadata({
-  title: 'الأدوار',
+  title: 'الأدوار والصلاحيات',
   description: 'إدارة أدوار النظام وصلاحيات الوصول.',
   path: '/roles',
 });
@@ -34,8 +35,8 @@ export default async function RolesPage({
   const session = await getAdminSession();
   const permissions = session?.user.permissions ?? [];
 
-  if (!hasPermission(permissions, 'roles.view')) {
-    redirect(routes.forbidden);
+  if (!hasPagePermission(permissions, 'roles.view')) {
+    return <PagePermissionDenied />;
   }
 
   const params = await searchParams;

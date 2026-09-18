@@ -1,3 +1,7 @@
+import {
+  PagePermissionDenied,
+  hasPagePermission,
+} from '@/components/layout/page-permission-gate';
 import { PlansList } from '@/features/plans/components/plans-list';
 import { getAdminPlans } from '@/features/plans';
 import type { PlanStatus } from '@/features/plans/types';
@@ -39,6 +43,14 @@ export default async function PlansPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const session = await getAdminSession();
+  const roles = session?.user.roles ?? [];
+  const permissions = session?.user.permissions ?? [];
+
+  if (!hasPagePermission(permissions, 'plans.view')) {
+    return <PagePermissionDenied />;
+  }
+
   const params = await searchParams;
   const page = parsePositiveInt(params.page, 1);
   const limit = Math.min(parsePositiveInt(params.limit, 20), 100);
@@ -48,12 +60,7 @@ export default async function PlansPage({
   const statusFilter =
     statusRaw === 'ACTIVE' || statusRaw === 'INACTIVE' ? statusRaw : '';
 
-  const [result, session] = await Promise.all([
-    getAdminPlans({ page, limit, search, status }),
-    getAdminSession(),
-  ]);
-  const roles = session?.user.roles ?? [];
-  const permissions = session?.user.permissions ?? [];
+  const result = await getAdminPlans({ page, limit, search, status });
 
   return (
     <PlansList

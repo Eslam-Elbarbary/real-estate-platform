@@ -1,24 +1,23 @@
 'use client';
 
-import { useMemo, useState, useTransition, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, useTransition, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { getButtonClassName } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
-import type { CatalogFeatureDto } from '@/types/api/public-property';
-import { saveDetailsStepAction } from '../../actions';
-import {
-  detailsFieldVisibility,
-  listingCopy,
-  listingFinishingOptions,
-  listingRegistrationOptions,
-  listingViewOptions,
-} from '../../config';
-import { getListingPublicationFee } from '../../lib/pricing';
 import type {
-  ListingDraft,
-  ListingRegistrationStatus,
-  ListingViewType,
-} from '../../types';
+  CatalogFeatureDto,
+  CatalogTypeDto,
+} from '@/types/api/public-property';
+import { saveDetailsStepAction } from '../../actions';
+import { listingCopy, listingFinishingOptions } from '../../config';
+import {
+  getPropertyTypeFieldConfig,
+  isDetailFieldVisible,
+  isRecommendedFeature,
+  sortFeaturesByRecommendation,
+} from '../../lib/property-type-details';
+import { getListingPublicationFee } from '../../lib/pricing';
+import type { ListingDraft } from '../../types';
 import type { FinishingType } from '@/types';
 
 const inputClass =
@@ -27,19 +26,52 @@ const inputClass =
 interface DetailsStepFormProps {
   draft: ListingDraft;
   features: CatalogFeatureDto[];
+  propertyViews: CatalogTypeDto[];
+  legalStatuses: CatalogTypeDto[];
 }
 
 function featureLabel(feature: CatalogFeatureDto): string {
   return feature.nameAr?.trim() || feature.nameEn;
 }
 
-export function DetailsStepForm({ draft, features }: DetailsStepFormProps) {
+function catalogOptions(
+  items: CatalogTypeDto[],
+): { value: string; label: string }[] {
+  return items.map((item) => ({
+    value: item.id,
+    label: item.nameAr?.trim() || item.nameEn,
+  }));
+}
+
+export function DetailsStepForm({
+  draft,
+  features,
+  propertyViews,
+  legalStatuses,
+}: DetailsStepFormProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const visibility = useMemo(
-    () => detailsFieldVisibility(draft.propertyType),
-    [draft.propertyType],
+  const propertyType = draft.propertyType;
+  const fieldConfig = useMemo(
+    () => getPropertyTypeFieldConfig(propertyType),
+    [propertyType],
+  );
+  const floorLabel = fieldConfig.floorLabel ?? listingCopy.floor;
+  const show = (field: Parameters<typeof isDetailFieldVisible>[0]) =>
+    isDetailFieldVisible(field, propertyType);
+
+  const sortedFeatures = useMemo(
+    () => sortFeaturesByRecommendation(features, propertyType),
+    [features, propertyType],
+  );
+  const viewOptions = useMemo(
+    () => catalogOptions(propertyViews),
+    [propertyViews],
+  );
+  const legalStatusOptions = useMemo(
+    () => catalogOptions(legalStatuses),
+    [legalStatuses],
   );
 
   const fee = getListingPublicationFee({
@@ -63,13 +95,18 @@ export function DetailsStepForm({ draft, features }: DetailsStepFormProps) {
   const [year, setYear] = useState(
     draft.details.buildOrDeliveryYear?.toString() ?? '',
   );
-  const [views, setViews] = useState<ListingViewType[]>(draft.details.views ?? []);
-  const [finishing, setFinishing] = useState<
-    FinishingType | 'extra_super_lux' | undefined
-  >(draft.details.finishing);
-  const [registrationStatus, setRegistrationStatus] = useState<
-    ListingRegistrationStatus | undefined
-  >(draft.details.registrationStatus);
+  const [furnished, setFurnished] = useState(
+    draft.details.furnished ?? false,
+  );
+  const [finishing, setFinishing] = useState<FinishingType | undefined>(
+    draft.details.finishing,
+  );
+  const [propertyViewIds, setPropertyViewIds] = useState<string[]>(
+    draft.details.propertyViewIds ?? [],
+  );
+  const [legalStatusId, setLegalStatusId] = useState<string | undefined>(
+    draft.details.legalStatusId,
+  );
   const [mortgageEligible, setMortgageEligible] = useState(
     draft.details.mortgageEligible ?? false,
   );
@@ -77,11 +114,18 @@ export function DetailsStepForm({ draft, features }: DetailsStepFormProps) {
     draft.details.amenities ?? [],
   );
 
-  function toggleView(value: ListingViewType) {
-    setViews((prev) =>
-      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value],
-    );
-  }
+  // Clear local state for fields hidden after a property-type change.
+  useEffect(() => {
+    if (!show('bedrooms')) setBedrooms('');
+    if (!show('bathrooms')) setBathrooms('');
+    if (!show('floor')) setFloor('');
+    if (!show('yearBuilt')) setYear('');
+    if (!show('finishingType')) setFinishing(undefined);
+    if (!show('furnished')) setFurnished(false);
+    if (!show('propertyViews')) setPropertyViewIds([]);
+    if (!show('legalStatus')) setLegalStatusId(undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when type changes
+  }, [propertyType]);
 
   function toggleFeature(featureId: string) {
     setSelectedFeatureIds((prev) =>
@@ -98,13 +142,16 @@ export function DetailsStepForm({ draft, features }: DetailsStepFormProps) {
       const area = Number(areaSqm);
       const result = await saveDetailsStepAction(draft.id, {
         areaSqm: area,
-        bedrooms: bedrooms ? Number(bedrooms) : undefined,
-        bathrooms: bathrooms ? Number(bathrooms) : undefined,
-        floor: floor || undefined,
-        buildOrDeliveryYear: year ? Number(year) : undefined,
-        views,
-        finishing,
-        registrationStatus,
+        bedrooms: show('bedrooms') && bedrooms ? Number(bedrooms) : undefined,
+        bathrooms:
+          show('bathrooms') && bathrooms ? Number(bathrooms) : undefined,
+        floor: show('floor') ? floor || undefined : undefined,
+        buildOrDeliveryYear:
+          show('yearBuilt') && year ? Number(year) : undefined,
+        furnished: show('furnished') ? furnished : undefined,
+        finishing: show('finishingType') ? finishing : undefined,
+        propertyViewIds: show('propertyViews') ? propertyViewIds : undefined,
+        legalStatusId: show('legalStatus') ? legalStatusId : undefined,
         mortgageEligible,
         amenities: selectedFeatureIds,
       });
@@ -123,27 +170,32 @@ export function DetailsStepForm({ draft, features }: DetailsStepFormProps) {
         {listingCopy.feeNotice(fee.amountEgp)}
       </div>
 
-      <div>
-        <label htmlFor="area" className="mb-1.5 block text-sm font-semibold text-ink-800">
-          {listingCopy.area}
-        </label>
-        <div className="relative">
-          <input
-            id="area"
-            inputMode="decimal"
-            value={areaSqm}
-            onChange={(e) => setAreaSqm(e.target.value)}
-            placeholder="اكتب المساحة"
-            className={cn(inputClass, 'pe-16')}
-            required
-          />
-          <span className="pointer-events-none absolute top-0.5 end-3 -translate-y-1/2 text-xs font-semibold text-ink-500">
-            متر²
-          </span>
+      {show('areaSqm') ? (
+        <div>
+          <label
+            htmlFor="area"
+            className="mb-1.5 block text-sm font-semibold text-ink-800"
+          >
+            {listingCopy.area}
+          </label>
+          <div className="relative">
+            <input
+              id="area"
+              inputMode="decimal"
+              value={areaSqm}
+              onChange={(e) => setAreaSqm(e.target.value)}
+              placeholder="اكتب المساحة"
+              className={cn(inputClass, 'pe-16')}
+              required
+            />
+            <span className="pointer-events-none absolute top-0.5 end-3 -translate-y-1/2 text-xs font-semibold text-ink-500">
+              متر²
+            </span>
+          </div>
         </div>
-      </div>
+      ) : null}
 
-      {visibility.bedrooms ? (
+      {show('bedrooms') ? (
         <Field
           id="bedrooms"
           label={listingCopy.bedrooms}
@@ -153,7 +205,7 @@ export function DetailsStepForm({ draft, features }: DetailsStepFormProps) {
         />
       ) : null}
 
-      {visibility.bathrooms ? (
+      {show('bathrooms') ? (
         <Field
           id="bathrooms"
           label={listingCopy.bathrooms}
@@ -163,40 +215,51 @@ export function DetailsStepForm({ draft, features }: DetailsStepFormProps) {
         />
       ) : null}
 
-      {visibility.floor ? (
+      {show('floor') ? (
         <Field
           id="floor"
-          label={listingCopy.floor}
+          label={floorLabel}
           value={floor}
           onChange={setFloor}
           placeholder="اكتب الدور"
         />
       ) : null}
 
-      <div>
-        <label htmlFor="year" className="mb-1.5 block text-sm font-semibold text-ink-800">
-          {listingCopy.year}
-        </label>
-        <input
-          id="year"
-          inputMode="numeric"
-          value={year}
-          onChange={(e) => setYear(e.target.value)}
-          placeholder="مثال: 2020"
-          className={inputClass}
-        />
-      </div>
+      {show('yearBuilt') ? (
+        <div>
+          <label
+            htmlFor="year"
+            className="mb-1.5 block text-sm font-semibold text-ink-800"
+          >
+            {listingCopy.year}
+          </label>
+          <input
+            id="year"
+            inputMode="numeric"
+            value={year}
+            onChange={(e) => setYear(e.target.value)}
+            placeholder="مثال: 2020"
+            className={inputClass}
+          />
+        </div>
+      ) : null}
 
-      {visibility.views ? (
+      {show('propertyViews') && viewOptions.length > 0 ? (
         <ChipGroup
           label={listingCopy.views}
-          options={listingViewOptions}
-          selected={views}
-          onToggle={toggleView}
+          options={viewOptions}
+          selected={propertyViewIds}
+          onToggle={(value) =>
+            setPropertyViewIds((prev) =>
+              prev.includes(value)
+                ? prev.filter((id) => id !== value)
+                : [...prev, value],
+            )
+          }
         />
       ) : null}
 
-      {visibility.finishing ? (
+      {show('finishingType') ? (
         <ChipGroup
           label={listingCopy.finishing}
           options={listingFinishingOptions}
@@ -208,15 +271,42 @@ export function DetailsStepForm({ draft, features }: DetailsStepFormProps) {
         />
       ) : null}
 
-      <ChipGroup
-        label={listingCopy.registration}
-        options={listingRegistrationOptions}
-        selected={registrationStatus ? [registrationStatus] : []}
-        onToggle={(value) =>
-          setRegistrationStatus((prev) => (prev === value ? undefined : value))
-        }
-        single
-      />
+      {show('furnished') ? (
+        <div className="flex items-center justify-between gap-4 rounded-lg border border-[#e5e5e5] px-4 py-3">
+          <span className="text-sm font-semibold text-ink-800">
+            {listingCopy.furnished}
+          </span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={furnished}
+            onClick={() => setFurnished((v) => !v)}
+            className={cn(
+              'relative h-7 w-12 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+              furnished ? 'bg-brand-600' : 'bg-ink-200',
+            )}
+          >
+            <span
+              className={cn(
+                'absolute top-0.5 size-6 rounded-full bg-white shadow transition-transform',
+                furnished ? 'start-5' : 'start-0.5',
+              )}
+            />
+          </button>
+        </div>
+      ) : null}
+
+      {show('legalStatus') && legalStatusOptions.length > 0 ? (
+        <ChipGroup
+          label={listingCopy.legalStatus}
+          options={legalStatusOptions}
+          selected={legalStatusId ? [legalStatusId] : []}
+          onToggle={(value) =>
+            setLegalStatusId((prev) => (prev === value ? undefined : value))
+          }
+          single
+        />
+      ) : null}
 
       <div className="flex items-center justify-between gap-4 rounded-lg border border-[#e5e5e5] px-4 py-3">
         <span className="text-sm font-semibold text-ink-800">
@@ -245,12 +335,16 @@ export function DetailsStepForm({ draft, features }: DetailsStepFormProps) {
         <legend className="mb-3 text-sm font-semibold text-ink-800">
           {listingCopy.amenities}
         </legend>
-        {features.length === 0 ? (
+        {sortedFeatures.length === 0 ? (
           <p className="text-sm text-ink-500">لا تتوفر مزايا من الكتالوج حاليًا.</p>
         ) : (
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {features.map((feature) => {
+            {sortedFeatures.map((feature) => {
               const checked = selectedFeatureIds.includes(feature.id);
+              const recommended = isRecommendedFeature(
+                feature.code,
+                propertyType,
+              );
               return (
                 <label
                   key={feature.id}
@@ -262,7 +356,14 @@ export function DetailsStepForm({ draft, features }: DetailsStepFormProps) {
                     onChange={() => toggleFeature(feature.id)}
                     className="size-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500"
                   />
-                  {featureLabel(feature)}
+                  <span>
+                    {featureLabel(feature)}
+                    {recommended ? (
+                      <span className="ms-1 text-xs font-semibold text-brand-700">
+                        (موصى به)
+                      </span>
+                    ) : null}
+                  </span>
                 </label>
               );
             })}

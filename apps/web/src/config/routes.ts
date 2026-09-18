@@ -67,7 +67,9 @@ export const routes = {
         | 'details'
         | 'price'
         | 'description'
+        | 'contact'
         | 'media'
+        | 'preview'
         | 'publish'
         | 'checkout',
     ) => `/my-properties/${id}/${step}`,
@@ -78,7 +80,9 @@ export const routes = {
         | 'details'
         | 'price'
         | 'description'
+        | 'contact'
         | 'media'
+        | 'preview'
         | 'publish',
     ) => `/my-properties/${id}/${step}`,
   },
@@ -120,6 +124,7 @@ export const routes = {
     compoundDeveloper: '/packages/compound-developer',
   },
   myProperties: '/my-properties',
+  myProperty: (id: string) => `/my-properties/${id}`,
   marketingServices: '/marketing-services',
   pro: {
     root: '/pro',

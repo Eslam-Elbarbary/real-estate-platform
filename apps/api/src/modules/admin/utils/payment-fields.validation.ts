@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { PaymentType } from '@prisma/client';
+import { PaymentType } from '@/prisma/generated/prisma-client';
 
 export type PaymentFieldsInput = {
   paymentType?: PaymentType | null;

@@ -75,6 +75,19 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     if (exception instanceof Error && exception.message) {
+      const code =
+        'code' in exception && exception.code != null
+          ? String(exception.code)
+          : undefined;
+
+      // Prisma wraps driver failures (e.g. ECONNREFUSED) as KnownRequestError with
+      // a truncated "Invalid `…` invocation" message — include the code for ops.
+      if (code && /Invalid `.*` invocation/i.test(exception.message)) {
+        return {
+          message: `Database request failed (${code}). Ensure PostgreSQL is running and DATABASE_URL is correct.`,
+        };
+      }
+
       return { message: exception.message };
     }
 

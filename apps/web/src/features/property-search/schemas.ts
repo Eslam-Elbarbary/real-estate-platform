@@ -3,18 +3,14 @@ import { SEARCH_DEFAULTS } from '@/config/search';
 
 export const transactionTypeSchema = z.enum(['sale', 'rent']);
 
-export const propertyTypeSchema = z.enum([
-  'apartment',
-  'villa',
-  'townhouse',
-  'duplex',
-  'penthouse',
-  'studio',
-  'chalet',
-  'office',
-  'shop',
-  'land',
-]);
+/** Dynamic catalog code slug (matches admin-created property types). */
+export const propertyTypeSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(64)
+  .regex(/^[a-zA-Z0-9_-]+$/)
+  .transform((value) => value.toLowerCase());
 
 export const finishingTypeSchema = z.enum([
   'unfinished',

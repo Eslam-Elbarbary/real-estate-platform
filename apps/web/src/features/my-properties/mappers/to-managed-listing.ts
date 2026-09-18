@@ -4,20 +4,9 @@ import type {
 } from '@/types/api/my-property';
 import type { CatalogTypeDto } from '@/types/api/public-property';
 import type { PropertyType, TransactionType } from '@/types';
+import { earliestIncompleteStep } from '@/features/add-property/lib/step-access';
+import { mapMyPropertyToListingDraft } from '@/features/add-property/mappers/from-api-property';
 import type { ManagedListing, ManagedListingStatus } from '../types';
-
-const PROPERTY_TYPES = new Set<PropertyType>([
-  'apartment',
-  'villa',
-  'townhouse',
-  'duplex',
-  'penthouse',
-  'studio',
-  'chalet',
-  'office',
-  'shop',
-  'land',
-]);
 
 export function toApiPropertyStatus(
   status: ManagedListingStatus,
@@ -73,8 +62,7 @@ function resolvePropertyType(
   if (!match) {
     return undefined;
   }
-  const code = match.code.toLowerCase() as PropertyType;
-  return PROPERTY_TYPES.has(code) ? code : undefined;
+  return match.code.toLowerCase();
 }
 
 function resolveTransactionType(
@@ -120,6 +108,7 @@ export function mapMyPropertyToManagedListing(
     id: dto.id,
     slug: dto.slug,
     title: dto.title?.trim() || 'بدون عنوان',
+    image: dto.primaryImageUrl?.trim() || undefined,
     transaction,
     propertyType,
     locationLabel: dto.address?.trim() || '',
@@ -132,12 +121,17 @@ export function mapMyPropertyToManagedListing(
     bathrooms: dto.bathrooms ?? undefined,
     areaSqm: toNumber(dto.areaSqm) ?? undefined,
     publishedAt: dto.publishedAt ?? undefined,
-    ...(fromApiPropertyStatus(dto.status) === 'draft'
-      ? { draftStep: 'basic' as const }
+    ...(dto.status === 'DRAFT' || dto.status === 'REJECTED'
+      ? {
+          draftStep: earliestIncompleteStep(
+            mapMyPropertyToListingDraft(dto, catalogs, [], 'owner'),
+          ),
+        }
       : {}),
     ...(dto.status === 'REJECTED'
       ? {
           rejectionReason:
+            dto.rejectedReason?.trim() ||
             'تم رفض العقار. يرجى مراجعة بيانات العقار وتعديلها ثم إعادة الإرسال.',
         }
       : {}),

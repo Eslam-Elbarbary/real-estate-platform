@@ -46,6 +46,11 @@ export async function toApiSearchQuery(
       propertyTypes,
       filters.propertyType,
     );
+  } else if (filters.propertyTypes?.length) {
+    const first = filters.propertyTypes.find((value) => value !== 'all');
+    if (first) {
+      query.propertyTypeId = resolveCatalogIdByCode(propertyTypes, first);
+    }
   }
 
   const locationIds = resolveLocationIdsFromSlugs(

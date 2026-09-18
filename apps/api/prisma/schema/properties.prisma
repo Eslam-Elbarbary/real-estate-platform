@@ -42,6 +42,7 @@ model Property {
   areaId            String?
   districtId        String?
   compoundId        String?
+  legalStatusId     String?
 
   title           String?
   slug            String         @unique
@@ -81,21 +82,24 @@ model Property {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  owner           User             @relation("PropertyOwner", fields: [ownerId], references: [id], onDelete: Restrict)
-  reviewedBy      User?            @relation("PropertyReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
-  propertyType    PropertyType?    @relation(fields: [propertyTypeId], references: [id], onDelete: Restrict)
-  transactionType TransactionType? @relation(fields: [transactionTypeId], references: [id], onDelete: Restrict)
-  area            Area?            @relation(fields: [areaId], references: [id], onDelete: Restrict)
-  district        District?        @relation(fields: [districtId], references: [id], onDelete: SetNull)
-  compound        Compound?        @relation(fields: [compoundId], references: [id], onDelete: SetNull)
+  owner           User                 @relation("PropertyOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  reviewedBy      User?                @relation("PropertyReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  propertyType    PropertyType?        @relation(fields: [propertyTypeId], references: [id], onDelete: Restrict)
+  transactionType TransactionType?     @relation(fields: [transactionTypeId], references: [id], onDelete: Restrict)
+  area            Area?                @relation(fields: [areaId], references: [id], onDelete: Restrict)
+  district        District?            @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  compound        Compound?            @relation(fields: [compoundId], references: [id], onDelete: SetNull)
+  legalStatus     PropertyLegalStatus? @relation(fields: [legalStatusId], references: [id], onDelete: SetNull)
 
-  images        PropertyImage[]
-  features      PropertyFeature[]
-  favorites     Favorite[]
-  leads         Lead[]
-  subscriptions Subscription[]
-  statusHistory PropertyStatusHistory[]
-  notes         PropertyNote[]
+  images          PropertyImage[]
+  features        PropertyFeature[]
+  viewAssignments PropertyViewAssignment[]
+  favorites       Favorite[]
+  leads           Lead[]
+  subscriptions   Subscription[]
+  statusHistory   PropertyStatusHistory[]
+  notes           PropertyNote[]
+  contact         PropertyContact?
 
   @@index([ownerId])
   @@index([status])
@@ -104,6 +108,7 @@ model Property {
   @@index([areaId])
   @@index([districtId])
   @@index([compoundId])
+  @@index([legalStatusId])
   @@index([reviewedById])
   @@index([price])
   @@index([paymentType])

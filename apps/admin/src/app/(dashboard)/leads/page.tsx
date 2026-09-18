@@ -1,10 +1,15 @@
+import {
+  PagePermissionDenied,
+  hasPagePermission,
+} from '@/components/layout/page-permission-gate';
 import { LeadsList } from '@/features/leads/components/leads-list';
 import { getAdminLeads } from '@/features/leads';
 import type { LeadStatus } from '@/features/leads/types';
+import { getAdminSession } from '@/features/auth/service';
 import { createPageMetadata } from '@/lib/seo/metadata';
 
 export const metadata = createPageMetadata({
-  title: 'الطلبات',
+  title: 'العملاء المحتملون',
   description: 'متابعة طلبات التواصل والاستفسارات على العقارات.',
   path: '/leads',
 });
@@ -47,6 +52,13 @@ export default async function LeadsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const session = await getAdminSession();
+  const permissions = session?.user.permissions ?? [];
+
+  if (!hasPagePermission(permissions, 'leads.view')) {
+    return <PagePermissionDenied />;
+  }
+
   const params = await searchParams;
   const page = parsePositiveInt(params.page, 1);
   const limit = Math.min(parsePositiveInt(params.limit, 20), 100);

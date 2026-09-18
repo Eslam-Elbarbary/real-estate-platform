@@ -1,4 +1,4 @@
-/** Matches NestJS AdminCompoundDto. */
+/** Matches NestJS AdminCompoundDto (+ nested refs from listAdmin). */
 export interface Compound {
   id: string;
   developerId: string | null;
@@ -15,6 +15,8 @@ export interface Compound {
   createdAt: string;
   updatedAt: string;
   publishedPropertyCount: number;
+  developer?: CompoundDeveloperSummary | null;
+  location?: CompoundLocation;
 }
 
 export interface PublicNamedRef {

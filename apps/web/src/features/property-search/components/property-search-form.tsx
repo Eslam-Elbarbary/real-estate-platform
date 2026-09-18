@@ -16,13 +16,17 @@ import type { PropertyType, TransactionType } from '@/types';
 import { AdvancedSearchDrawer } from './advanced-search-drawer';
 import { LocationField } from './location-field';
 import { PriceField } from './price-field';
-import { PropertyTypeField } from './property-type-field';
+import {
+  PropertyTypeField,
+  type PropertyTypeSelectOption,
+} from './property-type-field';
 import { SearchTabs } from './search-tabs';
 
 export type PropertySearchVariant = 'default' | 'compact' | 'stacked' | 'hero';
 
 interface PropertySearchFormProps {
   locations: LocationOption[];
+  propertyTypeOptions: PropertyTypeSelectOption[];
   variant?: PropertySearchVariant;
   className?: string;
   initialTransactionType?: TransactionType;
@@ -34,6 +38,7 @@ const FilterIcon = getAppIcon('filter');
 
 export function PropertySearchForm({
   locations,
+  propertyTypeOptions,
   variant = 'default',
   className,
   initialTransactionType = 'sale',
@@ -125,6 +130,7 @@ export function PropertySearchForm({
             key={`${mode}-${location?.id ?? 'none'}`}
             onClose={() => setFiltersOpen(false)}
             locations={locations}
+            propertyTypeOptions={propertyTypeOptions}
             initialTransactionType={mode === 'compounds' ? 'sale' : mode}
             initialLocation={location}
             resultCount={resultCount}
@@ -166,7 +172,11 @@ export function PropertySearchForm({
               'grid-cols-1 md:grid-cols-2 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.3fr)_minmax(0,1.2fr)_auto]',
           )}
         >
-          <PropertyTypeField value={propertyType} onChange={setPropertyType} />
+          <PropertyTypeField
+            value={propertyType}
+            onChange={setPropertyType}
+            options={propertyTypeOptions}
+          />
           <LocationField
             locations={locations}
             value={location}

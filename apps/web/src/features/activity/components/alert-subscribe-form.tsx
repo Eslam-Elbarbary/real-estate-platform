@@ -4,10 +4,7 @@ import { useMemo, useState, useTransition, type FormEvent, type ReactNode } from
 import { useRouter } from 'next/navigation';
 import { MapPin, X } from 'lucide-react';
 import { getButtonClassName } from '@/components/ui/button';
-import {
-  propertyTypeOptions,
-  transactionOptions,
-} from '@/config/property-types';
+import { transactionOptions } from '@/config/property-types';
 import {
   RENT_PRICE_SUGGESTIONS,
   SALE_PRICE_SUGGESTIONS,
@@ -21,11 +18,20 @@ import { ALERT_AREA_OPTIONS, activityCopy } from '../copy';
 const fieldClass =
   'h-10 w-full rounded-md border border-[#d0d0d0] bg-white px-3 text-sm text-ink-900 focus-visible:border-brand-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-200';
 
-interface AlertSubscribeFormProps {
-  locations: Location[];
+export interface AlertPropertyTypeOption {
+  value: string;
+  label: string;
 }
 
-export function AlertSubscribeForm({ locations }: AlertSubscribeFormProps) {
+interface AlertSubscribeFormProps {
+  locations: Location[];
+  propertyTypeOptions: AlertPropertyTypeOption[];
+}
+
+export function AlertSubscribeForm({
+  locations,
+  propertyTypeOptions,
+}: AlertSubscribeFormProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [toast, setToast] = useState<string | null>(null);
@@ -35,7 +41,9 @@ export function AlertSubscribeForm({ locations }: AlertSubscribeFormProps) {
       Boolean,
     ) as string[],
   );
-  const [propertyType, setPropertyType] = useState<PropertyType>('apartment');
+  const [propertyType, setPropertyType] = useState<PropertyType>(
+    propertyTypeOptions[0]?.value ?? 'apartment',
+  );
   const [transaction, setTransaction] = useState<TransactionType>('sale');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');

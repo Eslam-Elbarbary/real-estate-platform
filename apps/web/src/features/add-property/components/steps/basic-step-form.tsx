@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useTransition, type FormEvent, type ReactNode } from 'react';
+import { useMemo, useState, useTransition, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Home, KeyRound } from 'lucide-react';
 import { getButtonClassName } from '@/components/ui/button';
-import type { LocationOption } from '@/features/locations';
-import { LocationAutocomplete } from '@/features/valuation/components/location-autocomplete';
+import type { LocationTreeCountry } from '@/types/api/public-property';
 import type { PropertyType, TransactionType } from '@/types';
 import { cn } from '@/lib/utils/cn';
 import { saveBasicStepAction } from '../../actions';
@@ -16,19 +15,46 @@ import {
   PropertyTypeCombobox,
   type CatalogPropertyTypeOption,
 } from '../property-type-combobox';
+import {
+  PropertyLocationCascade,
+  resolveHierarchyFromAreaId,
+  type PropertyLocationCascadeValue,
+} from '../property-location-cascade';
 
 const DEFAULT_LAT = 30.0444;
 const DEFAULT_LNG = 31.2357;
 
 interface BasicStepFormProps {
   draft: ListingDraft;
-  locations: LocationOption[];
+  locationTree: LocationTreeCountry[];
   propertyTypeOptions: CatalogPropertyTypeOption[];
+}
+
+function initialLocation(
+  draft: ListingDraft,
+  tree: LocationTreeCountry[],
+): PropertyLocationCascadeValue {
+  const hierarchy = resolveHierarchyFromAreaId(
+    tree,
+    draft.areaId,
+    draft.districtId,
+  );
+  return {
+    countryId: draft.countryId || hierarchy.countryId,
+    cityId: draft.cityId || hierarchy.cityId,
+    areaId: draft.areaId || hierarchy.areaId,
+    districtId: draft.districtId ?? hierarchy.districtId ?? null,
+    compoundId: draft.compoundId ?? null,
+    address: draft.address ?? draft.description.ar.address ?? '',
+    latitude: draft.latitude ?? null,
+    longitude: draft.longitude ?? null,
+    locationLabel: draft.locationLabel || hierarchy.locationLabel || '',
+  };
 }
 
 export function BasicStepForm({
   draft,
-  locations,
+  locationTree,
   propertyTypeOptions,
 }: BasicStepFormProps) {
   const router = useRouter();
@@ -40,17 +66,23 @@ export function BasicStepForm({
   const [propertyType, setPropertyType] = useState<PropertyType | null>(
     draft.propertyType,
   );
-  const [locationId, setLocationId] = useState(draft.locationId ?? '');
-  const [locationLabel, setLocationLabel] = useState(draft.locationLabel ?? '');
-  const [locationSlug, setLocationSlug] = useState<string | undefined>(
-    locations.find((l) => l.id === draft.locationId)?.slug,
+  const [location, setLocation] = useState<PropertyLocationCascadeValue>(() =>
+    initialLocation(draft, locationTree),
   );
-  const [latitude, setLatitude] = useState(draft.latitude ?? DEFAULT_LAT);
-  const [longitude, setLongitude] = useState(draft.longitude ?? DEFAULT_LNG);
+  const [latitude, setLatitude] = useState(
+    draft.latitude ?? DEFAULT_LAT,
+  );
+  const [longitude, setLongitude] = useState(
+    draft.longitude ?? DEFAULT_LNG,
+  );
 
-  // Prefer area/neighborhood — city alone cannot set areaId.
-  const selectableLocations = locations.filter(
-    (item) => item.level === 'area' || item.level === 'neighborhood',
+  const hasCoords = useMemo(
+    () =>
+      latitude != null &&
+      longitude != null &&
+      Number.isFinite(latitude) &&
+      Number.isFinite(longitude),
+    [latitude, longitude],
   );
 
   function onSubmit(event: FormEvent) {
@@ -60,10 +92,15 @@ export function BasicStepForm({
       const result = await saveBasicStepAction(draft.id, {
         transaction,
         propertyType,
-        locationId,
-        locationLabel,
-        latitude,
-        longitude,
+        countryId: location.countryId,
+        cityId: location.cityId,
+        areaId: location.areaId,
+        districtId: location.districtId || null,
+        compoundId: location.compoundId || null,
+        address: location.address || null,
+        locationLabel: location.locationLabel || '',
+        latitude: hasCoords ? latitude : null,
+        longitude: hasCoords ? longitude : null,
       });
       if (!result.ok) {
         setError(result.error);
@@ -116,28 +153,30 @@ export function BasicStepForm({
       </div>
 
       <div>
-        <label className="mb-1.5 block text-sm font-semibold text-ink-800">
+        <p className="mb-1.5 text-sm font-semibold text-ink-800">
           {listingCopy.location}
-        </label>
-        <LocationAutocomplete
-          locations={selectableLocations}
-          valueSlug={locationSlug}
-          onSelect={(location) => {
-            setLocationId(location.id);
-            setLocationLabel(location.breadcrumb || location.name);
-            setLocationSlug(location.slug);
-          }}
+        </p>
+        <PropertyLocationCascade
+          tree={locationTree}
+          value={location}
+          onChange={setLocation}
+          disabled={pending}
         />
       </div>
 
-      <ListingMapPicker
-        latitude={latitude}
-        longitude={longitude}
-        onChange={({ latitude: lat, longitude: lng }) => {
-          setLatitude(lat);
-          setLongitude(lng);
-        }}
-      />
+      <div>
+        <p className="mb-1.5 text-sm font-semibold text-ink-800">
+          {listingCopy.mapTitle}
+        </p>
+        <ListingMapPicker
+          latitude={latitude}
+          longitude={longitude}
+          onChange={({ latitude: lat, longitude: lng }) => {
+            setLatitude(lat);
+            setLongitude(lng);
+          }}
+        />
+      </div>
 
       {error ? (
         <p className="text-sm font-semibold text-danger-700" role="alert">

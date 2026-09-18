@@ -1,15 +1,27 @@
+'use client';
+
 import Link from 'next/link';
 import { routes } from '@/config/routes';
-import { siteConfig } from '@/config/site';
 import { cn } from '@/lib/utils/cn';
+import { useBranding } from './branding-context';
 
 interface BrandLogoProps {
   className?: string;
   tone?: 'default' | 'inverse';
+  siteName?: string;
+  logoUrl?: string | null;
 }
 
-export function BrandLogo({ className, tone = 'default' }: BrandLogoProps) {
+export function BrandLogo({
+  className,
+  tone = 'default',
+  siteName,
+  logoUrl,
+}: BrandLogoProps) {
+  const branding = useBranding();
   const inverse = tone === 'inverse';
+  const resolvedName = siteName ?? branding.siteName;
+  const resolvedLogo = logoUrl === undefined ? branding.logoUrl : logoUrl;
 
   return (
     <Link
@@ -19,14 +31,23 @@ export function BrandLogo({ className, tone = 'default' }: BrandLogoProps) {
         className,
       )}
     >
-      <span
-        className={cn(
-          'truncate text-[1.35rem] font-extrabold tracking-tight',
-          inverse ? 'text-white' : 'text-brand-600',
-        )}
-      >
-        {siteConfig.name}
-      </span>
+      {resolvedLogo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={resolvedLogo}
+          alt={resolvedName}
+          className="h-8 w-auto max-w-[180px] object-contain"
+        />
+      ) : (
+        <span
+          className={cn(
+            'truncate text-[1.35rem] font-extrabold tracking-tight',
+            inverse ? 'text-white' : 'text-brand-600',
+          )}
+        >
+          {resolvedName}
+        </span>
+      )}
     </Link>
   );
 }

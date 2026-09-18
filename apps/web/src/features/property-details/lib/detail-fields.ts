@@ -30,8 +30,14 @@ export function buildDetailFields(property: Property): DetailField[] {
           value: String(property.deliveryYear),
         }
       : null,
-    property.viewType
-      ? { label: uiLabels.detailView, value: property.viewType }
+    property.viewTypes?.length
+      ? { label: uiLabels.detailViews, value: property.viewTypes.join('، ') }
+      : null,
+    property.legalStatusLabel
+      ? {
+          label: uiLabels.detailLegalStatus,
+          value: property.legalStatusLabel,
+        }
       : null,
     property.finishingType
       ? {

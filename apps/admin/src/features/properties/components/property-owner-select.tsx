@@ -9,7 +9,9 @@ import type { AdminPropertyOwner } from '../types';
 
 interface PropertyOwnerSelectProps {
   value: string;
-  onChange: (ownerId: string) => void;
+  onChange: (ownerId: string, owner: AdminUserSelectItem | null) => void;
+  /** Parent-held selection so display survives wizard step unmounts. */
+  selectedOwner?: AdminUserSelectItem | null;
   initialOwner?: AdminPropertyOwner | null;
   disabled?: boolean;
   error?: string;
@@ -31,6 +33,7 @@ function formatOwnerLabel(user: AdminUserSelectItem): string {
 export function PropertyOwnerSelect({
   value,
   onChange,
+  selectedOwner = null,
   initialOwner,
   disabled = false,
   error,
@@ -42,14 +45,25 @@ export function PropertyOwnerSelect({
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<AdminUserSelectItem[]>([]);
-  const [selected, setSelected] = useState<AdminUserSelectItem | null>(
-    initialOwner ? toSelectItem(initialOwner) : null,
-  );
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Prefer parent-controlled selection; fall back to initialOwner for edit hydration.
+  const displayOwner =
+    selectedOwner && selectedOwner.id === value
+      ? selectedOwner
+      : initialOwner && initialOwner.id === value
+        ? toSelectItem(initialOwner)
+        : null;
 
   useEffect(() => {
-    if (initialOwner && initialOwner.id === value) {
-      setSelected(toSelectItem(initialOwner));
+    if (selectedOwner || !initialOwner || !value) {
+      return;
     }
+    if (initialOwner.id === value) {
+      onChange(value, toSelectItem(initialOwner));
+    }
+    // Only hydrate once from initialOwner when parent has id but no selectedOwner object.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional one-shot hydrate
   }, [initialOwner, value]);
 
   useEffect(() => {
@@ -69,6 +83,7 @@ export function PropertyOwnerSelect({
 
     async function loadUsers() {
       setLoading(true);
+      setLoadError(null);
       const result = await selectUsersAction(debouncedSearch || undefined, 20);
       if (cancelled) {
         return;
@@ -76,8 +91,12 @@ export function PropertyOwnerSelect({
 
       if (result.ok) {
         setResults(result.items);
+        if (result.items.length === 0 && !debouncedSearch) {
+          setLoadError('لا يوجد مستخدمون نشطون للاختيار.');
+        }
       } else {
         setResults([]);
+        setLoadError(result.error);
       }
       setLoading(false);
     }
@@ -101,8 +120,7 @@ export function PropertyOwnerSelect({
   }, []);
 
   function handleSelect(user: AdminUserSelectItem) {
-    setSelected(user);
-    onChange(user.id);
+    onChange(user.id, user);
     setOpen(false);
     setSearch('');
   }
@@ -130,13 +148,17 @@ export function PropertyOwnerSelect({
           }
         }}
       >
-        {selected ? (
+        {displayOwner ? (
           <span className="min-w-0 truncate">
-            <span className="font-medium">{formatOwnerLabel(selected)}</span>
+            <span className="font-medium">{formatOwnerLabel(displayOwner)}</span>
             <span className="mx-1 text-ink-400">·</span>
             <span className="text-ink-500" dir="ltr">
-              {selected.email}
+              {displayOwner.email}
             </span>
+          </span>
+        ) : value ? (
+          <span className="min-w-0 truncate text-ink-700" dir="ltr">
+            تم اختيار المالك ({value.slice(0, 8)}…)
           </span>
         ) : (
           <span className="text-ink-400">اختر مالك العقار</span>
@@ -182,9 +204,11 @@ export function PropertyOwnerSelect({
 
             {showEmpty ? (
               <p className="py-6 text-center text-sm text-ink-500">
-                {debouncedSearch
-                  ? 'لا توجد نتائج مطابقة.'
-                  : 'ابدأ بالكتابة للبحث عن مستخدم.'}
+                {loadError
+                  ? loadError
+                  : debouncedSearch
+                    ? 'لا توجد نتائج مطابقة.'
+                    : 'لا يوجد مستخدمون. تأكد من صلاحية عرض المستخدمين ووجود حسابات نشطة.'}
               </p>
             ) : null}
 
@@ -207,6 +231,11 @@ export function PropertyOwnerSelect({
                       <span className="block truncate text-xs text-ink-500" dir="ltr">
                         {user.email}
                       </span>
+                      {user.phone ? (
+                        <span className="block truncate text-xs text-ink-400" dir="ltr">
+                          {user.phone}
+                        </span>
+                      ) : null}
                     </span>
                   </button>
                 ))

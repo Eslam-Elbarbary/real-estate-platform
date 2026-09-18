@@ -6,6 +6,7 @@ import {
   AiValuation,
   AppPromo,
   HomeHero,
+  HomeSectionBanners,
   ImportantAreas,
   KnowSection,
   LatestCompounds,
@@ -63,6 +64,7 @@ export default async function HomePage() {
     <>
       <HomeHero />
       <LatestCompounds />
+      <HomeSectionBanners />
       <AiValuation href={valuationHref} />
       <KnowSection />
       <PremiumStrip href={proCta.href} ctaLabel={proCta.ctaLabel} />

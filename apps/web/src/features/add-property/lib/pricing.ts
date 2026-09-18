@@ -1,17 +1,15 @@
-import type {
-  DeveloperPricing,
-  ListingDraft,
-  ListingPublicationFee,
-  OwnerInstallmentPricing,
-} from '../types';
+import type { ListingDraft, ListingPricingDraft } from '../types';
 
 export function getListingPublicationFee(_input: {
   transaction: ListingDraft['transaction'];
   propertyType: ListingDraft['propertyType'];
   locationId?: string;
-}): ListingPublicationFee {
+}): {
+  amountEgp: number;
+  currency: 'EGP';
+  reason: string;
+} {
   void _input;
-  // Demo default matching reference listing fee for demonstrated location.
   return {
     amountEgp: 750,
     currency: 'EGP',
@@ -19,57 +17,54 @@ export function getListingPublicationFee(_input: {
   };
 }
 
-export function downPaymentAmount(pricing: DeveloperPricing): number | null {
-  const total = pricing.installmentTotalPrice;
-  const value = pricing.downPayment.value;
-  if (total == null || value == null) return null;
-  if (pricing.downPayment.mode === 'percent') {
-    return Math.round((total * value) / 100);
-  }
-  return Math.min(value, total);
+export function resolvePricingAmount(
+  pricing: ListingPricingDraft | null | undefined,
+): number | undefined {
+  if (!pricing || pricing.price == null) return undefined;
+  if (!Number.isFinite(pricing.price) || pricing.price <= 0) return undefined;
+  return pricing.price;
 }
 
-export function downPaymentPercent(pricing: DeveloperPricing): number | null {
-  const total = pricing.installmentTotalPrice;
-  const amount = downPaymentAmount(pricing);
-  if (total == null || total <= 0 || amount == null) return null;
-  return Math.round((amount / total) * 1000) / 10;
+export function resolveListingDisplayPrice(
+  draft: ListingDraft,
+): number | undefined {
+  return resolvePricingAmount(draft.pricing);
 }
 
-export function monthlyInstallment(pricing: DeveloperPricing): number | null {
-  const total = pricing.installmentTotalPrice;
-  const down = downPaymentAmount(pricing);
-  const months = pricing.installmentDurationMonths;
-  if (total == null || down == null || !months || months <= 0) return null;
-  const remaining = Math.max(0, total - down);
-  return Math.round(remaining / months);
-}
-
-export function ownerInstallmentAskingPrice(
-  pricing: OwnerInstallmentPricing,
-): number {
+export function showsInstallmentFields(
+  paymentType: ListingPricingDraft['paymentType'],
+): boolean {
   return (
-    (pricing.totalPaid ?? 0) +
-    (pricing.overPrice ?? 0) +
-    (pricing.maintenanceDeposit ?? 0)
+    paymentType === 'INSTALLMENT' || paymentType === 'CASH_OR_INSTALLMENT'
   );
 }
 
-export function resolvePricingAmount(
-  pricing: ListingDraft['pricing'],
-): number | undefined {
-  if (!pricing || pricing.mode == null) return undefined;
-  if (pricing.mode === 'owner_cash') return pricing.price;
-  if (pricing.mode === 'rent') return pricing.price;
-  if (pricing.mode === 'developer') {
-    return pricing.cashPrice ?? pricing.installmentTotalPrice;
+export function formatPaymentTypeLabel(
+  paymentType: ListingPricingDraft['paymentType'],
+): string {
+  switch (paymentType) {
+    case 'CASH':
+      return 'نقدي';
+    case 'INSTALLMENT':
+      return 'تقسيط';
+    case 'CASH_OR_INSTALLMENT':
+      return 'نقدي أو تقسيط';
+    default:
+      return '—';
   }
-  if (pricing.mode === 'owner_installments') {
-    return ownerInstallmentAskingPrice(pricing);
-  }
-  return undefined;
 }
 
-export function resolveListingDisplayPrice(draft: ListingDraft): number | undefined {
-  return resolvePricingAmount(draft.pricing);
+export function formatRentPeriodLabel(
+  rentPeriod: ListingPricingDraft['rentPeriod'],
+): string {
+  switch (rentPeriod) {
+    case 'DAILY':
+      return 'يومي';
+    case 'MONTHLY':
+      return 'شهري';
+    case 'YEARLY':
+      return 'سنوي';
+    default:
+      return '—';
+  }
 }

@@ -1,3 +1,7 @@
+import {
+  PagePermissionDenied,
+  hasPagePermission,
+} from '@/components/layout/page-permission-gate';
 import { CompoundsList } from '@/features/compounds/components/compounds-list';
 import { buildAreaLabelMap } from '@/features/compounds/format';
 import { getAdminCompounds } from '@/features/compounds';
@@ -7,7 +11,7 @@ import { getLocationTree } from '@/features/locations';
 import { createPageMetadata } from '@/lib/seo/metadata';
 
 export const metadata = createPageMetadata({
-  title: 'المشاريع',
+  title: 'المشاريع والكمبوندات',
   description: 'إدارة الكمبوندات والمشاريع.',
   path: '/compounds',
 });
@@ -60,6 +64,14 @@ export default async function CompoundsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const session = await getAdminSession();
+  const roles = session?.user.roles ?? [];
+  const permissions = session?.user.permissions ?? [];
+
+  if (!hasPagePermission(permissions, 'compounds.view')) {
+    return <PagePermissionDenied />;
+  }
+
   const params = await searchParams;
   const page = parsePositiveInt(params.page, 1);
   const limit = Math.min(parsePositiveInt(params.limit, 20), 100);
@@ -72,7 +84,7 @@ export default async function CompoundsPage({
   const isActiveFilter =
     isActiveRaw === 'true' || isActiveRaw === 'false' ? isActiveRaw : '';
 
-  const [result, developersResult, locationTree, session] = await Promise.all([
+  const [result, developersResult, locationTree] = await Promise.all([
     getAdminCompounds({
       page,
       limit,
@@ -83,10 +95,7 @@ export default async function CompoundsPage({
     }),
     getAdminDevelopers({ limit: 100 }),
     getLocationTree(),
-    getAdminSession(),
   ]);
-  const roles = session?.user.roles ?? [];
-  const permissions = session?.user.permissions ?? [];
   const areaLabelsById = buildAreaLabelMap(flattenAreas(locationTree));
 
   return (

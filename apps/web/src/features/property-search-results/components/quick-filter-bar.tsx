@@ -23,17 +23,18 @@ import {
   FILTER_AREA_BOUNDS,
   FILTER_PRICE_BOUNDS,
   PRICE_HISTOGRAM_BARS,
-  filterPropertyTypeOptions,
+  type FilterChipOption,
 } from '@/config/filter-options';
 import { appIcons, ICON_SIZE_UI } from '@/config/icons';
 import { uiLabels } from '@/config/labels';
 import type { LocationOption } from '@/features/locations';
 import { AdvancedSearchDrawer } from '@/features/property-search/components/advanced-search-drawer';
+import type { PropertyTypeSelectOption } from '@/features/property-search/components/property-type-field';
 import { RangeHistogram } from '@/features/property-search/components/range-histogram';
 import { buildPropertySearchPath } from '@/features/property-search/search-params';
 import { formatArea } from '@/lib/formatting/area';
 import { formatCompactCurrency } from '@/lib/formatting/currency';
-import type { PropertySearchFilters, PropertyType, TransactionType } from '@/types';
+import type { PropertySearchFilters, TransactionType } from '@/types';
 import { cn } from '@/lib/utils/cn';
 
 type OpenMenu = 'transaction' | 'propertyType' | 'price' | 'area' | null;
@@ -41,19 +42,6 @@ type OpenMenu = 'transaction' | 'propertyType' | 'price' | 'area' | null;
 const SaleIcon = appIcons.sale;
 const RentIcon = appIcons.rent;
 const FilterIcon = appIcons.filter;
-
-const DOMAIN_PROPERTY_TYPES = new Set<string>([
-  'apartment',
-  'villa',
-  'townhouse',
-  'duplex',
-  'penthouse',
-  'studio',
-  'chalet',
-  'office',
-  'shop',
-  'land',
-]);
 
 const typeIcons: Record<string, typeof Home> = {
   apartment: Building2,
@@ -68,23 +56,12 @@ const typeIcons: Record<string, typeof Home> = {
   other: Home,
 };
 
-function resolveDomainPropertyType(value: string): PropertyType | undefined {
-  if (value === 'commercial') {
-    return 'shop';
-  }
-
-  if (DOMAIN_PROPERTY_TYPES.has(value)) {
-    return value as PropertyType;
-  }
-
-  return undefined;
-}
-
 interface QuickFilterBarProps {
   filters: PropertySearchFilters;
   locations: LocationOption[];
   selectedLocation: LocationOption | null;
   resultCount: number;
+  propertyTypeOptions: PropertyTypeSelectOption[];
 }
 
 export function QuickFilterBar({
@@ -92,11 +69,20 @@ export function QuickFilterBar({
   locations,
   selectedLocation,
   resultCount,
+  propertyTypeOptions,
 }: QuickFilterBarProps) {
   const router = useRouter();
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+
+  const filterPropertyTypeOptions: FilterChipOption[] = [
+    { value: 'all', label: 'عقارات' },
+    ...propertyTypeOptions.map((option) => ({
+      value: option.value,
+      label: option.label,
+    })),
+  ];
 
   const [minPrice, setMinPrice] = useState(
     filters.minPrice ?? FILTER_PRICE_BOUNDS.min,
@@ -249,11 +235,10 @@ export function QuickFilterBar({
                     type="button"
                     className={optionClass(selected)}
                     onClick={() => {
-                      const domainType = resolveDomainPropertyType(option.value);
                       navigate({
                         ...filters,
-                        propertyType: domainType,
-                        propertyTypes: domainType ? undefined : [option.value],
+                        propertyType: option.value,
+                        propertyTypes: undefined,
                       });
                     }}
                   >
@@ -371,6 +356,7 @@ export function QuickFilterBar({
         <AdvancedSearchDrawer
           onClose={() => setDrawerOpen(false)}
           locations={locations}
+          propertyTypeOptions={propertyTypeOptions}
           initialTransactionType={transaction}
           initialLocation={selectedLocation}
           resultCount={resultCount}

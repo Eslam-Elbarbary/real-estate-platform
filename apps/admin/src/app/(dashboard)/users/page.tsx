@@ -1,11 +1,13 @@
-import { redirect } from 'next/navigation';
-import { routes } from '@/config/routes';
-import { hasPermission } from '@/features/auth/permissions';
+import {
+  PagePermissionDenied,
+  hasPagePermission,
+} from '@/components/layout/page-permission-gate';
 import { getAdminSession } from '@/features/auth/service';
 import { getStoredAdminSession } from '@/features/auth/session';
 import { UsersList } from '@/features/users/components/users-list';
 import { getAdminUsers, getAssignableAdminRoles } from '@/features/users';
 import { formatRoleLabel } from '@/features/users/format';
+import { hasPermission } from '@/features/auth/permissions';
 import { logAdminSessionInDev } from '@/lib/dev/admin-session-log';
 import { handleAdminPageError } from '@/lib/server/handle-admin-page-error';
 import { isNextNavigationError } from '@/lib/server/is-navigation-error';
@@ -83,8 +85,8 @@ export default async function UsersPage({
     canViewUsers: hasPermission(permissions, 'users.view'),
   });
 
-  if (!hasPermission(permissions, 'users.view')) {
-    redirect(routes.forbidden);
+  if (!hasPagePermission(permissions, 'users.view')) {
+    return <PagePermissionDenied />;
   }
 
   const params = await searchParams;

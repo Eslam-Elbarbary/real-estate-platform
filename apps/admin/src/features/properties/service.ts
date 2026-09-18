@@ -3,6 +3,7 @@ import {
   archiveProperty,
   attachPropertyMedia,
   createProperty,
+  deleteDraftProperty,
   deletePropertyMedia,
   fetchAdminProperties,
   getPropertyDetails,
@@ -82,6 +83,12 @@ export async function restoreAdminProperty(
   id: string,
 ): Promise<AdminPropertyActionResult> {
   return restoreProperty(id);
+}
+
+export async function deleteAdminDraftProperty(
+  id: string,
+): Promise<{ message: string }> {
+  return deleteDraftProperty(id);
 }
 
 export async function getPropertyFormCatalogs(): Promise<PropertyFormCatalogs> {

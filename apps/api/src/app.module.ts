@@ -28,6 +28,8 @@ import { NotesModule } from './modules/notes/notes.module';
 import { AlertsModule } from './modules/alerts/alerts.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { SettingsModule } from './modules/settings/settings.module';
+import { BannersModule } from './modules/banners/banners.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { HealthModule } from './modules/health/health.module';
 
@@ -47,6 +49,8 @@ import { HealthModule } from './modules/health/health.module';
     LocationsModule,
     PlansModule,
     CatalogsModule,
+    SettingsModule,
+    BannersModule,
     SubscriptionsModule,
     PaymentsModule,
     CompoundsModule,

@@ -8,6 +8,7 @@ export type {
   Property,
   PropertyAmenity,
   PropertyCompoundRatings,
+  PropertyContact,
   PropertyGalleryImage,
   PropertyImage,
   PropertyLocation,

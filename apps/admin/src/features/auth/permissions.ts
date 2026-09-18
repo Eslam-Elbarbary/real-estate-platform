@@ -9,9 +9,11 @@ export type AdminPermission =
   | 'properties.view'
   | 'properties.create'
   | 'properties.update'
+  | 'properties.delete'
   | 'properties.approve'
   | 'properties.reject'
   | 'properties.archive'
+  | 'properties.restore'
   | 'properties.publish'
   // Leads
   | 'leads.view'
@@ -39,7 +41,34 @@ export type AdminPermission =
   | 'roles.create'
   | 'roles.update'
   | 'roles.delete'
-  | 'roles.manage_permissions';
+  | 'roles.manage_permissions'
+  // Catalogs
+  | 'catalogs.view'
+  | 'catalogs.create'
+  | 'catalogs.update'
+  // Features
+  | 'features.view'
+  | 'features.create'
+  | 'features.update'
+  | 'features.delete'
+  // Property views
+  | 'property_views.view'
+  | 'property_views.create'
+  | 'property_views.update'
+  | 'property_views.delete'
+  // Legal statuses
+  | 'property_legal_statuses.view'
+  | 'property_legal_statuses.create'
+  | 'property_legal_statuses.update'
+  | 'property_legal_statuses.delete'
+  // Settings
+  | 'settings.view'
+  | 'settings.update'
+  // Banners
+  | 'banners.view'
+  | 'banners.create'
+  | 'banners.update'
+  | 'banners.delete';
 
 export function hasPermission(
   permissions: string[],

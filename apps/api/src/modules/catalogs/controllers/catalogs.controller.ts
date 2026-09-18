@@ -4,7 +4,9 @@ import { Public } from '../../../common/decorators';
 import { CatalogsService } from '../catalogs.service';
 import {
   CatalogFeatureDto,
+  CatalogLegalStatusDto,
   CatalogPropertyTypeDto,
+  CatalogPropertyViewDto,
   CatalogTransactionTypeDto,
 } from '../mapper/catalog.mapper';
 
@@ -33,5 +35,21 @@ export class CatalogsController {
   @ApiOkResponse({ type: [CatalogFeatureDto] })
   getFeatures() {
     return this.catalogsService.getFeatures();
+  }
+
+  @Get('property-views')
+  @ApiOperation({ summary: 'List active property views for property creation' })
+  @ApiOkResponse({ type: [CatalogPropertyViewDto] })
+  getPropertyViews() {
+    return this.catalogsService.getPropertyViews();
+  }
+
+  @Get('property-legal-statuses')
+  @ApiOperation({
+    summary: 'List active property legal statuses for property creation',
+  })
+  @ApiOkResponse({ type: [CatalogLegalStatusDto] })
+  getLegalStatuses() {
+    return this.catalogsService.getLegalStatuses();
   }
 }

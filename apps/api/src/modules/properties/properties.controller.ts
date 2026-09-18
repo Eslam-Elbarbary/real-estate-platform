@@ -25,7 +25,10 @@ import { SellerLeadResponseDto } from '../leads/mapper/lead.mapper';
 import { CreateDraftDto } from './dto/create-draft.dto';
 import { ListMyPropertiesQueryDto } from './dto/list-my-properties-query.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
-import { PropertyResponseDto } from './mapper/property.mapper';
+import {
+  OwnerPropertyStatusHistoryDto,
+  PropertyResponseDto,
+} from './mapper/property.mapper';
 import { PropertiesService } from './properties.service';
 
 @ApiTags('properties')
@@ -76,6 +79,19 @@ export class PropertiesController {
     return this.propertiesService.getMine(user.sub, id);
   }
 
+  @Get('me/:id/status-history')
+  @ApiOperation({
+    summary: 'Status history for a property owned by the current user',
+  })
+  @ApiParam({ name: 'id', description: 'Property id' })
+  @ApiOkResponse({ type: [OwnerPropertyStatusHistoryDto] })
+  listStatusHistory(
+    @CurrentUser() user: AuthUserPayload,
+    @Param('id', ParseIdPipe) id: string,
+  ) {
+    return this.propertiesService.listStatusHistory(user.sub, id);
+  }
+
   @Patch('me/:id')
   @ApiOperation({ summary: 'Update a draft property owned by the current user' })
   @ApiParam({ name: 'id', description: 'Property id' })
@@ -97,5 +113,29 @@ export class PropertiesController {
     @Param('id', ParseIdPipe) id: string,
   ) {
     return this.propertiesService.deleteDraft(user.sub, id);
+  }
+
+  @Patch('me/:id/archive')
+  @ApiOperation({
+    summary: 'Archive a published, rejected, or expired property owned by the current user',
+  })
+  @ApiParam({ name: 'id', description: 'Property id' })
+  @ApiOkResponse({ type: PropertyResponseDto })
+  archiveMine(
+    @CurrentUser() user: AuthUserPayload,
+    @Param('id', ParseIdPipe) id: string,
+  ) {
+    return this.propertiesService.archiveMine(user.sub, id);
+  }
+
+  @Patch('me/:id/restore')
+  @ApiOperation({ summary: 'Restore an archived property owned by the current user to draft' })
+  @ApiParam({ name: 'id', description: 'Property id' })
+  @ApiOkResponse({ type: PropertyResponseDto })
+  restoreMine(
+    @CurrentUser() user: AuthUserPayload,
+    @Param('id', ParseIdPipe) id: string,
+  ) {
+    return this.propertiesService.restoreMine(user.sub, id);
   }
 }

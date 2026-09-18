@@ -29,6 +29,8 @@ export interface UpdateBasicBody {
 }
 
 export interface UpdateLocationBody {
+  countryId?: string;
+  cityId?: string;
   areaId?: string;
   districtId?: string | null;
   compoundId?: string | null;
@@ -44,7 +46,16 @@ export interface UpdateDetailsBody {
   floor?: number | null;
   yearBuilt?: number | null;
   furnished?: boolean | null;
+  finishingType?:
+    | 'UNFINISHED'
+    | 'SEMI_FINISHED'
+    | 'FINISHED'
+    | 'LUX'
+    | 'SUPER_LUX'
+    | null;
   rentPeriod?: ApiRentPeriod | null;
+  propertyViewIds?: string[];
+  legalStatusId?: string | null;
 }
 
 /** Fat PATCH body — only send fields the wizard owns. */
@@ -53,6 +64,12 @@ export interface UpdatePropertyBody {
   description?: string;
   address?: string | null;
   price?: number | null;
+  currency?: string;
+  paymentType?: 'CASH' | 'INSTALLMENT' | 'CASH_OR_INSTALLMENT' | null;
+  downPayment?: number | null;
+  installmentYears?: number | null;
+  monthlyInstallment?: number | null;
+  rentPeriod?: ApiRentPeriod | null;
 }
 
 export interface SetFeaturesBody {
@@ -93,6 +110,38 @@ export async function fetchMyPropertiesList(
     : ME_PATH;
   const data = await getJson<MyPropertyDto[]>(path, accessToken);
   return Array.isArray(data) ? data : [];
+}
+
+export async function deleteMyPropertyDraft(
+  accessToken: string,
+  propertyId: string,
+): Promise<{ message: string }> {
+  return deleteAuthedJson<{ message: string }>(
+    `${ME_PATH}/${encodeURIComponent(propertyId)}`,
+    accessToken,
+  );
+}
+
+export async function archiveMyProperty(
+  accessToken: string,
+  propertyId: string,
+): Promise<MyPropertyDto> {
+  return patchAuthedJson<MyPropertyDto, Record<string, never>>(
+    `${ME_PATH}/${encodeURIComponent(propertyId)}/archive`,
+    {},
+    accessToken,
+  );
+}
+
+export async function restoreMyProperty(
+  accessToken: string,
+  propertyId: string,
+): Promise<MyPropertyDto> {
+  return patchAuthedJson<MyPropertyDto, Record<string, never>>(
+    `${ME_PATH}/${encodeURIComponent(propertyId)}/restore`,
+    {},
+    accessToken,
+  );
 }
 
 export async function patchPropertyBasic(
@@ -212,6 +261,50 @@ export async function deletePropertyMedia(
 ): Promise<unknown> {
   return deleteAuthedJson(
     `${ME_PATH}/${encodeURIComponent(propertyId)}/media/${encodeURIComponent(imageId)}`,
+    accessToken,
+  );
+}
+
+export type PropertyContactSource = 'OWNER' | 'CUSTOM';
+export type PropertyContactType = 'OWNER' | 'AGENT' | 'COMPANY';
+
+export interface PropertyContactDto {
+  propertyId: string;
+  source: PropertyContactSource;
+  contactType: PropertyContactType;
+  name: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  email: string | null;
+}
+
+export interface UpsertPropertyContactBody {
+  source: PropertyContactSource;
+  contactType?: PropertyContactType;
+  name?: string | null;
+  phone?: string | null;
+  whatsapp?: string | null;
+  email?: string | null;
+}
+
+export async function fetchMyPropertyContact(
+  accessToken: string,
+  propertyId: string,
+): Promise<PropertyContactDto> {
+  return getJson<PropertyContactDto>(
+    `${ME_PATH}/${encodeURIComponent(propertyId)}/contact`,
+    accessToken,
+  );
+}
+
+export async function upsertMyPropertyContact(
+  accessToken: string,
+  propertyId: string,
+  body: UpsertPropertyContactBody,
+): Promise<PropertyContactDto> {
+  return putAuthedJson<PropertyContactDto, UpsertPropertyContactBody>(
+    `${ME_PATH}/${encodeURIComponent(propertyId)}/contact`,
+    body,
     accessToken,
   );
 }

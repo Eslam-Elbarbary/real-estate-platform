@@ -3,6 +3,7 @@ import { ArrowUpLeft, Clock3 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { routes } from '@/config/routes';
+import { siteConfig } from '@/config/site';
 import { hasPermission } from '@/features/auth/permissions';
 import type { UserRole } from '@/types';
 import { cn } from '@/lib/utils/cn';
@@ -108,8 +109,8 @@ export function DashboardHero({ roles, permissions, summary, updatedAt }: Dashbo
       <div className="relative grid gap-6 p-6 lg:grid-cols-[1fr_minmax(0,14rem)] lg:items-stretch lg:p-7">
         <div className="flex flex-col gap-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs font-semibold tracking-[0.18em] text-accent-500 uppercase">
-              Madar Home Properties
+            <p className="text-xs font-semibold tracking-wide text-accent-500">
+              {siteConfig.productName}
             </p>
             <div className="flex items-center gap-1.5 text-xs text-slate-400">
               <Clock3 className="size-3.5 shrink-0 text-accent-500/80" aria-hidden />

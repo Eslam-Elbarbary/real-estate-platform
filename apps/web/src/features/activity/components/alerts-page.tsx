@@ -9,9 +9,14 @@ import { AlertRow } from './alert-row';
 interface AlertsPageProps {
   alerts: PropertyAlert[];
   locations: Location[];
+  propertyTypeOptions: Array<{ value: string; label: string }>;
 }
 
-export function AlertsPage({ alerts, locations }: AlertsPageProps) {
+export function AlertsPage({
+  alerts,
+  locations,
+  propertyTypeOptions,
+}: AlertsPageProps) {
   return (
     <div className="bg-white pb-16">
       <ProfileCompletionAlert />
@@ -59,6 +64,11 @@ export function AlertsPage({ alerts, locations }: AlertsPageProps) {
                       key={alert.id}
                       alert={alert}
                       zebra={index % 2 === 1}
+                      propertyTypeLabel={
+                        propertyTypeOptions.find(
+                          (option) => option.value === alert.propertyType,
+                        )?.label
+                      }
                     />
                   ))}
                 </tbody>
@@ -66,7 +76,10 @@ export function AlertsPage({ alerts, locations }: AlertsPageProps) {
             </div>
           </section>
 
-          <AlertSubscribeForm locations={locations} />
+          <AlertSubscribeForm
+            locations={locations}
+            propertyTypeOptions={propertyTypeOptions}
+          />
         </div>
       </Container>
     </div>

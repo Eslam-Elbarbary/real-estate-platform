@@ -1,10 +1,12 @@
 import { createPageMetadata } from '@/lib/seo/metadata';
 import { routes } from '@/config/routes';
-import { getSearchLocationOptions } from '@/features/locations/api-options';
 import { ListingWizardShell } from '@/features/add-property/components/listing-wizard-shell';
 import { BasicStepForm } from '@/features/add-property/components/steps/basic-step-form';
 import { loadListingDraftForStep } from '@/features/add-property/lib/load-draft-page';
-import { fetchPropertyTypes } from '@/features/properties/api/catalogs';
+import {
+  fetchLocationTree,
+  fetchPropertyTypes,
+} from '@/features/properties/api/catalogs';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -23,8 +25,8 @@ export async function generateMetadata({ params }: PageProps) {
 export default async function ListingBasicPage({ params }: PageProps) {
   const { id } = await params;
   const draft = await loadListingDraftForStep(id, 'basic');
-  const [locations, propertyTypes] = await Promise.all([
-    getSearchLocationOptions(),
+  const [locationTree, propertyTypes] = await Promise.all([
+    fetchLocationTree(),
     fetchPropertyTypes(),
   ]);
 
@@ -38,7 +40,7 @@ export default async function ListingBasicPage({ params }: PageProps) {
     <ListingWizardShell title="المعلومات الأساسية" draft={draft} currentStep="basic">
       <BasicStepForm
         draft={draft}
-        locations={locations}
+        locationTree={locationTree}
         propertyTypeOptions={propertyTypeOptions}
       />
     </ListingWizardShell>

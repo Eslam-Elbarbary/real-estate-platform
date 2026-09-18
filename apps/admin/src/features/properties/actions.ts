@@ -3,12 +3,16 @@
 import { revalidatePath } from 'next/cache';
 import { getAdminCompounds } from '@/features/compounds';
 import { logPropertyCreateInDev } from '@/lib/dev/property-create-log';
-import { getUserFacingErrorMessage } from '@/lib/errors';
+import {
+  getAdminErrorMessage,
+  getUserFacingErrorMessage,
+} from '@/lib/errors';
 import {
   approveAdminProperty,
   archiveAdminProperty,
   attachAdminPropertyMedia,
   createAdminProperty,
+  deleteAdminDraftProperty,
   deleteAdminPropertyMedia,
   listAdminPropertyMedia,
   publishAdminProperty,
@@ -47,6 +51,8 @@ export type CompoundSelectOption = {
   id: string;
   nameEn: string;
   nameAr: string | null;
+  developerName: string | null;
+  locationLabel: string | null;
 };
 
 export type ListPropertyCompoundsResult =
@@ -96,7 +102,8 @@ export async function createPropertyAction(
     logPropertyCreateInDev('action-failure', {
       error: error instanceof Error ? error.message : String(error),
     });
-    return { ok: false, error: getUserFacingErrorMessage(error) };
+    // Prefer concrete DTO/validation messages over the generic VALIDATION toast.
+    return { ok: false, error: getAdminErrorMessage(error) };
   }
 }
 
@@ -186,6 +193,18 @@ export async function restorePropertyAction(
   }
 }
 
+export async function deleteDraftPropertyAction(
+  id: string,
+): Promise<PropertyActionResult> {
+  try {
+    await deleteAdminDraftProperty(id);
+    revalidatePropertyPaths();
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: getUserFacingErrorMessage(error) };
+  }
+}
+
 export async function listPropertyMediaAction(
   propertyId: string,
 ): Promise<PropertyMediaListActionResult> {
@@ -249,6 +268,38 @@ export async function deletePropertyMediaAction(
   }
 }
 
+export async function upsertPropertyContactAction(
+  propertyId: string,
+  input: import('./api-property-contact').UpsertPropertyContactInput,
+): Promise<
+  | { ok: true; data: import('./api-property-contact').PropertyContactDto }
+  | { ok: false; error: string }
+> {
+  try {
+    const { updatePropertyContact } = await import('./api-property-contact');
+    const data = await updatePropertyContact(propertyId, input);
+    revalidatePropertyPaths(propertyId);
+    return { ok: true, data };
+  } catch (error) {
+    return { ok: false, error: getUserFacingErrorMessage(error) };
+  }
+}
+
+export async function getPropertyContactAction(
+  propertyId: string,
+): Promise<
+  | { ok: true; data: import('./api-property-contact').PropertyContactDto }
+  | { ok: false; error: string }
+> {
+  try {
+    const { getPropertyContact } = await import('./api-property-contact');
+    const data = await getPropertyContact(propertyId);
+    return { ok: true, data };
+  } catch (error) {
+    return { ok: false, error: getUserFacingErrorMessage(error) };
+  }
+}
+
 /** Active compounds for property form select (filtered by area when set). */
 export async function listPropertyCompoundsAction(
   areaId?: string,
@@ -263,11 +314,23 @@ export async function listPropertyCompoundsAction(
 
     return {
       ok: true,
-      items: result.items.map((compound) => ({
-        id: compound.id,
-        nameEn: compound.nameEn,
-        nameAr: compound.nameAr,
-      })),
+      items: result.items.map((compound) => {
+        const developerName =
+          compound.developer?.nameAr?.trim() ||
+          compound.developer?.nameEn ||
+          null;
+        const locationParts = [
+          compound.location?.area.nameAr || compound.location?.area.nameEn,
+          compound.location?.city?.nameAr || compound.location?.city?.nameEn,
+        ].filter(Boolean);
+        return {
+          id: compound.id,
+          nameEn: compound.nameEn,
+          nameAr: compound.nameAr,
+          developerName,
+          locationLabel: locationParts.join(' · ') || null,
+        };
+      }),
     };
   } catch (error) {
     return { ok: false, error: getUserFacingErrorMessage(error) };

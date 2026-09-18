@@ -151,6 +151,14 @@ export interface PublicOwnerCardDto {
   avatarUrl: string | null;
 }
 
+/** Public-safe contact on published property details (no email/source). */
+export interface PublicPropertyContactDto {
+  name: string | null;
+  type: 'OWNER' | 'AGENT' | 'COMPANY';
+  phone: string | null;
+  whatsapp: string | null;
+}
+
 /** Mirrors NestJS PublicPropertyDetailsDto. */
 export interface PublicPropertyDetailsDto {
   id: string;
@@ -186,6 +194,10 @@ export interface PublicPropertyDetailsDto {
   images: PublicPropertyMediaDto[];
   features: PublicPropertyFeatureDto[];
   owner: PublicOwnerCardDto;
+  /** Present on published details; omitted/null when unavailable. */
+  contact?: PublicPropertyContactDto | null;
+  propertyViews?: PublicTypeRef[];
+  legalStatus?: PublicTypeRef | null;
   similar: PublicPropertyCardDto[];
   publishedAt: string | null;
 }

@@ -1,5 +1,6 @@
 import type {
   ApiRentPeriod,
+  PublicPropertyContactDto,
   PublicPropertyDetailsDto,
   PublicPropertyFeatureDto,
   PublicPropertyMediaDto,
@@ -8,6 +9,7 @@ import type {
   CurrencyCode,
   PricingPeriod,
   Property,
+  PropertyContact,
   PropertyImage,
 } from '@/types';
 import {
@@ -33,6 +35,29 @@ function displayName(
     return '';
   }
   return ref.nameAr?.trim() || ref.nameEn;
+}
+
+function digitsOnly(phone: string): string {
+  return phone.replace(/\D/g, '');
+}
+
+function mapPublicContact(
+  dto: PublicPropertyContactDto | null | undefined,
+): PropertyContact | null {
+  if (!dto) {
+    return null;
+  }
+  const phone = dto.phone?.trim() || '';
+  const whatsapp = dto.whatsapp?.trim() || phone;
+  if (digitsOnly(phone).length < 5 && digitsOnly(whatsapp).length < 5) {
+    return null;
+  }
+  return {
+    name: dto.name?.trim() || '',
+    type: dto.type,
+    phone,
+    whatsapp,
+  };
 }
 
 function mapCurrency(value: string): CurrencyCode {
@@ -113,6 +138,10 @@ export function mapPublicDetailsToProperty(
   const finishingType = mapFinishingType(dto.finishingType);
   const paymentType = mapPaymentType(dto.payment.type);
   const featureLabels = dto.features.map(featureLabel).filter(Boolean);
+  const viewTypes = (dto.propertyViews ?? [])
+    .map(displayName)
+    .filter((label): label is string => Boolean(label));
+  const contact = mapPublicContact(dto.contact);
 
   const property: Property = {
     id: dto.id,
@@ -145,6 +174,10 @@ export function mapPublicDetailsToProperty(
       : {}),
     ...(dto.furnished !== null && dto.furnished !== undefined
       ? { furnished: dto.furnished }
+      : {}),
+    ...(viewTypes.length > 0 ? { viewTypes } : {}),
+    ...(displayName(dto.legalStatus)
+      ? { legalStatusLabel: displayName(dto.legalStatus) }
       : {}),
     location: {
       countrySlug: dto.country?.slug ?? dto.country?.id ?? '',
@@ -179,10 +212,12 @@ export function mapPublicDetailsToProperty(
       id: dto.owner.id,
       name: dto.owner.name?.trim() || '',
       type: 'owner',
-      phone: '',
+      phone: contact?.phone || '',
+      ...(contact?.whatsapp ? { whatsapp: contact.whatsapp } : {}),
       avatarUrl: dto.owner.avatarUrl ?? undefined,
       isVerified: false,
     },
+    contact,
     amenities: featureLabels,
     features: featureLabels,
     verificationState: 'unverified',

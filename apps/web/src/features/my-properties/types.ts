@@ -45,7 +45,9 @@ export interface ManagedListing {
     | 'details'
     | 'price'
     | 'description'
+    | 'contact'
     | 'media'
+    | 'preview'
     | 'publish';
 }
 

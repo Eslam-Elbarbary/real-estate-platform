@@ -1,12 +1,17 @@
 import { uiLabels } from '@/config/labels';
-import { propertyTypeOptions } from '@/config/property-types';
 import { cn } from '@/lib/utils/cn';
 import type { PropertyType } from '@/types';
+
+export interface PropertyTypeSelectOption {
+  value: string;
+  label: string;
+}
 
 interface PropertyTypeFieldProps {
   id?: string;
   value?: PropertyType;
   onChange: (value: PropertyType | undefined) => void;
+  options: PropertyTypeSelectOption[];
   className?: string;
 }
 
@@ -14,6 +19,7 @@ export function PropertyTypeField({
   id = 'property-type',
   value,
   onChange,
+  options,
   className,
 }: PropertyTypeFieldProps) {
   return (
@@ -24,7 +30,7 @@ export function PropertyTypeField({
         value={value ?? ''}
         onChange={(event) => {
           const next = event.target.value;
-          onChange(next ? (next as PropertyType) : undefined);
+          onChange(next ? next : undefined);
         }}
         className={cn(
           'h-11 w-full rounded-md border border-border bg-white px-3 text-sm text-ink-900',
@@ -32,7 +38,7 @@ export function PropertyTypeField({
         )}
       >
         <option value="">{uiLabels.allPropertyTypes}</option>
-        {propertyTypeOptions.map((option) => (
+        {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>

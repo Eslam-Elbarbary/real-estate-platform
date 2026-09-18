@@ -1,6 +1,9 @@
 'use server';
 
-import { getUserFacingErrorMessage } from '@/lib/errors';
+import {
+  getAdminErrorMessage,
+  getUserFacingErrorMessage,
+} from '@/lib/errors';
 import type { AdminRole } from '@/features/roles/types';
 import {
   assignAdminUserRole,
@@ -40,7 +43,7 @@ export async function selectUsersAction(
     const items = await selectAdminUsers(search, limit);
     return { ok: true, items };
   } catch (error) {
-    return { ok: false, error: getUserFacingErrorMessage(error) };
+    return { ok: false, error: getAdminErrorMessage(error) };
   }
 }
 

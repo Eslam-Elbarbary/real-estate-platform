@@ -7,6 +7,8 @@ import {
   activityCopy,
   getAlertsService,
 } from '@/features/activity';
+import { fetchPropertyTypes } from '@/features/properties/api/catalogs';
+import { toCatalogPropertyTypeOptions } from '@/features/properties/lib/property-type-options';
 
 export const metadata = createPageMetadata({
   title: activityCopy.alerts.title,
@@ -24,10 +26,17 @@ export default async function AlertsRoutePage() {
   }
 
   const service = getAlertsService();
-  const [alerts, locations] = await Promise.all([
+  const [alerts, locations, propertyTypes] = await Promise.all([
     service.list(session.user.id),
     service.listLocationOptions(),
+    fetchPropertyTypes().catch(() => []),
   ]);
 
-  return <AlertsPage alerts={alerts} locations={locations} />;
+  return (
+    <AlertsPage
+      alerts={alerts}
+      locations={locations}
+      propertyTypeOptions={toCatalogPropertyTypeOptions(propertyTypes)}
+    />
+  );
 }

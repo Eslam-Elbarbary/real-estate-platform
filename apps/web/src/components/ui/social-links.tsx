@@ -3,10 +3,17 @@ import {
   FaFacebookF,
   FaInstagram,
   FaLinkedinIn,
-  FaYoutube,
+  FaXTwitter,
 } from 'react-icons/fa6';
-import { socialLinks, type SocialPlatform } from '@/config/app-links';
 import { cn } from '@/lib/utils/cn';
+
+export type SocialPlatform = 'facebook' | 'instagram' | 'twitter' | 'linkedin';
+
+export interface SocialLinkItem {
+  id: SocialPlatform;
+  label: string;
+  href: string;
+}
 
 const socialIcons: Record<
   SocialPlatform,
@@ -14,22 +21,31 @@ const socialIcons: Record<
 > = {
   facebook: FaFacebookF,
   instagram: FaInstagram,
+  twitter: FaXTwitter,
   linkedin: FaLinkedinIn,
-  youtube: FaYoutube,
 };
 
 interface SocialLinksProps {
   className?: string;
   iconClassName?: string;
+  links: SocialLinkItem[];
 }
 
-export function SocialLinks({ className, iconClassName }: SocialLinksProps) {
+export function SocialLinks({
+  className,
+  iconClassName,
+  links,
+}: SocialLinksProps) {
+  if (links.length === 0) {
+    return null;
+  }
+
   return (
     <div
       className={cn('flex items-center gap-3', className)}
       aria-label="حسابات التواصل"
     >
-      {socialLinks.map((link) => {
+      {links.map((link) => {
         const Icon = socialIcons[link.id];
         return (
           <a
@@ -50,4 +66,26 @@ export function SocialLinks({ className, iconClassName }: SocialLinksProps) {
       })}
     </div>
   );
+}
+
+export function buildSocialLinksFromSettings(settings: {
+  facebookUrl?: string | null;
+  instagramUrl?: string | null;
+  twitterUrl?: string | null;
+  linkedinUrl?: string | null;
+}): SocialLinkItem[] {
+  const entries: Array<{ id: SocialPlatform; label: string; href: string | null | undefined }> = [
+    { id: 'facebook', label: 'فيسبوك', href: settings.facebookUrl },
+    { id: 'instagram', label: 'إنستغرام', href: settings.instagramUrl },
+    { id: 'twitter', label: 'تويتر', href: settings.twitterUrl },
+    { id: 'linkedin', label: 'لينكدإن', href: settings.linkedinUrl },
+  ];
+
+  return entries
+    .filter((entry) => Boolean(entry.href?.trim()))
+    .map((entry) => ({
+      id: entry.id,
+      label: entry.label,
+      href: entry.href!.trim(),
+    }));
 }

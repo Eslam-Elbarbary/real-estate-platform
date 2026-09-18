@@ -1,4 +1,5 @@
 export { HomeHero } from './components/home-hero';
+export { HomeSectionBanners } from './components/home-section-banners';
 export { LatestCompounds } from './components/latest-compounds';
 export { AiValuation } from './components/ai-valuation';
 export { KnowSection } from './components/know-section';

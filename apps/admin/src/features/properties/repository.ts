@@ -257,6 +257,25 @@ export async function restoreProperty(
   );
 }
 
+export async function deleteDraftProperty(
+  id: string,
+): Promise<{ message: string }> {
+  const response = await authenticatedApiClient.delete<ApiEnvelope<{ message: string }>>(
+    `${PROPERTIES_PATH}/${id}`,
+  );
+
+  const body = response.data;
+  if (!body?.success) {
+    throw createAdminError('UNKNOWN', {
+      message: 'Invalid delete response',
+      userMessage: 'تعذر حذف المسودة.',
+      details: body,
+    });
+  }
+
+  return body.data ?? { message: 'Draft property deleted successfully' };
+}
+
 function parsePropertyDetailsResponse(
   response: ApiEnvelope<AdminPropertyDetails>,
   userMessage: string,

@@ -3,19 +3,9 @@ export interface FilterChipOption {
   label: string;
 }
 
-/** Centralized property-type chips for advanced search. */
+/** Centralized property-type chips for advanced search — fallback only. */
 export const filterPropertyTypeOptions: FilterChipOption[] = [
   { value: 'all', label: 'عقارات' },
-  { value: 'apartment', label: 'شقق' },
-  { value: 'furnished_apartment', label: 'شقق مفروشة' },
-  { value: 'chalet', label: 'شاليهات' },
-  { value: 'villa', label: 'فلل' },
-  { value: 'land', label: 'أراضي' },
-  { value: 'building', label: 'مباني' },
-  { value: 'commercial', label: 'تجاري' },
-  { value: 'office', label: 'إداري' },
-  { value: 'medical', label: 'طبي' },
-  { value: 'other', label: 'عقارات أخرى' },
 ];
 
 export const filterPaymentOptions: FilterChipOption[] = [
@@ -61,16 +51,3 @@ export const FILTER_AREA_BOUNDS = {
   min: 10,
   max: 5_000,
 } as const;
-
-export const DOMAIN_PROPERTY_TYPES = [
-  'apartment',
-  'villa',
-  'townhouse',
-  'duplex',
-  'penthouse',
-  'studio',
-  'chalet',
-  'office',
-  'shop',
-  'land',
-] as const;

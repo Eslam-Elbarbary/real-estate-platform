@@ -22,6 +22,6 @@ export function listingDraftToManagedListing(draft: ListingDraft): ManagedListin
     status: 'draft',
     createdAt: draft.createdAt,
     updatedAt: draft.updatedAt,
-    draftStep: draft.currentStep === 'publish' ? 'publish' : draft.currentStep,
+    draftStep: draft.currentStep,
   };
 }

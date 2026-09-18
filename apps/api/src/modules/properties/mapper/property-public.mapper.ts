@@ -12,8 +12,13 @@ import {
   MediaType,
   PaymentType,
   Property,
+  PropertyContact,
+  PropertyContactSource,
+  PropertyContactType,
   PropertyImage,
+  PropertyLegalStatus,
   PropertyType,
+  PropertyView,
   RentPeriod,
   TransactionType,
   User,
@@ -58,6 +63,9 @@ export class PublicLocationSummaryDto {
 
   @ApiPropertyOptional({ type: PublicLocationRefDto, nullable: true })
   district!: PublicLocationRefDto | null;
+
+  @ApiPropertyOptional({ type: PublicLocationRefDto, nullable: true })
+  compound!: PublicLocationRefDto | null;
 
   @ApiProperty({
     example: 'Nasr City, Cairo',
@@ -178,6 +186,23 @@ export class PublicPropertyImageDto {
   isPrimary!: boolean;
 }
 
+export class PublicPropertyContactDto {
+  @ApiPropertyOptional({ nullable: true })
+  name!: string | null;
+
+  @ApiProperty({
+    enum: PropertyContactType,
+    description: 'Public contact role (OWNER | AGENT | COMPANY)',
+  })
+  type!: PropertyContactType;
+
+  @ApiPropertyOptional({ nullable: true })
+  phone!: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  whatsapp!: string | null;
+}
+
 export class PublicOwnerCardDto {
   @ApiProperty()
   id!: string;
@@ -231,6 +256,12 @@ export class PublicPropertyDetailsDto {
 
   @ApiPropertyOptional({ type: PublicTypeRefDto, nullable: true })
   transactionType!: PublicTypeRefDto | null;
+
+  @ApiProperty({ type: [PublicTypeRefDto] })
+  propertyViews!: PublicTypeRefDto[];
+
+  @ApiPropertyOptional({ type: PublicTypeRefDto, nullable: true })
+  legalStatus!: PublicTypeRefDto | null;
 
   @ApiPropertyOptional({ type: PublicLocationRefDto, nullable: true })
   country!: PublicLocationRefDto | null;
@@ -292,6 +323,9 @@ export class PublicPropertyDetailsDto {
   @ApiProperty({ type: PublicOwnerCardDto })
   owner!: PublicOwnerCardDto;
 
+  @ApiProperty({ type: PublicPropertyContactDto })
+  contact!: PublicPropertyContactDto;
+
   @ApiProperty({ type: [PublicPropertyCardDto] })
   similar!: PublicPropertyCardDto[];
 
@@ -308,12 +342,16 @@ export type PropertyCardSource = Property & {
   transactionType: TransactionType | null;
   area: AreaWithCityCountry | null;
   district: District | null;
+  compound?: Compound | null;
   images: Array<PropertyImage & { mediaAsset: MediaAsset }>;
 };
 
 export type PropertyDetailsSource = PropertyCardSource & {
   compound: (Compound & { developer: Developer | null }) | null;
+  viewAssignments?: Array<{ view: PropertyView }>;
+  legalStatus?: PropertyLegalStatus | null;
   owner: User;
+  contact: PropertyContact | null;
   features: Array<{ feature: Feature }>;
   _count: { favorites: number };
 };
@@ -383,16 +421,23 @@ function toTypeRef(
 function toLocationSummary(
   area: AreaWithCityCountry | null,
   district: District | null,
+  compound: Compound | null = null,
 ): PublicLocationSummaryDto {
   const country = area?.city.country ?? null;
   const city = area?.city ?? null;
-  const parts = [area?.nameEn, city?.nameEn].filter(Boolean);
+  const parts = [
+    compound?.nameEn,
+    district?.nameEn,
+    area?.nameEn,
+    city?.nameEn,
+  ].filter(Boolean);
 
   return {
     country: toLocationRef(country),
     city: toLocationRef(city),
     area: toLocationRef(area),
     district: toLocationRef(district),
+    compound: toLocationRef(compound),
     summary: parts.join(', '),
   };
 }
@@ -436,6 +481,30 @@ export function toPublicOwnerCard(owner: User): PublicOwnerCardDto {
   };
 }
 
+export function toPublicPropertyContact(
+  _propertyId: string,
+  owner: User,
+  row: PropertyContact | null,
+): PublicPropertyContactDto {
+  const source = row?.source ?? PropertyContactSource.OWNER;
+  if (source === PropertyContactSource.CUSTOM && row) {
+    return {
+      name: row.name,
+      type: row.contactType,
+      phone: row.phone,
+      whatsapp: row.whatsapp ?? row.phone,
+    };
+  }
+
+  const name = [owner.firstName, owner.lastName].filter(Boolean).join(' ').trim();
+  return {
+    name: name || null,
+    type: PropertyContactType.OWNER,
+    phone: owner.phone,
+    whatsapp: owner.phone,
+  };
+}
+
 export function toPublicPropertyCard(
   property: PropertyCardSource,
 ): PublicPropertyCardDto {
@@ -451,7 +520,11 @@ export function toPublicPropertyCard(
     finishingType: property.finishingType,
     transactionType: toTypeRef(property.transactionType),
     propertyType: toTypeRef(property.propertyType),
-    location: toLocationSummary(property.area, property.district),
+    location: toLocationSummary(
+      property.area,
+      property.district,
+      property.compound ?? null,
+    ),
     coordinates: toCoordinates(property),
     primaryImage: pickPrimaryImage(property.images),
     bedrooms: property.bedrooms,
@@ -465,7 +538,11 @@ export function toPublicPropertyDetails(
   property: PropertyDetailsSource,
   similar: PropertyCardSource[],
 ): PublicPropertyDetailsDto {
-  const location = toLocationSummary(property.area, property.district);
+  const location = toLocationSummary(
+    property.area,
+    property.district,
+    property.compound,
+  );
 
   return {
     id: property.id,
@@ -481,6 +558,15 @@ export function toPublicPropertyDetails(
     rentPeriod: property.rentPeriod,
     propertyType: toTypeRef(property.propertyType),
     transactionType: toTypeRef(property.transactionType),
+    propertyViews: (property.viewAssignments ?? [])
+      .map(({ view }) => ({
+        id: view.id,
+        code: view.code,
+        nameEn: view.nameEn,
+        nameAr: view.nameAr,
+      }))
+      .sort((a, b) => a.nameEn.localeCompare(b.nameEn)),
+    legalStatus: toTypeRef(property.legalStatus),
     country: location.country,
     city: location.city,
     area: location.area,
@@ -510,6 +596,11 @@ export function toPublicPropertyDetails(
       })),
     features: property.features.map((row) => toFeatureResponse(row.feature)),
     owner: toPublicOwnerCard(property.owner),
+    contact: toPublicPropertyContact(
+      property.id,
+      property.owner,
+      property.contact,
+    ),
     similar: similar.map(toPublicPropertyCard),
     publishedAt: dateToIso(property.publishedAt),
   };

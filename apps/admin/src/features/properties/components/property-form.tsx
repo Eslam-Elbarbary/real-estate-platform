@@ -10,9 +10,7 @@ import { toast } from '@/lib/toast';
 import { cn } from '@/lib/utils/cn';
 import {
   createPropertyAction,
-  listPropertyCompoundsAction,
   updatePropertyAction,
-  type CompoundSelectOption,
 } from '../actions';
 import {
   formatFinishingType,
@@ -38,6 +36,7 @@ import {
   type PropertyLocationValue,
 } from './property-location-field';
 import { PropertyMediaManager } from './property-media-manager';
+import type { AdminUserSelectItem } from '@/features/users/types';
 import { PropertyOwnerSelect } from './property-owner-select';
 
 interface PropertyFormState {
@@ -116,6 +115,12 @@ const EMPTY_LOCATION: PropertyLocationValue = {
   cityId: '',
   areaId: '',
   districtId: '',
+  compoundId: '',
+  countryName: '',
+  cityName: '',
+  areaName: '',
+  districtName: '',
+  compoundName: '',
   address: '',
   latitude: '',
   longitude: '',
@@ -187,6 +192,21 @@ function detailsToLocation(property: AdminPropertyDetails): PropertyLocationValu
     cityId: property.location.city?.id ?? '',
     areaId: property.location.area?.id ?? '',
     districtId: property.location.district?.id ?? '',
+    compoundId: property.compound?.id ?? '',
+    countryName:
+      property.location.country?.nameAr ??
+      property.location.country?.nameEn ??
+      '',
+    cityName:
+      property.location.city?.nameAr ?? property.location.city?.nameEn ?? '',
+    areaName:
+      property.location.area?.nameAr ?? property.location.area?.nameEn ?? '',
+    districtName:
+      property.location.district?.nameAr ??
+      property.location.district?.nameEn ??
+      '',
+    compoundName:
+      property.compound?.nameAr ?? property.compound?.nameEn ?? '',
     address: property.address ?? '',
     latitude: property.latitude != null ? String(property.latitude) : '',
     longitude: property.longitude != null ? String(property.longitude) : '',
@@ -258,8 +278,9 @@ export function PropertyForm({
   const [primaryId, setPrimaryId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<PropertyFormFieldErrors>({});
-  const [compounds, setCompounds] = useState<CompoundSelectOption[]>([]);
-  const [compoundsLoading, setCompoundsLoading] = useState(false);
+  const [selectedOwner, setSelectedOwner] = useState<AdminUserSelectItem | null>(
+    null,
+  );
 
   useEffect(() => {
     if (isEdit && initialData) {
@@ -268,6 +289,12 @@ export function PropertyForm({
       setImages([]);
       setPrimaryId(null);
       setFieldErrors({});
+      setSelectedOwner({
+        id: initialData.owner.id,
+        name: initialData.owner.name,
+        email: initialData.owner.email,
+        phone: initialData.owner.phone,
+      });
       return;
     }
 
@@ -275,42 +302,9 @@ export function PropertyForm({
     setLocation(EMPTY_LOCATION);
     setImages([]);
     setPrimaryId(null);
+    setSelectedOwner(null);
     setFieldErrors({});
   }, [isEdit, initialData]);
-
-  useEffect(() => {
-    const areaId = location.areaId.trim();
-    if (!areaId) {
-      setCompounds([]);
-      setForm((current) =>
-        current.compoundId ? { ...current, compoundId: '' } : current,
-      );
-      return;
-    }
-
-    let cancelled = false;
-
-    async function loadCompounds() {
-      setCompoundsLoading(true);
-      const result = await listPropertyCompoundsAction(areaId);
-      if (cancelled) {
-        return;
-      }
-
-      if (result.ok) {
-        setCompounds(result.items);
-      } else {
-        setCompounds([]);
-      }
-      setCompoundsLoading(false);
-    }
-
-    void loadCompounds();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [location.areaId]);
 
   const propertyTypeOptions = useMemo(
     () =>
@@ -340,29 +334,18 @@ export function PropertyForm({
     form.featureIds.includes(feature.id),
   );
 
-  const compoundOptions = useMemo(() => {
-    const options = [
-      { value: '', label: 'بدون كمباوند' },
-      ...compounds.map((compound) => ({
-        value: compound.id,
-        label: formatCatalogLabel(compound),
-      })),
-    ];
-
-    const selected = initialData?.compound;
-    if (
-      selected &&
-      form.compoundId === selected.id &&
-      !options.some((option) => option.value === selected.id)
-    ) {
-      options.splice(1, 0, {
-        value: selected.id,
-        label: formatCatalogLabel(selected),
-      });
-    }
-
-    return options;
-  }, [compounds, form.compoundId, initialData?.compound]);
+  function handleLocationChange(next: PropertyLocationValue) {
+    setLocation(next);
+    setForm((current) =>
+      current.compoundId === next.compoundId
+        ? current
+        : { ...current, compoundId: next.compoundId },
+    );
+    setFieldErrors((current) => ({
+      ...current,
+      areaId: next.areaId.trim() ? undefined : current.areaId,
+    }));
+  }
 
   function updateField<K extends keyof PropertyFormState>(
     key: K,
@@ -586,7 +569,11 @@ export function PropertyForm({
         {!isEdit ? (
           <PropertyOwnerSelect
             value={form.ownerId}
-            onChange={(ownerId) => updateField('ownerId', ownerId)}
+            selectedOwner={selectedOwner}
+            onChange={(ownerId, owner) => {
+              updateField('ownerId', ownerId);
+              setSelectedOwner(owner);
+            }}
             disabled={formDisabled}
             error={fieldErrors.ownerId}
           />
@@ -837,25 +824,11 @@ export function PropertyForm({
       <section className="space-y-4">
         <PropertyLocationField
           value={location}
-          onChange={setLocation}
+          onChange={handleLocationChange}
           disabled={formDisabled}
           areaError={fieldErrors.areaId}
           title="04 — الموقع"
         />
-
-        <Select
-          name="compoundId"
-          label="الكمبوند"
-          options={compoundOptions}
-          value={form.compoundId}
-          disabled={formDisabled || !location.areaId || compoundsLoading}
-          onChange={(event) => updateField('compoundId', event.target.value)}
-        />
-        {!location.areaId ? (
-          <p className="text-xs text-ink-500">اختر المنطقة أولاً لعرض الكمبوندات.</p>
-        ) : compoundsLoading ? (
-          <p className="text-xs text-ink-500">جاري تحميل الكمبوندات…</p>
-        ) : null}
       </section>
 
       <PropertyFeaturesField
@@ -963,11 +936,8 @@ export function PropertyForm({
             <ReviewRow
               label="الكمبوند"
               value={
-                formatTypeLabel(
-                  compounds.find((compound) => compound.id === form.compoundId) ??
-                    initialData?.compound ??
-                    null,
-                )
+                formatTypeLabel(initialData?.compound ?? null) ||
+                (form.compoundId ? 'محدد' : '—')
               }
             />
           ) : null}

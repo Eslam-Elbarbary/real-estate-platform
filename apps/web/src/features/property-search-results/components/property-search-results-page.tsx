@@ -1,6 +1,7 @@
 import { Container } from '@/components/ui/container';
 import { routes } from '@/config/routes';
 import type { LocationOption } from '@/features/locations';
+import type { PropertyTypeSelectOption } from '@/features/property-search/components/property-type-field';
 import type { PropertySearchFilters, PropertySearchResult } from '@/types';
 import { getSearchSeoContent } from '../data/search-seo-content';
 import {
@@ -21,6 +22,7 @@ import { ResultsBreadcrumb } from './results-breadcrumb';
 import { ResultsLocationSearch } from './results-location-search';
 import { SeoContent } from './seo-content';
 import { SortControl } from './sort-control';
+import { PropertiesPageBanner } from '@/features/banners/components/properties-page-banner';
 
 interface PropertySearchResultsPageProps {
   filters: PropertySearchFilters;
@@ -28,6 +30,7 @@ interface PropertySearchResultsPageProps {
   locations: LocationOption[];
   selectedLocation: LocationOption | null;
   subtypeCounts: Record<string, number>;
+  propertyTypeOptions: PropertyTypeSelectOption[];
   favoritePropertyIds?: string[];
   errorMessage?: string;
 }
@@ -38,12 +41,17 @@ export function PropertySearchResultsPage({
   locations,
   selectedLocation,
   subtypeCounts,
+  propertyTypeOptions,
   favoritePropertyIds = [],
   errorMessage,
 }: PropertySearchResultsPageProps) {
   const heading = getResultsHeading(filters);
   const countLabel = getResultsCountLabel(result.total, filters);
-  const chips = buildSubtypeChips(filters, subtypeCounts);
+  const chips = buildSubtypeChips(
+    filters,
+    subtypeCounts,
+    propertyTypeOptions,
+  );
   const seo = getSearchSeoContent(filters);
   const transaction = filters.transactionType ?? 'sale';
   const favoriteIds = new Set(favoritePropertyIds);
@@ -65,6 +73,7 @@ export function PropertySearchResultsPage({
   return (
     <div className="bg-white">
       <Container wide className="py-4 sm:py-5">
+        <PropertiesPageBanner />
         <div className="space-y-2.5 rounded-xl border border-border bg-white p-3 sm:p-3.5">
           <ResultsLocationSearch
             locations={locations}
@@ -76,6 +85,7 @@ export function PropertySearchResultsPage({
             locations={locations}
             selectedLocation={selectedLocation}
             resultCount={result.total}
+            propertyTypeOptions={propertyTypeOptions}
           />
         </div>
 

@@ -34,6 +34,11 @@ export const PERMISSIONS: PermissionSeed[] = [
     description: 'Archive property listings (soft removal from active catalog)',
   },
   {
+    code: 'properties.restore',
+    name: 'Restore Properties',
+    description: 'Restore archived property listings back to draft',
+  },
+  {
     code: 'properties.approve',
     name: 'Approve Properties',
     description: 'Approve properties pending review',
@@ -176,6 +181,117 @@ export const PERMISSIONS: PermissionSeed[] = [
     name: 'Update Plans',
     description: 'Edit subscription plans',
   },
+  // Catalogs
+  {
+    code: 'catalogs.view',
+    name: 'View Catalogs',
+    description: 'View property types, transaction types, and features',
+  },
+  {
+    code: 'catalogs.create',
+    name: 'Create Catalogs',
+    description: 'Create property types, transaction types, and features',
+  },
+  {
+    code: 'catalogs.update',
+    name: 'Update Catalogs',
+    description: 'Edit property types, transaction types, and features',
+  },
+  // Features (dedicated; catalogs.* still work as aliases)
+  {
+    code: 'features.view',
+    name: 'View Features',
+    description: 'View property feature catalog',
+  },
+  {
+    code: 'features.create',
+    name: 'Create Features',
+    description: 'Create property features',
+  },
+  {
+    code: 'features.update',
+    name: 'Update Features',
+    description: 'Edit and activate/deactivate property features',
+  },
+  {
+    code: 'features.delete',
+    name: 'Delete Features',
+    description: 'Delete unused features or deactivate linked ones',
+  },
+  // Property views (dedicated; catalogs.* still work as aliases)
+  {
+    code: 'property_views.view',
+    name: 'View Property Views',
+    description: 'View the property view catalog (Nile, sea, garden…)',
+  },
+  {
+    code: 'property_views.create',
+    name: 'Create Property Views',
+    description: 'Create property view options',
+  },
+  {
+    code: 'property_views.update',
+    name: 'Update Property Views',
+    description: 'Edit and activate/deactivate property view options',
+  },
+  {
+    code: 'property_views.delete',
+    name: 'Delete Property Views',
+    description: 'Delete unused property views or deactivate linked ones',
+  },
+  // Legal statuses (dedicated; catalogs.* still work as aliases)
+  {
+    code: 'property_legal_statuses.view',
+    name: 'View Legal Statuses',
+    description: 'View the property legal status catalog',
+  },
+  {
+    code: 'property_legal_statuses.create',
+    name: 'Create Legal Statuses',
+    description: 'Create property legal status options',
+  },
+  {
+    code: 'property_legal_statuses.update',
+    name: 'Update Legal Statuses',
+    description: 'Edit and activate/deactivate legal status options',
+  },
+  {
+    code: 'property_legal_statuses.delete',
+    name: 'Delete Legal Statuses',
+    description: 'Delete unused legal statuses or deactivate linked ones',
+  },
+  // Settings
+  {
+    code: 'settings.view',
+    name: 'View Settings',
+    description: 'View platform branding, contact, and SEO settings',
+  },
+  {
+    code: 'settings.update',
+    name: 'Update Settings',
+    description: 'Edit platform branding, contact, and SEO settings',
+  },
+  // Banners
+  {
+    code: 'banners.view',
+    name: 'View Banners',
+    description: 'View marketing banners',
+  },
+  {
+    code: 'banners.create',
+    name: 'Create Banners',
+    description: 'Create marketing banners',
+  },
+  {
+    code: 'banners.update',
+    name: 'Update Banners',
+    description: 'Edit, activate, deactivate, and reorder banners',
+  },
+  {
+    code: 'banners.delete',
+    name: 'Delete Banners',
+    description: 'Delete marketing banners',
+  },
   // Roles
   {
     code: 'roles.view',
@@ -221,8 +337,20 @@ export const ROLE_PERMISSION_MAP: Record<string, readonly string[]> = {
   USER: [],
 };
 
+/** Codes dropped by a rename; removed so roles stop carrying dead permissions. */
+const RETIRED_PERMISSION_CODES = [
+  'registration_statuses.view',
+  'registration_statuses.create',
+  'registration_statuses.update',
+  'registration_statuses.delete',
+];
+
 export async function seedPermissions(prisma: PrismaClient): Promise<Map<string, string>> {
   const permissionIds = new Map<string, string>();
+
+  await prisma.permission.deleteMany({
+    where: { code: { in: RETIRED_PERMISSION_CODES } },
+  });
 
   for (const permission of PERMISSIONS) {
     const row = await prisma.permission.upsert({

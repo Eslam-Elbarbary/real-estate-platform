@@ -2,10 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import {
   CatalogFeatureDto,
+  CatalogLegalStatusDto,
   CatalogPropertyTypeDto,
+  CatalogPropertyViewDto,
   CatalogTransactionTypeDto,
   toCatalogFeature,
+  toCatalogLegalStatus,
   toCatalogPropertyType,
+  toCatalogPropertyView,
   toCatalogTransactionType,
 } from './mapper/catalog.mapper';
 
@@ -38,5 +42,23 @@ export class CatalogsService {
     });
 
     return rows.map(toCatalogFeature);
+  }
+
+  async getPropertyViews(): Promise<CatalogPropertyViewDto[]> {
+    const rows = await this.prisma.propertyView.findMany({
+      where: { isActive: true },
+      orderBy: { nameEn: 'asc' },
+    });
+
+    return rows.map(toCatalogPropertyView);
+  }
+
+  async getLegalStatuses(): Promise<CatalogLegalStatusDto[]> {
+    const rows = await this.prisma.propertyLegalStatus.findMany({
+      where: { isActive: true },
+      orderBy: { nameEn: 'asc' },
+    });
+
+    return rows.map(toCatalogLegalStatus);
   }
 }

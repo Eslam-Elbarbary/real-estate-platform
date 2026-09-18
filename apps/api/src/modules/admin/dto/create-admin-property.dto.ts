@@ -15,6 +15,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { AdminPropertyImageInputDto } from './admin-property-image-input.dto';
+import { UpsertPropertyContactDto } from '../../properties/dto/upsert-property-contact.dto';
 
 export class CreateAdminPropertyDto {
   @ApiProperty({ description: 'Property owner user id' })
@@ -159,6 +160,24 @@ export class CreateAdminPropertyDto {
   @IsString()
   compoundId?: string;
 
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'PropertyView catalog ids (active only)',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsString({ each: true })
+  propertyViewIds?: string[];
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'PropertyLegalStatus catalog id (active only)',
+  })
+  @IsOptional()
+  @IsString()
+  legalStatusId?: string | null;
+
   @ApiPropertyOptional({ example: '12 Abbas El Akkad St' })
   @IsOptional()
   @IsString()
@@ -190,4 +209,22 @@ export class CreateAdminPropertyDto {
   @ValidateNested({ each: true })
   @Type(() => AdminPropertyImageInputDto)
   images?: AdminPropertyImageInputDto[];
+
+  @ApiPropertyOptional({
+    description: 'Optional listing contact. When omitted on publish, OWNER contact is created.',
+    type: () => UpsertPropertyContactDto,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => UpsertPropertyContactDto)
+  contact?: UpsertPropertyContactDto;
+
+  @ApiPropertyOptional({
+    description:
+      'When false, create as DRAFT. When omitted or true, create as PUBLISHED (backward compatible).',
+    default: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  publish?: boolean;
 }

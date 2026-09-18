@@ -1,4 +1,3 @@
-import type { PropertyType } from '@/types';
 import { uiLabels } from '@/config/labels';
 import type { ValuationFinishing, ValuationView } from './types';
 
@@ -29,9 +28,21 @@ export const valuationFinishingOptions: {
   { value: 'unfinished', label: uiLabels.finishingUnfinished },
 ];
 
-/** Display choices mapped onto existing PropertyType domain values. */
+type ValuationPropertyTypeOption =
+  | 'apartment'
+  | 'villa'
+  | 'townhouse'
+  | 'duplex'
+  | 'penthouse'
+  | 'studio'
+  | 'chalet'
+  | 'office'
+  | 'shop'
+  | 'land';
+
+/** Valuation wizard choices (mock engine) — separate from live catalog filters. */
 export const valuationPropertyTypeOptions: {
-  value: PropertyType;
+  value: ValuationPropertyTypeOption;
   label: string;
 }[] = [
   { value: 'apartment', label: 'شقة' },

@@ -1,6 +1,11 @@
+import {
+  PagePermissionDenied,
+  hasPagePermission,
+} from '@/components/layout/page-permission-gate';
 import { PaymentsList } from '@/features/payments/components/payments-list';
 import { getAdminPayments } from '@/features/payments';
 import type { PaymentStatus } from '@/features/payments/types';
+import { getAdminSession } from '@/features/auth/service';
 import { createPageMetadata } from '@/lib/seo/metadata';
 
 export const metadata = createPageMetadata({
@@ -45,6 +50,13 @@ export default async function PaymentsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const session = await getAdminSession();
+  const permissions = session?.user.permissions ?? [];
+
+  if (!hasPagePermission(permissions, 'payments.view')) {
+    return <PagePermissionDenied />;
+  }
+
   const params = await searchParams;
   const page = parsePositiveInt(params.page, 1);
   const limit = Math.min(parsePositiveInt(params.limit, 20), 100);

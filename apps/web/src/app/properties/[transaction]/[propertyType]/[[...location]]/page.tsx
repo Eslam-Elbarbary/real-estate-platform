@@ -71,6 +71,7 @@ export default async function PropertiesTypedLocationPage({
       locations={loaded.locations}
       selectedLocation={loaded.selectedLocation}
       subtypeCounts={loaded.subtypeCounts}
+      propertyTypeOptions={loaded.propertyTypeOptions}
       favoritePropertyIds={loaded.favoritePropertyIds}
       errorMessage={loaded.errorMessage}
     />

@@ -16,6 +16,7 @@ import type {
   ListingMediaDraft,
   ListingPricingDraft,
 } from './types';
+import { emptyPricingDraft } from './types';
 
 /** Legacy oversized collection cookie — migrated then deleted. */
 export const LISTING_DRAFTS_COOKIE = 'demo_listing_drafts';
@@ -60,12 +61,19 @@ export function createEmptyDraft(userId: string, id: string): ListingDraft {
     transaction: 'sale',
     propertyType: null,
     details: {
-      views: [],
       amenities: [],
       mortgageEligible: false,
     },
-    pricing: { mode: null },
+    pricing: emptyPricingDraft(),
     description: emptyDescription(),
+    contact: {
+      contactSource: 'OWNER',
+      contactType: 'OWNER',
+      contactName: '',
+      phone: '',
+      whatsapp: '',
+      email: '',
+    },
     media: { images: [] },
     currentStep: 'basic',
     status: 'draft',
@@ -391,7 +399,9 @@ export function nextStepAfter(step: ListingDraftStep): ListingDraftStep | 'check
     'details',
     'price',
     'description',
+    'contact',
     'media',
+    'preview',
     'publish',
     'checkout',
   ];

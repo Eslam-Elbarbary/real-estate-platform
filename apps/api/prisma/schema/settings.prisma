@@ -1,0 +1,27 @@
+// -----------------------------------------------------------------------------
+// Platform settings (singleton marketplace branding / contact / SEO)
+// -----------------------------------------------------------------------------
+
+model PlatformSetting {
+  id              String   @id @default(cuid())
+  siteName        String
+  shortName       String
+  description     String?
+  logoUrl         String?
+  faviconUrl      String?
+  email           String?
+  phone           String?
+  whatsapp        String?
+  address         String?
+  facebookUrl     String?
+  instagramUrl    String?
+  twitterUrl      String?
+  linkedinUrl     String?
+  metaTitle       String?
+  metaDescription String?
+  ogImageUrl      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("platform_settings")
+}

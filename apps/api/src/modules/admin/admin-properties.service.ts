@@ -7,6 +7,7 @@ import { Prisma, PropertyStatus, SubscriptionStatus } from '@/prisma/generated/p
 import { PrismaService } from '../../database/prisma.service';
 import { SavedSearchMatchingService } from '../alerts/saved-search-matching.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PropertyContactService } from '../properties/services/property-contact.service';
 import { ListAdminPropertiesQueryDto, AdminPropertySort } from './dto/list-admin-properties-query.dto';
 import {
   AdminPropertyReviewCardDto,
@@ -54,6 +55,8 @@ const PROPERTY_CARD_INCLUDE = {
 
 const PROPERTY_DETAILS_INCLUDE = {
   ...PROPERTY_CARD_INCLUDE,
+  viewAssignments: { include: { view: true } },
+  legalStatus: true,
   features: { include: { feature: true } },
   images: {
     include: { mediaAsset: true },
@@ -152,6 +155,7 @@ export class AdminPropertiesService {
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
     private readonly savedSearchMatchingService: SavedSearchMatchingService,
+    private readonly propertyContactService: PropertyContactService,
   ) {}
 
   async listProperties(query: ListAdminPropertiesQueryDto): Promise<{
@@ -288,6 +292,7 @@ export class AdminPropertiesService {
     });
 
     await this.onPropertyApproved(updated);
+    await this.propertyContactService.ensureDefaultOwnerContact(propertyId);
 
     return toAdminPropertyActionResponse(updated);
   }
@@ -344,8 +349,16 @@ export class AdminPropertiesService {
       throw new NotFoundException('Property not found');
     }
 
-    if (property.status === PropertyStatus.ARCHIVED) {
-      throw new BadRequestException('Property is already archived');
+    const allowed: PropertyStatus[] = [
+      PropertyStatus.PUBLISHED,
+      PropertyStatus.REJECTED,
+      PropertyStatus.EXPIRED,
+    ];
+
+    if (!allowed.includes(property.status)) {
+      throw new BadRequestException(
+        `Only published, rejected, or expired properties can be archived (current: ${property.status})`,
+      );
     }
 
     const now = new Date();
@@ -372,6 +385,32 @@ export class AdminPropertiesService {
     });
 
     return toAdminPropertyActionResponse(updated);
+  }
+
+  /**
+   * Hard-delete DRAFT only. Related rows (images, features, views,
+   * contact, status history, leads, favorites, notes, subscriptions) cascade.
+   */
+  async deleteDraftProperty(_adminId: string, propertyId: string) {
+    const property = await this.prisma.property.findUnique({
+      where: { id: propertyId },
+    });
+
+    if (!property) {
+      throw new NotFoundException('Property not found');
+    }
+
+    if (property.status !== PropertyStatus.DRAFT) {
+      throw new BadRequestException(
+        'Only draft properties can be permanently deleted',
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.property.delete({ where: { id: propertyId } });
+    });
+
+    return { message: 'Draft property deleted successfully' };
   }
 
   /**
@@ -428,6 +467,7 @@ export class AdminPropertiesService {
     });
 
     await this.onPropertyApproved(updated);
+    await this.propertyContactService.ensureDefaultOwnerContact(propertyId);
 
     return toAdminPropertyActionResponse(updated);
   }
@@ -499,7 +539,7 @@ export class AdminPropertiesService {
           fromStatus: property.status,
           toStatus: PropertyStatus.DRAFT,
           changedById: adminId,
-          reason: 'Restored from archive by administrator',
+          reason: 'RESTORED — restored from archive by administrator',
         },
       });
 

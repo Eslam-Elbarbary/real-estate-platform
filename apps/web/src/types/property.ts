@@ -1,16 +1,10 @@
 export type TransactionType = 'sale' | 'rent';
 
-export type PropertyType =
-  | 'apartment'
-  | 'villa'
-  | 'townhouse'
-  | 'duplex'
-  | 'penthouse'
-  | 'studio'
-  | 'chalet'
-  | 'office'
-  | 'shop'
-  | 'land';
+/**
+ * Property type slug from the catalogs API (`code`, lowercased).
+ * Kept open so admin-created active types work without frontend hardcoding.
+ */
+export type PropertyType = string;
 
 export type FinishingType =
   | 'unfinished'
@@ -68,6 +62,14 @@ export interface PropertySeller {
   isVerified: boolean;
   rating?: number;
   listingCount?: number;
+}
+
+/** Public listing contact (from API `contact`; no email/source). */
+export interface PropertyContact {
+  name: string;
+  type: 'OWNER' | 'AGENT' | 'COMPANY';
+  phone: string;
+  whatsapp: string;
 }
 
 export interface PropertyAmenity {
@@ -132,8 +134,10 @@ export interface Property {
   deliveryYear?: number;
   yearBuilt?: number;
   furnished?: boolean;
-  /** Arabic label for view / orientation (إطلالة). */
-  viewType?: string;
+  /** Arabic labels for views / orientation (إطلالات). */
+  viewTypes?: string[];
+  /** Arabic label for the legal status. */
+  legalStatusLabel?: string;
   gardenArea?: number;
   location: PropertyLocation;
   compoundId?: string;
@@ -145,6 +149,8 @@ export interface Property {
   developerName?: string;
   images: PropertyImage[];
   seller: PropertySeller;
+  /** Public contact for published listings; omitted/null when unavailable. */
+  contact?: PropertyContact | null;
   amenities: string[];
   features: string[];
   verificationState: VerificationState;

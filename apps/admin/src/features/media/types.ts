@@ -45,6 +45,8 @@ export const MEDIA_FOLDER_OPTIONS = [
   { value: 'properties', label: 'properties' },
   { value: 'developers', label: 'developers' },
   { value: 'compounds', label: 'compounds' },
+  { value: 'banners', label: 'banners' },
+  { value: 'platform', label: 'platform' },
 ] as const;
 
 export const MEDIA_IMAGE_MIME_TYPES = new Set([

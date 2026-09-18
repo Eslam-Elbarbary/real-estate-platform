@@ -7,58 +7,25 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   filterNavByPermissions,
+  groupNavItems,
+  isActiveNavPath,
   mainNav,
   type NavItem,
 } from '@/config/navigation';
 import { routes } from '@/config/routes';
+import { siteConfig } from '@/config/site';
 import { logoutAction } from '@/features/auth/actions';
 import { cn } from '@/lib/utils/cn';
 
-const NAV_GROUPS = [
-  {
-    title: 'MAIN',
-    hrefs: [routes.home],
-  },
-  {
-    title: 'MANAGEMENT',
-    hrefs: [routes.users.root, routes.roles.root, routes.properties.root, routes.leads.root],
-  },
-  {
-    title: 'BUSINESS',
-    hrefs: [routes.payments.root, routes.plans.root],
-  },
-  {
-    title: 'CATALOG',
-    hrefs: [routes.developers.root, routes.compounds.root],
-  },
-] as const;
-
-function isActivePath(pathname: string, href: string) {
-  if (href === '/') {
-    return pathname === '/';
-  }
-
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
-
-function groupNavItems(items: NavItem[]) {
-  return NAV_GROUPS.map((group) => ({
-    title: group.title,
-    items: group.hrefs
-      .map((href) => items.find((item) => item.href === href))
-      .filter((item): item is NavItem => Boolean(item)),
-  })).filter((group) => group.items.length > 0);
-}
-
 function getCurrentPageLabel(pathname: string, items: NavItem[]): string {
-  const match = items.find((item) => isActivePath(pathname, item.href));
-  return match?.label ?? 'لوحة التحكم';
+  const match = items.find((item) => isActiveNavPath(pathname, item.href));
+  return match?.label ?? siteConfig.name;
 }
 
 function getInitials(name: string): string {
   const trimmed = name.trim();
   if (!trimmed) {
-    return 'A';
+    return siteConfig.logo.letter;
   }
 
   const parts = trimmed.split(/\s+/);
@@ -136,7 +103,7 @@ export function Topbar({ permissions, userName, userEmail }: TopbarProps) {
               {pageLabel}
             </p>
             <p className="hidden truncate text-xs text-ink-500 sm:block">
-              Madar Home Properties — Admin
+              {siteConfig.productName} — {siteConfig.name}
             </p>
           </div>
         </div>
@@ -222,19 +189,32 @@ export function Topbar({ permissions, userName, userEmail }: TopbarProps) {
             aria-label="القائمة الرئيسية"
           >
             <div className="border-b border-white/10 px-4 py-4">
-              <p className="text-sm font-semibold text-white">Madar Home Properties</p>
-              <p className="text-xs text-[var(--sidebar-muted)]">Admin Dashboard</p>
+              <div className="flex items-center gap-2.5">
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent-500/20 ring-1 ring-accent-500/40">
+                  <span className="text-sm font-bold text-accent-500">
+                    {siteConfig.logo.letter}
+                  </span>
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-white">
+                    {siteConfig.productName}
+                  </p>
+                  <p className="truncate text-xs text-[var(--sidebar-muted)]">
+                    {siteConfig.name}
+                  </p>
+                </div>
+              </div>
             </div>
             <div className="flex-1 space-y-5 overflow-y-auto p-3">
               {groupedNav.map((group) => (
                 <div key={group.title}>
-                  <p className="mb-2 px-3 text-[0.65rem] font-semibold tracking-[0.14em] text-[var(--sidebar-muted)]">
+                  <p className="mb-2 px-3 text-[0.65rem] font-semibold tracking-wide text-[var(--sidebar-muted)]">
                     {group.title}
                   </p>
                   <div className="space-y-0.5">
                     {group.items.map((item) => {
                       const Icon = item.icon;
-                      const active = isActivePath(pathname, item.href);
+                      const active = isActiveNavPath(pathname, item.href);
 
                       return (
                         <Link

@@ -1,9 +1,5 @@
-import type {
-  ListingDraftStep,
-  ListingRegistrationStatus,
-  ListingViewType,
-} from './types';
-import type { FinishingType, PropertyType } from '@/types';
+import type { ListingDraftStep } from './types';
+import type { FinishingType } from '@/types';
 
 export const LISTING_STEPS: {
   id: ListingDraftStep;
@@ -13,8 +9,10 @@ export const LISTING_STEPS: {
   { id: 'details', label: 'تفاصيل العقار والمزايا' },
   { id: 'price', label: 'سعر العقار' },
   { id: 'description', label: 'وصف العقار' },
+  { id: 'contact', label: 'بيانات التواصل' },
   { id: 'media', label: 'الفيديوهات والصور' },
-  { id: 'publish', label: 'مراجعة البيانات والباقة' },
+  { id: 'preview', label: 'معاينة الإعلان' },
+  { id: 'publish', label: 'إرسال للمراجعة' },
 ];
 
 export const listingCopy = {
@@ -33,9 +31,10 @@ export const listingCopy = {
   bathrooms: 'عدد الحمامات',
   floor: 'الدور',
   year: 'سنة البناء أو التسليم',
-  views: 'الإطلالة',
+  views: 'الإطلالات',
   finishing: 'نوع التشطيب',
-  registration: 'حالة التسجيل في الشهر العقاري',
+  furnished: 'مفروش؟',
+  legalStatus: 'الحالة القانونية',
   mortgage: 'عقارك قابل للتمويل العقاري؟',
   amenities: 'مزايا العقار',
   paymentMethod: 'طريقة الدفع',
@@ -58,6 +57,19 @@ export const listingCopy = {
   remainingPeriod: 'مدة التقسيط المتبقية',
   rentPrice: 'سعر الإيجار',
   descriptionTitle: 'وصف العقار',
+  contactTitle: 'بيانات التواصل',
+  contactAccountMode: 'استخدام بيانات الحساب',
+  contactCustomMode: 'بيانات تواصل مختلفة',
+  contactName: 'اسم جهة التواصل',
+  contactType: 'نوع جهة التواصل',
+  contactTypeOwner: 'مالك',
+  contactTypeAgent: 'وسيط',
+  contactTypeCompany: 'شركة',
+  contactPhone: 'رقم الهاتف',
+  contactWhatsapp: 'رقم واتساب',
+  contactEmail: 'البريد الإلكتروني (اختياري)',
+  contactReviewTitle: 'بيانات التواصل',
+  contactEdit: 'تعديل',
   arTab: 'عربي',
   enTab: 'English',
   listingNameAr: 'اسم الإعلان',
@@ -74,7 +86,15 @@ export const listingCopy = {
   maxSize: 'أكبر حجم: 30 ميجابايت',
   videoUrl: 'رابط الفيديو (اختياري)',
   videoPlaceholder: 'أضف رابط الفيديو يوتيوب',
-  publishTitle: 'مراجعة البيانات والباقة',
+  publishTitle: 'إرسال للمراجعة',
+  previewTitle: 'معاينة الإعلان',
+  previewContinue: 'متابعة إلى الإرسال',
+  previewSubmit: 'إرسال للمراجعة',
+  previewEdit: 'تعديل',
+  previewMissingMedia: 'لم تُضف صور بعد.',
+  previewMissingLocation: 'لم يُحدد الموقع بعد.',
+  previewMissingContact: 'بيانات التواصل غير مكتملة.',
+  previewMissingFeatures: 'لم تُختر مزايا بعد.',
   listingFeeLabel: 'تكلفة الإعلان',
   payNow: 'ادفع الآن',
   checkoutPaymentTitle: 'إتمام الدفع',
@@ -121,41 +141,15 @@ export const completionFieldLabels: Record<string, string> = {
   images: 'صورة واحدةً على الأقل',
 };
 
-export const listingViewOptions: { value: ListingViewType; label: string }[] = [
-  { value: 'main_street', label: 'شارع رئيسي' },
-  { value: 'side_street', label: 'شارع فرعي' },
-  { value: 'corner', label: 'ناصية' },
-  { value: 'rear', label: 'خلفي' },
-  { value: 'garden', label: 'حديقة' },
-  { value: 'nile', label: 'النيل' },
-  { value: 'lake', label: 'بحيرة' },
-  { value: 'pool', label: 'حمام سباحة' },
-  { value: 'sea', label: 'بحر' },
-  { value: 'plaza', label: 'بلازا' },
-  { value: 'golf', label: 'جولف' },
-  { value: 'club', label: 'نادي' },
-  { value: 'other', label: 'أخرى' },
-];
-
 export const listingFinishingOptions: {
-  value: FinishingType | 'extra_super_lux';
+  value: FinishingType;
   label: string;
 }[] = [
-  { value: 'extra_super_lux', label: 'اكسترا سوبر لوكس' },
   { value: 'super_lux', label: 'سوبر لوكس' },
   { value: 'lux', label: 'لوكس' },
+  { value: 'finished', label: 'تشطيب كامل' },
   { value: 'semi_finished', label: 'نصف تشطيب' },
   { value: 'unfinished', label: 'بدون تشطيب' },
-];
-
-export const listingRegistrationOptions: {
-  value: ListingRegistrationStatus;
-  label: string;
-}[] = [
-  { value: 'registered', label: 'مسجل' },
-  { value: 'registerable', label: 'قابل للتسجيل' },
-  { value: 'urban_communities', label: 'مسجل بهيئة المجتمعات العمرانية' },
-  { value: 'unsure', label: 'لست متأكدًا' },
 ];
 
 /** Legacy demo assets for unfinished publish/checkout cookie shell only. */
@@ -166,47 +160,3 @@ export const DEMO_PROPERTY_IMAGES = [
   '/assets/properties/property-04.webp',
   '/assets/properties/property-05.webp',
 ] as const;
-
-/** Residential-style fields visibility by property type. */
-export function detailsFieldVisibility(propertyType: PropertyType | null): {
-  bedrooms: boolean;
-  bathrooms: boolean;
-  floor: boolean;
-  views: boolean;
-  finishing: boolean;
-} {
-  if (!propertyType) {
-    return {
-      bedrooms: true,
-      bathrooms: true,
-      floor: true,
-      views: true,
-      finishing: true,
-    };
-  }
-  if (propertyType === 'land') {
-    return {
-      bedrooms: false,
-      bathrooms: false,
-      floor: false,
-      views: false,
-      finishing: false,
-    };
-  }
-  if (propertyType === 'office' || propertyType === 'shop') {
-    return {
-      bedrooms: false,
-      bathrooms: true,
-      floor: true,
-      views: true,
-      finishing: true,
-    };
-  }
-  return {
-    bedrooms: true,
-    bathrooms: true,
-    floor: true,
-    views: true,
-    finishing: true,
-  };
-}

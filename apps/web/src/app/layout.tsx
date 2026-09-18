@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Cairo } from 'next/font/google';
 import { SiteShell } from '@/components/layout/site-shell';
 import { siteConfig } from '@/config/site';
+import { getPlatformSettings } from '@/features/settings';
 import { createRootMetadata } from '@/lib/seo/metadata';
 import './globals.css';
 
@@ -11,7 +12,10 @@ const cairo = Cairo({
   display: 'swap',
 });
 
-export const metadata = createRootMetadata();
+export async function generateMetadata() {
+  const settings = await getPlatformSettings();
+  return createRootMetadata(settings);
+}
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { MediaType } from '@prisma/client';
+import { MediaType } from '@/prisma/generated/prisma-client';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,

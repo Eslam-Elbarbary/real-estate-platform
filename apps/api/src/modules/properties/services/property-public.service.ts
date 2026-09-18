@@ -23,6 +23,7 @@ const cardInclude = {
     },
   },
   district: true,
+  compound: true,
   images: {
     include: { mediaAsset: true },
     orderBy: [{ isPrimary: 'desc' as const }, { sortOrder: 'asc' as const }],
@@ -73,7 +74,10 @@ export class PropertyPublicService {
         compound: {
           include: { developer: true },
         },
+        viewAssignments: { include: { view: true } },
+        legalStatus: true,
         owner: true,
+        contact: true,
         features: {
           include: { feature: true },
           orderBy: { feature: { nameEn: 'asc' } },

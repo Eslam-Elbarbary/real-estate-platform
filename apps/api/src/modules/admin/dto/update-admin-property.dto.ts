@@ -160,6 +160,25 @@ export class UpdateAdminPropertyDto {
   @IsString()
   compoundId?: string | null;
 
+  @ApiPropertyOptional({
+    type: [String],
+    description:
+      'PropertyView catalog ids (active only). Replaces the full selection.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsString({ each: true })
+  propertyViewIds?: string[];
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'PropertyLegalStatus catalog id (active only)',
+  })
+  @IsOptional()
+  @IsString()
+  legalStatusId?: string | null;
+
   @ApiPropertyOptional({ example: '12 Abbas El Akkad St' })
   @IsOptional()
   @IsString()

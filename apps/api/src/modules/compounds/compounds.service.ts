@@ -117,7 +117,7 @@ export class CompoundsService {
   }
 
   async listAdmin(query: ListAdminCompoundsQueryDto): Promise<{
-    data: AdminCompoundDto[];
+    data: AdminCompoundDetailsDto[];
     meta: { page: number; limit: number; total: number; totalPages: number };
   }> {
     const page = query.page ?? 1;
@@ -134,6 +134,7 @@ export class CompoundsService {
       this.prisma.compound.count({ where }),
       this.prisma.compound.findMany({
         where,
+        include: COMPOUND_CARD_INCLUDE,
         orderBy: [{ nameEn: 'asc' }, { createdAt: 'desc' }],
         skip,
         take: limit,
@@ -146,7 +147,10 @@ export class CompoundsService {
 
     return {
       data: rows.map((row) =>
-        toAdminCompound(row, propertyCounts.get(row.id) ?? 0),
+        toAdminCompoundDetails(
+          row as CompoundCardSource,
+          propertyCounts.get(row.id) ?? 0,
+        ),
       ),
       meta: {
         page,

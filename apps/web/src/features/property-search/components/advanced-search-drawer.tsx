@@ -7,9 +7,9 @@ import {
   FILTER_AREA_BOUNDS,
   FILTER_PRICE_BOUNDS,
   filterPaymentOptions,
-  filterPropertyTypeOptions,
   filterViewOptions,
   PRICE_HISTOGRAM_BARS,
+  type FilterChipOption,
 } from '@/config/filter-options';
 import { getAppIcon, ICON_SIZE_UI } from '@/config/icons';
 import { uiLabels } from '@/config/labels';
@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils/cn';
 import { LocationField } from './location-field';
 import { FilterChip } from './filter-chip';
 import { RangeHistogram } from './range-histogram';
+import type { PropertyTypeSelectOption } from './property-type-field';
 
 const CloseIcon = getAppIcon('close');
 const ResetIcon = getAppIcon('reset');
@@ -32,6 +33,7 @@ const RentIcon = getAppIcon('rent');
 interface AdvancedSearchDrawerProps {
   onClose: () => void;
   locations: LocationOption[];
+  propertyTypeOptions: PropertyTypeSelectOption[];
   initialTransactionType?: TransactionType;
   initialLocation?: LocationOption | null;
   resultCount?: number;
@@ -105,22 +107,19 @@ function resolveDomainPropertyType(
     return undefined;
   }
 
-  const [value] = selected;
-  if (
-    value === 'apartment' ||
-    value === 'villa' ||
-    value === 'chalet' ||
-    value === 'land' ||
-    value === 'office'
-  ) {
-    return value;
-  }
+  return selected[0];
+}
 
-  if (value === 'commercial') {
-    return 'shop';
-  }
-
-  return undefined;
+function toFilterChips(
+  options: PropertyTypeSelectOption[],
+): FilterChipOption[] {
+  return [
+    { value: 'all', label: 'عقارات' },
+    ...options.map((option) => ({
+      value: option.value,
+      label: option.label,
+    })),
+  ];
 }
 
 function ProBadge() {
@@ -134,6 +133,7 @@ function ProBadge() {
 export function AdvancedSearchDrawer({
   onClose,
   locations,
+  propertyTypeOptions,
   initialTransactionType = 'sale',
   initialLocation = null,
   resultCount,
@@ -142,6 +142,10 @@ export function AdvancedSearchDrawer({
   const titleId = useId();
   const [state, setState] = useState<DrawerState>(() =>
     createDefaultState(initialTransactionType, initialLocation),
+  );
+  const propertyTypeChips = useMemo(
+    () => toFilterChips(propertyTypeOptions),
+    [propertyTypeOptions],
   );
 
   useEffect(() => {
@@ -362,7 +366,7 @@ export function AdvancedSearchDrawer({
               {uiLabels.filterPropertyType}
             </p>
             <div className="flex flex-wrap gap-2">
-              {filterPropertyTypeOptions.map((option) => (
+              {propertyTypeChips.map((option) => (
                 <FilterChip
                   key={option.value}
                   label={option.label}

@@ -17,7 +17,7 @@ const LOCATION_BASE_RATE: Record<string, number> = {
   default: 35_000,
 };
 
-const PROPERTY_TYPE_MULTIPLIER: Record<PropertyType, number> = {
+const PROPERTY_TYPE_MULTIPLIER: Record<string, number> = {
   apartment: 1,
   studio: 0.95,
   villa: 1.35,

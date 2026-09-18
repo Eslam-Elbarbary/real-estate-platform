@@ -1,3 +1,7 @@
+/**
+ * Static fallbacks for marketplace branding when the settings API is unavailable.
+ * Runtime branding should come from GET /api/v1/settings via getPlatformSettings().
+ */
 export const siteConfig = {
   name: 'عقارات مصر',
   nameEn: 'Egypt Homes',

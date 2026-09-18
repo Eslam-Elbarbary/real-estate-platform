@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -73,6 +73,19 @@ export class AdminPropertiesController {
     return this.adminPropertyManagementService.updateProperty(user.sub, id, dto);
   }
 
+  @Delete(':id')
+  @Permissions('properties.delete')
+  @ApiOperation({
+    summary: 'Hard-delete a DRAFT property only (cascades related rows)',
+  })
+  @ApiOkResponse({ schema: { example: { message: 'Draft property deleted successfully' } } })
+  deleteProperty(
+    @CurrentUser() user: AuthUserPayload,
+    @Param('id') id: string,
+  ) {
+    return this.adminPropertiesService.deleteDraftProperty(user.sub, id);
+  }
+
   @Post(':id/approve')
   @Permissions('properties.approve')
   @ApiOperation({ summary: 'Approve a pending review property' })
@@ -96,8 +109,22 @@ export class AdminPropertiesController {
 
   @Post(':id/archive')
   @Permissions('properties.archive')
-  @ApiOperation({ summary: 'Archive a property (admin only)' })
+  @ApiOperation({
+    summary: 'Archive a published, rejected, or expired property',
+  })
   archiveProperty(@CurrentUser() user: AuthUserPayload, @Param('id') id: string) {
+    return this.adminPropertiesService.archiveProperty(user.sub, id);
+  }
+
+  @Patch(':id/archive')
+  @Permissions('properties.archive')
+  @ApiOperation({
+    summary: 'Archive a published, rejected, or expired property',
+  })
+  archivePropertyPatch(
+    @CurrentUser() user: AuthUserPayload,
+    @Param('id') id: string,
+  ) {
     return this.adminPropertiesService.archiveProperty(user.sub, id);
   }
 
@@ -121,9 +148,19 @@ export class AdminPropertiesController {
   }
 
   @Post(':id/restore')
-  @Permissions('properties.archive')
+  @Permissions('properties.restore', 'properties.archive')
   @ApiOperation({ summary: 'Restore an archived property to draft' })
   restoreProperty(@CurrentUser() user: AuthUserPayload, @Param('id') id: string) {
+    return this.adminPropertiesService.restoreProperty(user.sub, id);
+  }
+
+  @Patch(':id/restore')
+  @Permissions('properties.restore', 'properties.archive')
+  @ApiOperation({ summary: 'Restore an archived property to draft' })
+  restorePropertyPatch(
+    @CurrentUser() user: AuthUserPayload,
+    @Param('id') id: string,
+  ) {
     return this.adminPropertiesService.restoreProperty(user.sub, id);
   }
 }

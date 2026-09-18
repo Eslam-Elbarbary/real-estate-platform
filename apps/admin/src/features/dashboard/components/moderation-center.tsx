@@ -31,14 +31,14 @@ const ITEMS: ModerationItem[] = [
     key: 'pendingPayments',
     label: 'طلب دفع',
     suffix: 'طلب',
-    href: routes.payments.root,
+    href: routes.payments.pending,
     icon: CreditCard,
   },
   {
     key: 'newLeads',
     label: 'عميل محتمل جديد',
     suffix: 'عميل',
-    href: routes.leads.root,
+    href: routes.leads.new,
     icon: MessageSquare,
   },
 ];

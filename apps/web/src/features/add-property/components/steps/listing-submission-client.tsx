@@ -15,6 +15,7 @@ import type {
 import {
   resubmitRejectedListingAction,
   selectListingPlanAction,
+  validateListingBeforeSubmitAction,
 } from '../../actions';
 import { completionFieldLabels, listingCopy } from '../../config';
 import type { ListingDraft } from '../../types';
@@ -128,15 +129,39 @@ function EditableSubmission({
     Boolean(subscription.endsAt) &&
     new Date(subscription.endsAt!).getTime() > Date.now();
 
+  async function ensureValidOrRedirect(): Promise<boolean> {
+    const validation = await validateListingBeforeSubmitAction(draft.id);
+    if (!validation.ok) {
+      setError(validation.error);
+      return false;
+    }
+    if (!validation.data.complete) {
+      router.push(validation.data.href);
+      router.refresh();
+      return false;
+    }
+    return true;
+  }
+
   function onSelectPlan(planId: string) {
     if (!completion.completed || pending) return;
     setError(null);
     setSelectedPlanId(planId);
     startTransition(async () => {
+      const valid = await ensureValidOrRedirect();
+      if (!valid) {
+        setSelectedPlanId(null);
+        return;
+      }
+
       const result = await selectListingPlanAction(draft.id, planId);
       if (!result.ok) {
         setError(result.error);
         setSelectedPlanId(null);
+        if (result.href) {
+          router.push(result.href);
+          router.refresh();
+        }
         return;
       }
       router.push(result.data.href);
@@ -148,12 +173,19 @@ function EditableSubmission({
     if (!completion.completed || pending) return;
     setError(null);
     startTransition(async () => {
+      const valid = await ensureValidOrRedirect();
+      if (!valid) return;
+
       const result = await resubmitRejectedListingAction(draft.id);
       if (!result.ok) {
         setError(result.error);
+        if (result.href) {
+          router.push(result.href);
+          router.refresh();
+        }
         return;
       }
-      router.push(routes.addProperty.step(draft.id, 'publish'));
+      router.push(result.data.href);
       router.refresh();
     });
   }
@@ -169,13 +201,25 @@ function EditableSubmission({
             {listingCopy.rejectedBody}
           </p>
           <Link
-            href={routes.addProperty.step(draft.id, 'basic')}
+            href={routes.addProperty.step(draft.id, 'preview')}
             className="mt-3 inline-flex text-sm font-bold text-brand-700 underline"
           >
             {listingCopy.editListing}
           </Link>
         </div>
       ) : null}
+
+      <div className="rounded-lg border border-brand-100 bg-brand-50/60 px-4 py-3 text-sm text-ink-800">
+        <p className="font-semibold">
+          راجع معاينة إعلانك قبل الإرسال للمراجعة.
+        </p>
+        <Link
+          href={routes.addProperty.step(draft.id, 'preview')}
+          className="mt-2 inline-flex text-sm font-bold text-brand-700 underline"
+        >
+          فتح المعاينة
+        </Link>
+      </div>
 
       <CompletionPanel completion={completion} />
 
@@ -192,7 +236,7 @@ function EditableSubmission({
               className: 'h-12 min-w-[160px] rounded-lg px-8 text-base font-extrabold',
             })}
           >
-            {listingCopy.resubmit}
+            {listingCopy.previewSubmit}
           </button>
         </div>
       ) : null}
@@ -275,49 +319,53 @@ function PlansPanel({
       <h2 className="text-sm font-extrabold text-ink-900">
         {listingCopy.plansTitle}
       </h2>
+      <p className="text-sm text-ink-600">
+        اختر الباقة لإرسال الإعلان للمراجعة ({listingCopy.previewSubmit}).
+      </p>
       <ul className="grid gap-3">
         {plans.map((plan) => {
           const features = planFeaturesText(plan.features);
-          const isFree = Number(plan.price) === 0;
-          const selecting = pending && selectedPlanId === plan.id;
+          const selected = selectedPlanId === plan.id;
           return (
-            <li
-              key={plan.id}
-              className="rounded-xl border border-[#e5e5e5] bg-white p-4"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-base font-extrabold text-ink-950">
-                    {plan.name}
-                  </p>
-                  <p className="mt-1 text-xs text-ink-500">{plan.code}</p>
-                  <p className="mt-2 text-sm font-bold text-ink-800">
-                    {isFree
+            <li key={plan.id}>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => onSelect(plan.id)}
+                className={cn(
+                  'w-full rounded-lg border px-4 py-4 text-start transition-colors',
+                  selected
+                    ? 'border-brand-500 bg-brand-50'
+                    : 'border-[#e5e5e5] bg-white hover:bg-surface-50',
+                  pending && 'opacity-60',
+                )}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <p className="text-base font-extrabold text-ink-900">
+                      {plan.name}
+                    </p>
+                    <p className="mt-1 text-sm text-ink-600">
+                      {listingCopy.planDuration(plan.durationDays)}
+                    </p>
+                  </div>
+                  <p className="text-base font-extrabold text-brand-700">
+                    {plan.price === 0
                       ? listingCopy.planFree
-                      : formatCurrency(Number(plan.price))}
-                  </p>
-                  <p className="mt-1 text-xs text-ink-600">
-                    {listingCopy.planDuration(plan.durationDays)}
+                      : formatCurrency(plan.price, 'EGP')}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  disabled={pending}
-                  onClick={() => onSelect(plan.id)}
-                  className={getButtonClassName({
-                    className: 'h-10 rounded-lg px-4 text-sm font-extrabold',
-                  })}
-                >
-                  {selecting ? 'جاري الاختيار...' : listingCopy.selectPlan}
-                </button>
-              </div>
-              {features.length > 0 ? (
-                <ul className="mt-3 space-y-1 text-xs text-ink-600">
-                  {features.map((line) => (
-                    <li key={line}>• {line}</li>
-                  ))}
-                </ul>
-              ) : null}
+                {features.length > 0 ? (
+                  <ul className="mt-3 space-y-1 text-xs font-semibold text-ink-600">
+                    {features.slice(0, 4).map((feature) => (
+                      <li key={feature}>• {feature}</li>
+                    ))}
+                  </ul>
+                ) : null}
+                <p className="mt-3 text-sm font-bold text-brand-700">
+                  {listingCopy.previewSubmit}
+                </p>
+              </button>
             </li>
           );
         })}
@@ -339,38 +387,15 @@ function StatusPanel({
     tone === 'success'
       ? 'border-success-100 bg-success-50 text-success-800'
       : tone === 'warning'
-        ? 'border-warning-100 bg-warning-50 text-warning-900'
-        : tone === 'muted'
-          ? 'border-[#e5e5e5] bg-surface-50 text-ink-700'
-          : 'border-brand-100 bg-brand-50 text-brand-900';
+        ? 'border-accent-100 bg-[#fff8e8] text-ink-800'
+        : tone === 'info'
+          ? 'border-brand-100 bg-brand-50 text-brand-900'
+          : 'border-[#e5e5e5] bg-surface-50 text-ink-700';
 
   return (
-    <div className="space-y-4">
-      <div className={cn('rounded-lg border px-4 py-4', toneClass)}>
-        <p className="text-base font-extrabold">{title}</p>
-        <p className="mt-2 text-sm leading-7">{body}</p>
-      </div>
-      <div className="flex flex-wrap gap-3">
-        <Link
-          href={`${routes.myProperties}?status=pending`}
-          className={getButtonClassName({
-            className:
-              'inline-flex h-11 items-center justify-center rounded-lg px-5 text-sm font-extrabold',
-          })}
-        >
-          {listingCopy.viewMyProperties}
-        </Link>
-        <Link
-          href={routes.myProperties}
-          className={getButtonClassName({
-            variant: 'outline',
-            className:
-              'inline-flex h-11 items-center justify-center rounded-lg px-5 text-sm font-extrabold',
-          })}
-        >
-          {listingCopy.viewPropertyStatus}
-        </Link>
-      </div>
+    <div className={cn('rounded-lg border px-4 py-4', toneClass)}>
+      <p className="text-sm font-extrabold">{title}</p>
+      <p className="mt-1 text-sm leading-6 opacity-90">{body}</p>
     </div>
   );
 }

@@ -1,34 +1,54 @@
 import Link from 'next/link';
 import { StoreBadges } from '@/components/ui/app-store-badges';
 import { Container } from '@/components/ui/container';
-import { SocialLinks } from '@/components/ui/social-links';
+import {
+  SocialLinks,
+  buildSocialLinksFromSettings,
+} from '@/components/ui/social-links';
 import {
   footerAttribution,
   footerLegalLinks,
   footerSections,
 } from '@/config/footer';
 import { uiLabels } from '@/config/labels';
+import type { PublicPlatformSettings } from '@/features/settings';
+import { resolveSiteName } from '@/features/settings';
+import { BrandLogo } from './brand-logo';
 
-export function Footer() {
+interface FooterProps {
+  settings: PublicPlatformSettings;
+}
+
+export function Footer({ settings }: FooterProps) {
   const linkSections = footerSections.slice(0, 3);
-  const { companyName, companyUrl, copyrightYear, rightsReserved, tagline, creditLine } =
+  const { companyName, companyUrl, copyrightYear, rightsReserved, creditLine } =
     footerAttribution;
+  const siteName = resolveSiteName(settings);
+  const socialLinks = buildSocialLinksFromSettings(settings);
+  const contactLines = [
+    settings.email,
+    settings.phone,
+    settings.whatsapp ? `WhatsApp: ${settings.whatsapp}` : null,
+    settings.address,
+  ].filter((value): value is string => Boolean(value?.trim()));
 
   return (
     <footer className="mt-auto bg-brand-600 text-white">
       <Container className="py-8">
         <div className="grid gap-8 lg:grid-cols-[1.1fr_2fr_0.9fr]">
           <div className="max-w-sm space-y-4">
-            <Link
-              href={companyUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block text-lg font-extrabold tracking-tight text-white transition-colors hover:text-white/90"
-            >
-              {companyName}
-            </Link>
-            <p className="text-xs leading-6 text-white/85 sm:text-[13px]">{tagline}</p>
-            <SocialLinks />
+            <BrandLogo
+              tone="inverse"
+              siteName={siteName}
+              logoUrl={settings.logoUrl}
+              className="text-white"
+            />
+            {settings.description ? (
+              <p className="text-xs leading-6 text-white/85 sm:text-[13px]">
+                {settings.description}
+              </p>
+            ) : null}
+            <SocialLinks links={socialLinks} />
           </div>
 
           <div className="grid grid-cols-2 gap-6 sm:grid-cols-3">
@@ -56,14 +76,15 @@ export function Footer() {
           <div className="space-y-4">
             <div>
               <p className="mb-2.5 text-sm font-semibold">تواصل معنا</p>
-              <Link
-                href={companyUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-white/80 transition-colors hover:text-white sm:text-[13px]"
-              >
-                {companyUrl.replace(/^https?:\/\//, '')}
-              </Link>
+              {contactLines.length > 0 ? (
+                <ul className="space-y-1.5 text-xs text-white/80 sm:text-[13px]">
+                  {contactLines.map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-xs text-white/80 sm:text-[13px]">{siteName}</p>
+              )}
             </div>
             <div>
               <p className="mb-2.5 text-sm font-semibold">
@@ -79,16 +100,7 @@ export function Footer() {
         <Container className="flex flex-col gap-2 py-3 text-[11px] text-white/75 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1 text-center sm:text-start">
             <p>
-              © {copyrightYear}{' '}
-              <Link
-                href={companyUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="transition-colors hover:text-white"
-              >
-                {companyName}
-              </Link>
-              . {rightsReserved}
+              © {copyrightYear} {siteName}. {rightsReserved}
             </p>
             <p>
               <Link
@@ -99,6 +111,8 @@ export function Footer() {
               >
                 {creditLine}
               </Link>
+              {' · '}
+              {companyName}
             </p>
           </div>
           <ul className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 sm:justify-start">

@@ -5,7 +5,10 @@ import { ApiRequestError } from '@/lib/api/errors';
 import { resolveStepRedirect } from '@/features/add-property/actions';
 import { getListingDraftService } from '@/features/add-property/service';
 import {
-  preferredStepForStatus,
+  canAccessListingStep,
+  isPropertyEditable,
+  listingDetailHref,
+  preferredDestinationForStatus,
   resolveCheckoutAccess,
   stepHref,
 } from '@/features/add-property/lib/step-access';
@@ -51,22 +54,27 @@ export async function loadListingDraftForStep(
 
   if (!draft) notFound();
 
+  // Submitted / published / archived never reopen the wizard.
+  if (
+    !isPropertyEditable(draft.apiStatus) &&
+    draft.apiStatus !== 'PENDING_PAYMENT'
+  ) {
+    redirect(listingDetailHref(draft.id));
+  }
+
   if (step === 'checkout') {
     if (!resolveCheckoutAccess(draft)) {
-      const preferred = preferredStepForStatus(draft);
-      redirect(
-        preferred === 'checkout'
-          ? stepHref(draft.id, 'publish')
-          : preferred === 'publish'
-            ? stepHref(draft.id, 'publish')
-            : stepHref(draft.id, preferred),
-      );
+      redirect(preferredDestinationForStatus(draft));
     }
     return draft;
   }
 
   if (draft.apiStatus === 'PENDING_PAYMENT' && step !== 'publish') {
     redirect(stepHref(draft.id, 'checkout'));
+  }
+
+  if (!canAccessListingStep(draft, step)) {
+    redirect(preferredDestinationForStatus(draft));
   }
 
   const redirectTo = await resolveStepRedirect(draft, step);

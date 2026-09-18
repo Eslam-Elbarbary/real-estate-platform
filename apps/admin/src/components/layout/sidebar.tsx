@@ -7,32 +7,15 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   filterNavByPermissions,
+  groupNavItems,
+  isActiveNavPath,
   mainNav,
-  type NavItem,
 } from '@/config/navigation';
 import { routes } from '@/config/routes';
+import { siteConfig } from '@/config/site';
 import { logoutAction } from '@/features/auth/actions';
 import { formatRoleLabel } from '@/features/users/format';
 import { cn } from '@/lib/utils/cn';
-
-const NAV_GROUPS = [
-  {
-    title: 'MAIN',
-    hrefs: [routes.home],
-  },
-  {
-    title: 'MANAGEMENT',
-    hrefs: [routes.users.root, routes.roles.root, routes.properties.root, routes.leads.root],
-  },
-  {
-    title: 'BUSINESS',
-    hrefs: [routes.payments.root, routes.plans.root],
-  },
-  {
-    title: 'CATALOG',
-    hrefs: [routes.developers.root, routes.compounds.root],
-  },
-] as const;
 
 /** Display-only priority for picking a badge role; not used for authorization. */
 const ROLE_PRIORITY = [
@@ -43,23 +26,6 @@ const ROLE_PRIORITY = [
   'BROKER',
   'USER',
 ] as const;
-
-function isActivePath(pathname: string, href: string) {
-  if (href === '/') {
-    return pathname === '/';
-  }
-
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
-
-function groupNavItems(items: NavItem[]) {
-  return NAV_GROUPS.map((group) => ({
-    title: group.title,
-    items: group.hrefs
-      .map((href) => items.find((item) => item.href === href))
-      .filter((item): item is NavItem => Boolean(item)),
-  })).filter((group) => group.items.length > 0);
-}
 
 function getPrimaryRole(roles: string[]): string | null {
   for (const role of ROLE_PRIORITY) {
@@ -74,7 +40,7 @@ function getPrimaryRole(roles: string[]): string | null {
 function getInitials(name: string): string {
   const trimmed = name.trim();
   if (!trimmed) {
-    return 'A';
+    return siteConfig.logo.letter;
   }
 
   const parts = trimmed.split(/\s+/);
@@ -124,14 +90,16 @@ export function Sidebar({ roles, permissions, userName, userEmail }: SidebarProp
         <Link href="/" className="group block min-w-0">
           <div className="mb-2 flex items-center gap-2.5">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent-500/20 ring-1 ring-accent-500/40">
-              <span className="text-sm font-bold text-accent-500">M</span>
+              <span className="text-sm font-bold text-accent-500">
+                {siteConfig.logo.letter}
+              </span>
             </div>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-white transition-colors group-hover:text-accent-500">
-                Madar Home Properties
+                {siteConfig.productName}
               </p>
               <p className="truncate text-xs text-[var(--sidebar-muted)]">
-                Admin Dashboard
+                {siteConfig.name}
               </p>
             </div>
           </div>
@@ -141,13 +109,13 @@ export function Sidebar({ roles, permissions, userName, userEmail }: SidebarProp
       <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4" aria-label="القائمة الرئيسية">
         {groupedNav.map((group) => (
           <div key={group.title}>
-            <p className="mb-2 px-3 text-[0.65rem] font-semibold tracking-[0.14em] text-[var(--sidebar-muted)]">
+            <p className="mb-2 px-3 text-[0.65rem] font-semibold tracking-wide text-[var(--sidebar-muted)]">
               {group.title}
             </p>
             <div className="space-y-0.5">
               {group.items.map((item) => {
                 const Icon = item.icon;
-                const active = isActivePath(pathname, item.href);
+                const active = isActiveNavPath(pathname, item.href);
 
                 return (
                   <Link

@@ -2,6 +2,20 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNumber, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class UpdateLocationDto {
+  @ApiPropertyOptional({
+    description: 'Optional; validated against area hierarchy, not stored',
+  })
+  @IsOptional()
+  @IsString()
+  countryId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Optional; validated against area hierarchy, not stored',
+  })
+  @IsOptional()
+  @IsString()
+  cityId?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

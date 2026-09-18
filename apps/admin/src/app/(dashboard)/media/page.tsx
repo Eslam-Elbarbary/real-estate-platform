@@ -1,6 +1,7 @@
-import { redirect } from 'next/navigation';
-import { routes } from '@/config/routes';
-import { hasPermission } from '@/features/auth/permissions';
+import {
+  PagePermissionDenied,
+  hasPagePermission,
+} from '@/components/layout/page-permission-gate';
 import { getAdminSession } from '@/features/auth/service';
 import { MediaLibrary } from '@/features/media/components/media-library';
 import { getAdminMedia } from '@/features/media';
@@ -36,8 +37,8 @@ export default async function MediaPage({
   const session = await getAdminSession();
   const permissions = session?.user.permissions ?? [];
 
-  if (!hasPermission(permissions, 'media.view')) {
-    redirect(routes.forbidden);
+  if (!hasPagePermission(permissions, 'media.view')) {
+    return <PagePermissionDenied />;
   }
 
   const params = await searchParams;

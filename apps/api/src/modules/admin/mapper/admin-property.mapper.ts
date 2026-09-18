@@ -16,9 +16,11 @@ import {
   Plan,
   Property,
   PropertyImage,
+  PropertyLegalStatus,
   PropertyStatus,
   PropertyStatusHistory,
   PropertyType,
+  PropertyView,
   RentPeriod,
   Subscription,
   TransactionType,
@@ -275,6 +277,12 @@ export class AdminPropertyReviewDetailsDto {
   @ApiPropertyOptional({ type: PublicTypeRefDto, nullable: true })
   transactionType!: PublicTypeRefDto | null;
 
+  @ApiProperty({ type: [PublicTypeRefDto] })
+  propertyViews!: PublicTypeRefDto[];
+
+  @ApiPropertyOptional({ type: PublicTypeRefDto, nullable: true })
+  legalStatus!: PublicTypeRefDto | null;
+
   @ApiProperty({ type: PublicLocationSummaryDto })
   location!: PublicLocationSummaryDto;
 
@@ -356,6 +364,8 @@ export type AdminPropertyCardSource = Property & {
 };
 
 export type AdminPropertyDetailsSource = Omit<AdminPropertyCardSource, 'images'> & {
+  viewAssignments: Array<{ view: PropertyView }>;
+  legalStatus: PropertyLegalStatus | null;
   features: Array<{ feature: Feature }>;
   images: Array<PropertyImage & { mediaAsset: MediaAsset }>;
   subscriptions: Array<Subscription & { plan: Plan }>;
@@ -418,19 +428,41 @@ function toTypeRef(
   };
 }
 
+function toTypeRefList(
+  assignments: Array<{
+    view: { id: string; code: string; nameEn: string; nameAr: string | null };
+  }>,
+): PublicTypeRefDto[] {
+  return assignments
+    .map(({ view }) => ({
+      id: view.id,
+      code: view.code,
+      nameEn: view.nameEn,
+      nameAr: view.nameAr,
+    }))
+    .sort((a, b) => a.nameEn.localeCompare(b.nameEn));
+}
+
 function toLocationSummary(
   area: AreaWithCityCountry | null,
   district: District | null,
+  compound: Compound | null = null,
 ): PublicLocationSummaryDto {
   const country = area?.city.country ?? null;
   const city = area?.city ?? null;
-  const parts = [area?.nameEn, city?.nameEn].filter(Boolean);
+  const parts = [
+    compound?.nameEn,
+    district?.nameEn,
+    area?.nameEn,
+    city?.nameEn,
+  ].filter(Boolean);
 
   return {
     country: toNamedRef(country),
     city: toNamedRef(city),
     area: toNamedRef(area),
     district: toNamedRef(district),
+    compound: toNamedRef(compound),
     summary: parts.join(', '),
   };
 }
@@ -517,7 +549,7 @@ export function toAdminPropertyReviewCard(
     areaSqm: decimalToNumber(property.areaSqm),
     propertyType: toTypeRef(property.propertyType),
     transactionType: toTypeRef(property.transactionType),
-    location: toLocationSummary(property.area, property.district),
+    location: toLocationSummary(property.area, property.district, property.compound),
     compound: toNamedRef(property.compound),
     owner: toOwnerDto(property.owner),
     primaryImage: pickPrimaryImage(property.images),
@@ -588,7 +620,9 @@ export function toAdminPropertyReviewDetails(
     longitude: decimalToNumber(property.longitude),
     propertyType: toTypeRef(property.propertyType),
     transactionType: toTypeRef(property.transactionType),
-    location: toLocationSummary(property.area, property.district),
+    propertyViews: toTypeRefList(property.viewAssignments),
+    legalStatus: toTypeRef(property.legalStatus),
+    location: toLocationSummary(property.area, property.district, property.compound),
     compound: toNamedRef(property.compound),
     developer: toNamedRef(property.compound?.developer ?? null),
     viewCount: property.viewCount,

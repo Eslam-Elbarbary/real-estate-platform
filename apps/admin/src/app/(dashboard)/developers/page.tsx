@@ -1,3 +1,7 @@
+import {
+  PagePermissionDenied,
+  hasPagePermission,
+} from '@/components/layout/page-permission-gate';
 import { DevelopersList } from '@/features/developers/components/developers-list';
 import { getAdminDevelopers } from '@/features/developers';
 import { getAdminSession } from '@/features/auth/service';
@@ -23,18 +27,21 @@ export default async function DevelopersPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const session = await getAdminSession();
+  const roles = session?.user.roles ?? [];
+  const permissions = session?.user.permissions ?? [];
+
+  if (!hasPagePermission(permissions, 'developers.view')) {
+    return <PagePermissionDenied />;
+  }
+
   const params = await searchParams;
   const page = parsePositiveInt(params.page, 1);
   const limit = Math.min(parsePositiveInt(params.limit, 20), 100);
   const searchRaw = Array.isArray(params.search) ? params.search[0] : params.search;
   const search = searchRaw?.trim() ?? '';
 
-  const [result, session] = await Promise.all([
-    getAdminDevelopers({ page, limit, search }),
-    getAdminSession(),
-  ]);
-  const roles = session?.user.roles ?? [];
-  const permissions = session?.user.permissions ?? [];
+  const result = await getAdminDevelopers({ page, limit, search });
 
   return (
     <DevelopersList

@@ -24,8 +24,9 @@ dist/
 build/
 tmp/
 
-# prisma
+# prisma generated clients (custom output + legacy misplaced path)
 apps/api/prisma/generated/
+apps/api/generated/
 
 # turbo
 .turbo

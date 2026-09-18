@@ -7,6 +7,7 @@ import {
 import { MediaType, PaymentType, Prisma, PropertyStatus } from '@/prisma/generated/prisma-client';
 import { PrismaService } from '../../database/prisma.service';
 import { slugifyTitle } from '../properties/utils/slug.util';
+import { PropertyContactService } from '../properties/services/property-contact.service';
 import { AdminPropertiesService } from './admin-properties.service';
 import { CreateAdminPropertyDto } from './dto/create-admin-property.dto';
 import { AdminPropertyImageInputDto } from './dto/admin-property-image-input.dto';
@@ -21,6 +22,7 @@ export class AdminPropertyManagementService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly adminPropertiesService: AdminPropertiesService,
+    private readonly propertyContactService: PropertyContactService,
   ) {}
 
   async createProperty(
@@ -39,6 +41,13 @@ export class AdminPropertyManagementService {
 
     if (dto.compoundId) {
       await this.assertActiveCompound(dto.compoundId, dto.areaId);
+    }
+
+    const propertyViewIds = [...new Set(dto.propertyViewIds ?? [])];
+    await this.assertActivePropertyViews(propertyViewIds);
+
+    if (dto.legalStatusId) {
+      await this.assertActiveLegalStatus(dto.legalStatusId);
     }
 
     if (dto.referenceNumber?.trim()) {
@@ -70,6 +79,12 @@ export class AdminPropertyManagementService {
     const title = dto.title.trim();
     const slug = await this.ensureUniqueSlug(slugifyTitle(title));
     const now = new Date();
+    const asDraft = dto.publish === false;
+    const status = asDraft ? PropertyStatus.DRAFT : PropertyStatus.PUBLISHED;
+    const publishedAt = asDraft ? null : now;
+    const historyReason = asDraft
+      ? 'Created as draft by administrator'
+      : 'Created and published by administrator';
 
     const propertyId = await this.prisma.$transaction(async (tx) => {
       const property = await tx.property.create({
@@ -78,8 +93,8 @@ export class AdminPropertyManagementService {
           title,
           slug,
           description: dto.description?.trim() || null,
-          status: PropertyStatus.PUBLISHED,
-          publishedAt: now,
+          status,
+          publishedAt,
           propertyTypeId: dto.propertyTypeId,
           transactionTypeId: dto.transactionTypeId,
           price: dto.price,
@@ -100,6 +115,7 @@ export class AdminPropertyManagementService {
           areaId: dto.areaId,
           districtId: dto.districtId ?? null,
           compoundId: dto.compoundId ?? null,
+          legalStatusId: dto.legalStatusId ?? null,
           address: dto.address?.trim() || null,
           latitude: dto.latitude,
           longitude: dto.longitude,
@@ -111,6 +127,15 @@ export class AdminPropertyManagementService {
           data: featureIds.map((featureId) => ({
             propertyId: property.id,
             featureId,
+          })),
+        });
+      }
+
+      if (propertyViewIds.length > 0) {
+        await tx.propertyViewAssignment.createMany({
+          data: propertyViewIds.map((viewId) => ({
+            propertyId: property.id,
+            viewId,
           })),
         });
       }
@@ -131,9 +156,9 @@ export class AdminPropertyManagementService {
         data: {
           propertyId: property.id,
           fromStatus: null,
-          toStatus: PropertyStatus.PUBLISHED,
+          toStatus: status,
           changedById: adminId,
-          reason: 'Created and published by administrator',
+          reason: historyReason,
         },
       });
 
@@ -142,8 +167,14 @@ export class AdminPropertyManagementService {
 
     if (process.env.NODE_ENV !== 'production') {
       this.logger.debug(
-        `Created admin property id=${propertyId} status=PUBLISHED`,
+        `Created admin property id=${propertyId} status=${status}`,
       );
+    }
+
+    if (dto.contact) {
+      await this.propertyContactService.upsertForAdmin(propertyId, dto.contact);
+    } else if (!asDraft) {
+      await this.propertyContactService.ensureDefaultOwnerContact(propertyId);
     }
 
     return this.adminPropertiesService.getPropertyDetails(propertyId);
@@ -183,6 +214,14 @@ export class AdminPropertyManagementService {
 
     if (dto.compoundId) {
       await this.assertActiveCompound(dto.compoundId, nextAreaId);
+    }
+
+    if (dto.propertyViewIds !== undefined) {
+      await this.assertActivePropertyViews([...new Set(dto.propertyViewIds)]);
+    }
+
+    if (dto.legalStatusId) {
+      await this.assertActiveLegalStatus(dto.legalStatusId);
     }
 
     if (dto.referenceNumber !== undefined && dto.referenceNumber?.trim()) {
@@ -328,6 +367,12 @@ export class AdminPropertyManagementService {
             : { connect: { id: dto.compoundId } };
       }
 
+      if (dto.legalStatusId !== undefined) {
+        data.legalStatus = dto.legalStatusId
+          ? { connect: { id: dto.legalStatusId } }
+          : { disconnect: true };
+      }
+
       if (dto.address !== undefined) {
         data.address = dto.address?.trim() || null;
       }
@@ -355,6 +400,19 @@ export class AdminPropertyManagementService {
             data: featureIds.map((featureId) => ({
               propertyId,
               featureId,
+            })),
+          });
+        }
+      }
+
+      if (dto.propertyViewIds !== undefined) {
+        const propertyViewIds = [...new Set(dto.propertyViewIds)];
+        await tx.propertyViewAssignment.deleteMany({ where: { propertyId } });
+        if (propertyViewIds.length > 0) {
+          await tx.propertyViewAssignment.createMany({
+            data: propertyViewIds.map((viewId) => ({
+              propertyId,
+              viewId,
             })),
           });
         }
@@ -468,6 +526,34 @@ export class AdminPropertyManagementService {
       throw new BadRequestException(
         'Compound does not belong to the selected area',
       );
+    }
+  }
+
+  private async assertActivePropertyViews(
+    propertyViewIds: string[],
+  ): Promise<void> {
+    if (propertyViewIds.length === 0) {
+      return;
+    }
+
+    const views = await this.prisma.propertyView.findMany({
+      where: { id: { in: propertyViewIds }, isActive: true },
+      select: { id: true },
+    });
+
+    if (views.length !== propertyViewIds.length) {
+      throw new BadRequestException('One or more property view ids are invalid');
+    }
+  }
+
+  private async assertActiveLegalStatus(legalStatusId: string): Promise<void> {
+    const status = await this.prisma.propertyLegalStatus.findFirst({
+      where: { id: legalStatusId, isActive: true },
+      select: { id: true },
+    });
+
+    if (!status) {
+      throw new BadRequestException('Invalid legal status');
     }
   }
 

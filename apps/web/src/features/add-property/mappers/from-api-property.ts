@@ -2,29 +2,58 @@ import type { CatalogTypeDto } from '@/types/api/public-property';
 import type { MyPropertyDto, PropertyImageDto } from '@/types/api/my-property';
 import type { PropertyType, TransactionType } from '@/types';
 import type { LocationOption } from '@/features/locations';
+import { mapFinishingType } from '@/features/properties/mappers/to-property-card';
 import type {
+  ListingContactDraft,
   ListingDraft,
   ListingImageDraft,
   ListingPricingDraft,
 } from '../types';
-
-const PROPERTY_TYPES = new Set<PropertyType>([
-  'apartment',
-  'villa',
-  'townhouse',
-  'duplex',
-  'penthouse',
-  'studio',
-  'chalet',
-  'office',
-  'shop',
-  'land',
-]);
+import { emptyPricingDraft } from '../types';
 
 function emptyDescription() {
   return {
     ar: { title: '', description: '', address: '' },
     en: { title: '', description: '', address: '' },
+  };
+}
+
+export function emptyContactDraft(): ListingContactDraft {
+  return {
+    contactSource: 'OWNER',
+    contactType: 'OWNER',
+    contactName: '',
+    phone: '',
+    whatsapp: '',
+    email: '',
+  };
+}
+
+export function mapContactDtoToDraft(dto: {
+  source: 'OWNER' | 'CUSTOM';
+  contactType: 'OWNER' | 'AGENT' | 'COMPANY';
+  name: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  email: string | null;
+}): ListingContactDraft {
+  if (dto.source === 'CUSTOM') {
+    return {
+      contactSource: 'CUSTOM',
+      contactType: dto.contactType,
+      contactName: dto.name?.trim() || '',
+      phone: dto.phone?.trim() || '',
+      whatsapp: dto.whatsapp?.trim() || '',
+      email: dto.email?.trim() || '',
+    };
+  }
+  return {
+    contactSource: 'OWNER',
+    contactType: 'OWNER',
+    contactName: dto.name?.trim() || '',
+    phone: dto.phone?.trim() || '',
+    whatsapp: dto.whatsapp?.trim() || dto.phone?.trim() || '',
+    email: dto.email?.trim() || '',
   };
 }
 
@@ -35,8 +64,7 @@ export function resolvePropertyTypeCode(
   if (!propertyTypeId) return null;
   const match = propertyTypes.find((item) => item.id === propertyTypeId);
   if (!match) return null;
-  const code = match.code.toLowerCase() as PropertyType;
-  return PROPERTY_TYPES.has(code) ? code : null;
+  return match.code.toLowerCase();
 }
 
 export function resolveTransactionCode(
@@ -60,7 +88,16 @@ export function resolveCatalogIdByCode(
 function resolveLocationFromProperty(
   dto: MyPropertyDto,
   locations: LocationOption[],
-): { locationId?: string; locationLabel?: string } {
+): {
+  locationId?: string;
+  locationLabel?: string;
+  countryId?: string;
+  cityId?: string;
+} {
+  const countryId = dto.location?.country?.id;
+  const cityId = dto.location?.city?.id;
+  const summary = dto.location?.summary?.trim();
+
   if (dto.districtId) {
     const district = locations.find(
       (item) => item.districtId === dto.districtId || item.id === dto.districtId,
@@ -68,7 +105,9 @@ function resolveLocationFromProperty(
     if (district) {
       return {
         locationId: district.id,
-        locationLabel: district.breadcrumb || district.name,
+        locationLabel: summary || district.breadcrumb || district.name,
+        countryId,
+        cityId,
       };
     }
   }
@@ -79,14 +118,19 @@ function resolveLocationFromProperty(
     if (area) {
       return {
         locationId: area.id,
-        locationLabel: area.breadcrumb || area.name,
+        locationLabel: summary || area.breadcrumb || area.name,
+        countryId,
+        cityId,
       };
     }
   }
-  if (dto.address?.trim()) {
-    return { locationLabel: dto.address.trim() };
+  if (summary) {
+    return { locationLabel: summary, countryId, cityId };
   }
-  return {};
+  if (dto.address?.trim()) {
+    return { locationLabel: dto.address.trim(), countryId, cityId };
+  }
+  return { countryId, cityId };
 }
 
 export function mapPropertyImagesToMedia(
@@ -107,19 +151,33 @@ function mapPricingFromApi(
   dto: MyPropertyDto,
   transaction: TransactionType | null,
 ): ListingPricingDraft {
+  const base = emptyPricingDraft();
   if (dto.price == null || !Number.isFinite(dto.price)) {
-    return { mode: null };
-  }
-  if (transaction === 'rent') {
     return {
-      mode: 'rent',
-      price: dto.price,
-      pricingPeriod: 'monthly',
+      ...base,
+      currency: dto.currency?.trim() || 'EGP',
     };
   }
+
+  if (transaction === 'rent') {
+    return {
+      ...base,
+      price: dto.price,
+      currency: dto.currency?.trim() || 'EGP',
+      rentPeriod: dto.rentPeriod ?? 'MONTHLY',
+      paymentType: '',
+    };
+  }
+
   return {
-    mode: 'owner_cash',
+    ...base,
     price: dto.price,
+    currency: dto.currency?.trim() || 'EGP',
+    paymentType: dto.paymentType ?? '',
+    downPayment: dto.downPayment ?? undefined,
+    installmentYears: dto.installmentYears ?? undefined,
+    monthlyInstallment: dto.monthlyInstallment ?? undefined,
+    rentPeriod: '',
   };
 }
 
@@ -171,6 +229,10 @@ export function mapMyPropertyToListingDraft(
     transactionTypeId: dto.transactionTypeId ?? undefined,
     areaId: dto.areaId ?? undefined,
     districtId: dto.districtId ?? undefined,
+    compoundId: dto.compoundId ?? undefined,
+    countryId: location.countryId,
+    cityId: location.cityId,
+    address: dto.address?.trim() || undefined,
     locationId: location.locationId,
     locationLabel: location.locationLabel,
     latitude: dto.latitude ?? undefined,
@@ -182,12 +244,15 @@ export function mapMyPropertyToListingDraft(
       floor: dto.floor ?? undefined,
       buildOrDeliveryYear: dto.yearBuilt ?? undefined,
       furnished: dto.furnished ?? undefined,
+      finishing: mapFinishingType(dto.finishingType),
       rentPeriod: dto.rentPeriod ?? undefined,
-      views: [],
+      propertyViewIds: dto.propertyViews?.map((view) => view.id) ?? undefined,
+      legalStatusId: dto.legalStatusId ?? dto.legalStatus?.id ?? undefined,
       amenities: featureIds,
     },
     pricing: mapPricingFromApi(dto, transaction),
     description,
+    contact: emptyContactDraft(),
     media: { images: mapPropertyImagesToMedia(mediaImages) },
     currentStep: 'basic',
     status: mapLegacyDraftStatus(dto.status),

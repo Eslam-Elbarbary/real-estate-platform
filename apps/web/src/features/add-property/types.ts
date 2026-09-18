@@ -6,7 +6,9 @@ export type ListingDraftStep =
   | 'details'
   | 'price'
   | 'description'
+  | 'contact'
   | 'media'
+  | 'preview'
   | 'publish';
 
 /** Legacy cookie status — prefer `apiStatus` from the backend. */
@@ -21,27 +23,6 @@ export type ListingPaymentMode =
   | 'owner_cash'
   | 'owner_installments';
 
-export type ListingRegistrationStatus =
-  | 'registered'
-  | 'registerable'
-  | 'urban_communities'
-  | 'unsure';
-
-export type ListingViewType =
-  | 'main_street'
-  | 'side_street'
-  | 'corner'
-  | 'rear'
-  | 'garden'
-  | 'nile'
-  | 'lake'
-  | 'pool'
-  | 'sea'
-  | 'plaza'
-  | 'golf'
-  | 'club'
-  | 'other';
-
 /** @deprecated Prefer catalog feature UUIDs in amenities. */
 export type ListingAmenityId = string;
 
@@ -53,51 +34,42 @@ export interface ListingDetailsDraft {
   buildOrDeliveryYear?: number;
   furnished?: boolean;
   rentPeriod?: 'DAILY' | 'MONTHLY' | 'YEARLY';
-  views: ListingViewType[];
-  finishing?: FinishingType | 'extra_super_lux';
-  registrationStatus?: ListingRegistrationStatus;
+  finishing?: FinishingType;
+  /** PropertyView catalog UUIDs (PATCH /properties/me/:id/details). */
+  propertyViewIds?: string[];
+  /** PropertyLegalStatus catalog UUID (same details PATCH). */
+  legalStatusId?: string;
   mortgageEligible?: boolean;
   /** Selected Feature catalog UUIDs (PUT /properties/me/:id/features). */
   amenities: string[];
 }
 
-export interface DeveloperPricing {
-  mode: 'developer';
-  cashPrice?: number;
-  installmentTotalPrice?: number;
-  downPayment: {
-    mode: 'egp' | 'percent';
-    value?: number;
+export type ApiPaymentType = 'CASH' | 'INSTALLMENT' | 'CASH_OR_INSTALLMENT';
+export type ApiRentPeriodCode = 'DAILY' | 'MONTHLY' | 'YEARLY';
+
+/**
+ * Pricing aligned with Property payment columns / admin wizard.
+ * Survives via API PATCH /properties/me/:id (not cookies).
+ */
+export interface ListingPricingDraft {
+  price?: number;
+  currency: string;
+  /** Sale only — maps to backend paymentType */
+  paymentType?: ApiPaymentType | '';
+  downPayment?: number;
+  installmentYears?: number;
+  monthlyInstallment?: number;
+  /** Rent only */
+  rentPeriod?: ApiRentPeriodCode | '';
+}
+
+export function emptyPricingDraft(): ListingPricingDraft {
+  return {
+    currency: 'EGP',
+    paymentType: '',
+    rentPeriod: '',
   };
-  installmentDurationMonths?: number;
 }
-
-export interface OwnerCashPricing {
-  mode: 'owner_cash';
-  price: number;
-}
-
-export interface OwnerInstallmentPricing {
-  mode: 'owner_installments';
-  contractPrice: number;
-  overPrice?: number;
-  maintenanceDeposit?: number;
-  totalPaid: number;
-  remainingInstallmentMonths: number;
-}
-
-export interface RentPricing {
-  mode: 'rent';
-  price: number;
-  pricingPeriod: 'monthly' | 'daily' | 'yearly';
-}
-
-export type ListingPricingDraft =
-  | DeveloperPricing
-  | OwnerCashPricing
-  | OwnerInstallmentPricing
-  | RentPricing
-  | { mode: null };
 
 export interface LocalizedListingDescription {
   title: string;
@@ -124,6 +96,18 @@ export interface ListingMediaDraft {
   videoUrl?: string;
 }
 
+export type ListingContactSource = 'OWNER' | 'CUSTOM';
+export type ListingContactType = 'OWNER' | 'AGENT' | 'COMPANY';
+
+export interface ListingContactDraft {
+  contactSource: ListingContactSource;
+  contactType: ListingContactType;
+  contactName: string;
+  phone: string;
+  whatsapp: string;
+  email: string;
+}
+
 export interface ListingDraft {
   id: string;
   ownerUserId: string;
@@ -136,6 +120,10 @@ export interface ListingDraft {
   transactionTypeId?: string;
   areaId?: string;
   districtId?: string;
+  compoundId?: string;
+  countryId?: string;
+  cityId?: string;
+  address?: string;
   locationId?: string;
   locationLabel?: string;
   latitude?: number;
@@ -143,6 +131,7 @@ export interface ListingDraft {
   details: ListingDetailsDraft;
   pricing: ListingPricingDraft;
   description: ListingDescriptionDraft;
+  contact: ListingContactDraft;
   media: ListingMediaDraft;
   currentStep: ListingDraftStep;
   /** @deprecated Prefer apiStatus */

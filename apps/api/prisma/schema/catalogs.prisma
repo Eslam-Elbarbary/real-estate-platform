@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-// Catalogs: property types, transaction types & features
+// Catalogs: property types, transaction types, features, views & legal status
 // -----------------------------------------------------------------------------
 
 model PropertyType {
@@ -47,6 +47,34 @@ model Feature {
   @@map("features")
 }
 
+model PropertyView {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  nameEn    String
+  nameAr    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignments PropertyViewAssignment[]
+
+  @@map("property_views")
+}
+
+model PropertyLegalStatus {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  nameEn    String
+  nameAr    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  properties Property[]
+
+  @@map("property_legal_statuses")
+}
+
 model PropertyFeature {
   propertyId String
   featureId  String
@@ -59,4 +87,17 @@ model PropertyFeature {
   @@id([propertyId, featureId])
   @@index([featureId])
   @@map("property_features")
+}
+
+model PropertyViewAssignment {
+  propertyId String
+  viewId     String
+  createdAt  DateTime @default(now())
+
+  property Property     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  view     PropertyView @relation(fields: [viewId], references: [id], onDelete: Cascade)
+
+  @@id([propertyId, viewId])
+  @@index([viewId])
+  @@map("property_view_assignments")
 }

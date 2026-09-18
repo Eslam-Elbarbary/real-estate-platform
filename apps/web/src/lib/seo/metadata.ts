@@ -1,5 +1,12 @@
 import type { Metadata } from 'next';
 import { siteConfig } from '@/config/site';
+import type { PublicPlatformSettings } from '@/features/settings';
+import {
+  resolveMetaDescription,
+  resolveMetaTitle,
+  resolveOgImage,
+  resolveSiteName,
+} from '@/features/settings';
 
 export interface PageSeoInput {
   title: string;
@@ -10,6 +17,7 @@ export interface PageSeoInput {
   type?: 'website' | 'article';
   /** When true, bypasses the root title template. */
   absoluteTitle?: boolean;
+  settings?: PublicPlatformSettings;
 }
 
 function absoluteUrl(path = '/') {
@@ -21,17 +29,21 @@ export function createPageMetadata({
   title,
   description,
   path = '/',
-  image = siteConfig.defaultOgImage,
+  image,
   noIndex = false,
   type = 'website',
   absoluteTitle = false,
+  settings,
 }: PageSeoInput): Metadata {
+  const siteName = settings ? resolveSiteName(settings) : siteConfig.name;
+  const defaultImage = settings ? resolveOgImage(settings) : siteConfig.defaultOgImage;
+  const resolvedImage = image ?? defaultImage;
   const url = absoluteUrl(path);
-  const imageUrl = image.startsWith('http') ? image : absoluteUrl(image);
+  const imageUrl = resolvedImage.startsWith('http')
+    ? resolvedImage
+    : absoluteUrl(resolvedImage);
   const displayTitle =
-    absoluteTitle || title === siteConfig.name
-      ? title
-      : `${title} | ${siteConfig.name}`;
+    absoluteTitle || title === siteName ? title : `${title} | ${siteName}`;
 
   return {
     title: absoluteTitle ? { absolute: title } : title,
@@ -53,7 +65,7 @@ export function createPageMetadata({
       type,
       locale: siteConfig.locale,
       url,
-      siteName: siteConfig.name,
+      siteName,
       title: displayTitle,
       description,
       images: [
@@ -72,14 +84,29 @@ export function createPageMetadata({
   };
 }
 
-export function createRootMetadata(): Metadata {
+export function createRootMetadata(
+  settings?: PublicPlatformSettings,
+): Metadata {
+  const siteName = settings ? resolveSiteName(settings) : siteConfig.name;
+  const title = settings ? resolveMetaTitle(settings) : siteConfig.name;
+  const description = settings
+    ? resolveMetaDescription(settings)
+    : siteConfig.description;
+  const ogImage = settings ? resolveOgImage(settings) : siteConfig.defaultOgImage;
+  const imageUrl = ogImage.startsWith('http') ? ogImage : absoluteUrl(ogImage);
+
   return {
     metadataBase: new URL(siteConfig.url),
     title: {
-      default: siteConfig.name,
-      template: `%s | ${siteConfig.name}`,
+      default: title,
+      template: `%s | ${siteName}`,
     },
-    description: siteConfig.description,
+    description,
+    icons: settings?.faviconUrl
+      ? {
+          icon: settings.faviconUrl,
+        }
+      : undefined,
     alternates: {
       canonical: siteConfig.url,
     },
@@ -87,14 +114,21 @@ export function createRootMetadata(): Metadata {
       type: 'website',
       locale: siteConfig.locale,
       url: siteConfig.url,
-      siteName: siteConfig.name,
-      title: siteConfig.name,
-      description: siteConfig.description,
+      siteName,
+      title,
+      description,
+      images: [
+        {
+          url: imageUrl,
+          alt: siteName,
+        },
+      ],
     },
     twitter: {
       card: 'summary_large_image',
-      title: siteConfig.name,
-      description: siteConfig.description,
+      title,
+      description,
+      images: [imageUrl],
     },
   };
 }

@@ -39,6 +39,7 @@ export interface PublicLocationSummary {
   city: PublicNamedRef | null;
   area: PublicNamedRef | null;
   district: PublicNamedRef | null;
+  compound: PublicNamedRef | null;
   summary: string;
 }
 
@@ -202,6 +203,8 @@ export interface AdminPropertyDetails {
   longitude: number | null;
   propertyType: PublicTypeRef | null;
   transactionType: PublicTypeRef | null;
+  propertyViews: PublicTypeRef[];
+  legalStatus: PublicTypeRef | null;
   location: PublicLocationSummary;
   compound: PublicNamedRef | null;
   developer: PublicNamedRef | null;
@@ -249,10 +252,28 @@ export interface CatalogFeature {
   category: string | null;
 }
 
+/** Matches public catalogs API property view item. */
+export interface CatalogPropertyView {
+  id: string;
+  code: string;
+  nameEn: string;
+  nameAr: string | null;
+}
+
+/** Matches public catalogs API legal status item. */
+export interface CatalogLegalStatus {
+  id: string;
+  code: string;
+  nameEn: string;
+  nameAr: string | null;
+}
+
 export interface PropertyFormCatalogs {
   propertyTypes: CatalogPropertyType[];
   transactionTypes: CatalogTransactionType[];
   features: CatalogFeature[];
+  propertyViews: CatalogPropertyView[];
+  legalStatuses: CatalogLegalStatus[];
 }
 
 export interface PropertyImageInput {
@@ -299,11 +320,15 @@ export interface CreatePropertyInput {
   areaId: string;
   districtId?: string;
   compoundId?: string;
+  propertyViewIds?: string[];
+  legalStatusId?: string | null;
   address?: string;
   latitude?: number;
   longitude?: number;
   featureIds?: string[];
   images?: PropertyImageInput[];
+  /** When false, create as DRAFT. When true/omitted, create as PUBLISHED. */
+  publish?: boolean;
 }
 
 export interface UpdatePropertyInput {
@@ -331,6 +356,8 @@ export interface UpdatePropertyInput {
   areaId?: string;
   districtId?: string | null;
   compoundId?: string | null;
+  propertyViewIds?: string[];
+  legalStatusId?: string | null;
   address?: string | null;
   latitude?: number | null;
   longitude?: number | null;

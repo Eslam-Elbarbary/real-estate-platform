@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { MediaType, Property } from '@prisma/client';
+import { MediaType, Property } from '@/prisma/generated/prisma-client';
 import { PrismaService } from '../../database/prisma.service';
 import { MediaService } from '../media/media.service';
 import { ReorderMediaDto } from '../properties/dto/reorder-media.dto';

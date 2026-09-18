@@ -23,7 +23,7 @@ const seedProperties: Property[] = [
     "finishingType": "semi_finished",
     "paymentType": "installment",
     "deliveryYear": 2025,
-    "viewType": "حديقة",
+    "viewTypes": ["حديقة"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -230,7 +230,7 @@ const seedProperties: Property[] = [
     "installmentYears": 6,
     "monthlyInstallment": 35938,
     "deliveryYear": 2025,
-    "viewType": "شارع رئيسي",
+    "viewTypes": ["شارع رئيسي"],
     "gardenArea": 50,
     "location": {
       "countrySlug": "egypt",
@@ -404,7 +404,7 @@ const seedProperties: Property[] = [
     "installmentYears": 7,
     "monthlyInstallment": 31875,
     "deliveryYear": 2026,
-    "viewType": "مفتوح",
+    "viewTypes": ["مفتوح"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -581,7 +581,7 @@ const seedProperties: Property[] = [
     "finishingType": "semi_finished",
     "paymentType": "cash",
     "deliveryYear": 2027,
-    "viewType": "بحيرة",
+    "viewTypes": ["بحيرة"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -718,7 +718,7 @@ const seedProperties: Property[] = [
     "installmentYears": 9,
     "monthlyInstallment": 29380,
     "deliveryYear": 2024,
-    "viewType": "حمام سباحة",
+    "viewTypes": ["حمام سباحة"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -828,7 +828,7 @@ const seedProperties: Property[] = [
     "installmentYears": 10,
     "monthlyInstallment": 27113,
     "deliveryYear": 2025,
-    "viewType": "نادي",
+    "viewTypes": ["نادي"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -994,7 +994,7 @@ const seedProperties: Property[] = [
     "finishingType": "super_lux",
     "paymentType": "cash",
     "deliveryYear": 2026,
-    "viewType": "حديقة",
+    "viewTypes": ["حديقة"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -1171,7 +1171,7 @@ const seedProperties: Property[] = [
     "installmentYears": 6,
     "monthlyInstallment": 46278,
     "deliveryYear": 2027,
-    "viewType": "شارع رئيسي",
+    "viewTypes": ["شارع رئيسي"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -1350,7 +1350,7 @@ const seedProperties: Property[] = [
     "installmentYears": 7,
     "monthlyInstallment": 46143,
     "deliveryYear": 2024,
-    "viewType": "مفتوح",
+    "viewTypes": ["مفتوح"],
     "gardenArea": 70,
     "location": {
       "countrySlug": "egypt",
@@ -1483,7 +1483,7 @@ const seedProperties: Property[] = [
     "finishingType": "lux",
     "paymentType": "cash",
     "deliveryYear": 2025,
-    "viewType": "بحيرة",
+    "viewTypes": ["بحيرة"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -1591,7 +1591,7 @@ const seedProperties: Property[] = [
     "installmentYears": 9,
     "monthlyInstallment": 36440,
     "deliveryYear": 2026,
-    "viewType": "حمام سباحة",
+    "viewTypes": ["حمام سباحة"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -1758,7 +1758,7 @@ const seedProperties: Property[] = [
     "installmentYears": 10,
     "monthlyInstallment": 32700,
     "deliveryYear": 2027,
-    "viewType": "نادي",
+    "viewTypes": ["نادي"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -1930,7 +1930,7 @@ const seedProperties: Property[] = [
     "finishingType": "finished",
     "paymentType": "cash",
     "deliveryYear": 2024,
-    "viewType": "حديقة",
+    "viewTypes": ["حديقة"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -2113,7 +2113,7 @@ const seedProperties: Property[] = [
     "installmentYears": 6,
     "monthlyInstallment": 63688,
     "deliveryYear": 2025,
-    "viewType": "شارع رئيسي",
+    "viewTypes": ["شارع رئيسي"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -2253,7 +2253,7 @@ const seedProperties: Property[] = [
     "installmentYears": 7,
     "monthlyInstallment": 54339,
     "deliveryYear": 2026,
-    "viewType": "مفتوح",
+    "viewTypes": ["مفتوح"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -2356,7 +2356,7 @@ const seedProperties: Property[] = [
     "finishingType": "semi_finished",
     "paymentType": "cash",
     "deliveryYear": 2027,
-    "viewType": "بحيرة",
+    "viewTypes": ["بحيرة"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -2521,7 +2521,7 @@ const seedProperties: Property[] = [
     "installmentYears": 9,
     "monthlyInstallment": 48907,
     "deliveryYear": 2024,
-    "viewType": "حمام سباحة",
+    "viewTypes": ["حمام سباحة"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -2694,7 +2694,7 @@ const seedProperties: Property[] = [
     "installmentYears": 10,
     "monthlyInstallment": 43763,
     "deliveryYear": 2025,
-    "viewType": "نادي",
+    "viewTypes": ["نادي"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -2872,7 +2872,7 @@ const seedProperties: Property[] = [
     "finishingType": "super_lux",
     "paymentType": "cash",
     "deliveryYear": 2026,
-    "viewType": "حديقة",
+    "viewTypes": ["حديقة"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -3010,7 +3010,7 @@ const seedProperties: Property[] = [
     "installmentYears": 6,
     "monthlyInstallment": 70944,
     "deliveryYear": 2027,
-    "viewType": "شارع رئيسي",
+    "viewTypes": ["شارع رئيسي"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -3121,7 +3121,7 @@ const seedProperties: Property[] = [
     "installmentYears": 7,
     "monthlyInstallment": 71250,
     "deliveryYear": 2024,
-    "viewType": "مفتوح",
+    "viewTypes": ["مفتوح"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -3288,7 +3288,7 @@ const seedProperties: Property[] = [
     "finishingType": "lux",
     "paymentType": "cash",
     "deliveryYear": 2025,
-    "viewType": "بحيرة",
+    "viewTypes": ["بحيرة"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -3459,7 +3459,7 @@ const seedProperties: Property[] = [
     "installmentYears": 9,
     "monthlyInstallment": 53912,
     "deliveryYear": 2026,
-    "viewType": "حمام سباحة",
+    "viewTypes": ["حمام سباحة"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -3638,7 +3638,7 @@ const seedProperties: Property[] = [
     "installmentYears": 10,
     "monthlyInstallment": 47500,
     "deliveryYear": 2027,
-    "viewType": "نادي",
+    "viewTypes": ["نادي"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -3771,7 +3771,7 @@ const seedProperties: Property[] = [
     "finishingType": "finished",
     "paymentType": "cash",
     "deliveryYear": 2024,
-    "viewType": "حديقة",
+    "viewTypes": ["حديقة"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -3880,7 +3880,7 @@ const seedProperties: Property[] = [
     "installmentYears": 6,
     "monthlyInstallment": 91438,
     "deliveryYear": 2025,
-    "viewType": "شارع رئيسي",
+    "viewTypes": ["شارع رئيسي"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -4048,7 +4048,7 @@ const seedProperties: Property[] = [
     "installmentYears": 7,
     "monthlyInstallment": 76804,
     "deliveryYear": 2026,
-    "viewType": "مفتوح",
+    "viewTypes": ["مفتوح"],
     "gardenArea": 50,
     "location": {
       "countrySlug": "egypt",
@@ -4222,7 +4222,7 @@ const seedProperties: Property[] = [
     "finishingType": "semi_finished",
     "paymentType": "cash",
     "deliveryYear": 2027,
-    "viewType": "بحيرة",
+    "viewTypes": ["بحيرة"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -4406,7 +4406,7 @@ const seedProperties: Property[] = [
     "installmentYears": 9,
     "monthlyInstallment": 136343,
     "deliveryYear": 2024,
-    "viewType": "حمام سباحة",
+    "viewTypes": ["حمام سباحة"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -4540,7 +4540,7 @@ const seedProperties: Property[] = [
     "installmentYears": 10,
     "monthlyInstallment": 73500,
     "deliveryYear": 2025,
-    "viewType": "نادي",
+    "viewTypes": ["نادي"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -4644,7 +4644,7 @@ const seedProperties: Property[] = [
     "finishingType": "super_lux",
     "paymentType": "cash",
     "deliveryYear": 2026,
-    "viewType": "حديقة",
+    "viewTypes": ["حديقة"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -4808,7 +4808,7 @@ const seedProperties: Property[] = [
     "finishingType": "semi_finished",
     "paymentType": "cash",
     "deliveryYear": 2027,
-    "viewType": "شارع رئيسي",
+    "viewTypes": ["شارع رئيسي"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -4978,7 +4978,7 @@ const seedProperties: Property[] = [
     "finishingType": "finished",
     "paymentType": "cash",
     "deliveryYear": 2024,
-    "viewType": "مفتوح",
+    "viewTypes": ["مفتوح"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -5157,7 +5157,7 @@ const seedProperties: Property[] = [
     "finishingType": "lux",
     "paymentType": "cash",
     "deliveryYear": 2025,
-    "viewType": "بحيرة",
+    "viewTypes": ["بحيرة"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -5296,7 +5296,7 @@ const seedProperties: Property[] = [
     "installmentYears": 9,
     "monthlyInstallment": 56667,
     "deliveryYear": 2026,
-    "viewType": "حمام سباحة",
+    "viewTypes": ["حمام سباحة"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -5408,7 +5408,7 @@ const seedProperties: Property[] = [
     "installmentYears": 10,
     "monthlyInstallment": 59333,
     "deliveryYear": 2027,
-    "viewType": "نادي",
+    "viewTypes": ["نادي"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -5568,7 +5568,7 @@ const seedProperties: Property[] = [
     "finishingType": "finished",
     "paymentType": "cash",
     "deliveryYear": 2024,
-    "viewType": "حديقة",
+    "viewTypes": ["حديقة"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -5740,7 +5740,7 @@ const seedProperties: Property[] = [
     "installmentYears": 6,
     "monthlyInstallment": 147500,
     "deliveryYear": 2025,
-    "viewType": "شارع رئيسي",
+    "viewTypes": ["شارع رئيسي"],
     "gardenArea": 60,
     "location": {
       "countrySlug": "egypt",
@@ -5921,7 +5921,7 @@ const seedProperties: Property[] = [
     "installmentYears": 7,
     "monthlyInstallment": 28333,
     "deliveryYear": 2026,
-    "viewType": "مفتوح",
+    "viewTypes": ["مفتوح"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",
@@ -6056,7 +6056,7 @@ const seedProperties: Property[] = [
     "finishingType": "semi_finished",
     "paymentType": "cash",
     "deliveryYear": 2027,
-    "viewType": "بحيرة",
+    "viewTypes": ["بحيرة"],
     "location": {
       "countrySlug": "egypt",
       "countryName": "مصر",

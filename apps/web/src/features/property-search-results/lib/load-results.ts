@@ -6,6 +6,8 @@ import {
   getSearchSubtypeCounts,
   searchProperties,
 } from '@/features/properties';
+import { fetchPropertyTypes } from '@/features/properties/api/catalogs';
+import { toCatalogPropertyTypeOptions } from '@/features/properties/lib/property-type-options';
 import { ApiRequestError } from '@/lib/api/errors';
 import type { PropertySearchFilters, PropertySearchResult } from '@/types';
 import {
@@ -34,6 +36,7 @@ export interface LoadedSearchResults {
   locations: LocationOption[];
   selectedLocation: LocationOption | null;
   subtypeCounts: Record<string, number>;
+  propertyTypeOptions: ReturnType<typeof toCatalogPropertyTypeOptions>;
   canonicalPath: string;
   metadataTitle: string;
   metadataDescription: string;
@@ -87,21 +90,24 @@ export async function loadSearchResults(input: {
   let result: PropertySearchResult = EMPTY_RESULT;
   let locations: LocationOption[] = [];
   let subtypeCounts: Record<string, number> = {};
+  let propertyTypeOptions: ReturnType<typeof toCatalogPropertyTypeOptions> = [];
   let favoritePropertyIds: string[] = [];
   let errorMessage: string | undefined;
 
   try {
-    const [searchResult, locationOptions, counts, favoriteIds] =
+    const [searchResult, locationOptions, counts, favoriteIds, propertyTypes] =
       await Promise.all([
         searchProperties(filters),
         getSearchLocationOptions(),
         getSearchSubtypeCounts(filters),
         getFavoritesService().listPropertyIdsIfAuthenticated(),
+        fetchPropertyTypes(),
       ]);
     result = searchResult;
     locations = locationOptions;
     subtypeCounts = counts;
     favoritePropertyIds = favoriteIds;
+    propertyTypeOptions = toCatalogPropertyTypeOptions(propertyTypes);
   } catch (error) {
     errorMessage =
       error instanceof ApiRequestError
@@ -114,6 +120,14 @@ export async function loadSearchResults(input: {
       locations = await getSearchLocationOptions();
     } catch {
       locations = [];
+    }
+
+    try {
+      propertyTypeOptions = toCatalogPropertyTypeOptions(
+        await fetchPropertyTypes(),
+      );
+    } catch {
+      propertyTypeOptions = [];
     }
 
     favoritePropertyIds =
@@ -142,6 +156,7 @@ export async function loadSearchResults(input: {
     locations,
     selectedLocation,
     subtypeCounts,
+    propertyTypeOptions,
     canonicalPath,
     metadataTitle: getResultsMetadataTitle(filters),
     metadataDescription: getResultsMetadataDescription(filters, result.total),

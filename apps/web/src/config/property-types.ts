@@ -5,9 +5,13 @@ import { routes } from '@/config/routes';
 export interface PropertyTypeOption {
   value: PropertyType;
   label: string;
-  group: 'residential' | 'commercial' | 'land';
+  group?: 'residential' | 'commercial' | 'land';
 }
 
+/**
+ * Static fallback labels only — prefer catalog API options for dropdowns.
+ * @deprecated Prefer `toCatalogPropertyTypeOptions` / live catalog fetch.
+ */
 export const propertyTypeOptions: PropertyTypeOption[] = [
   { value: 'apartment', label: 'شقة', group: 'residential' },
   { value: 'villa', label: 'فيلا', group: 'residential' },
@@ -21,12 +25,12 @@ export const propertyTypeOptions: PropertyTypeOption[] = [
   { value: 'land', label: 'أرض', group: 'land' },
 ];
 
-export const propertyTypeLabelMap: Record<PropertyType, string> = Object.fromEntries(
+const propertyTypeLabelMap: Record<string, string> = Object.fromEntries(
   propertyTypeOptions.map((option) => [option.value, option.label]),
-) as Record<PropertyType, string>;
+);
 
 export function getPropertyTypeLabel(type: PropertyType): string {
-  return propertyTypeLabelMap[type];
+  return propertyTypeLabelMap[type] ?? type;
 }
 
 export type SearchMode = TransactionType | 'compounds';

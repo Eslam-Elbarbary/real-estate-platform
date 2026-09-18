@@ -469,7 +469,7 @@ function buildProperty(t, i) {
           monthlyInstallment,
         }),
     deliveryYear: 2024 + (i % 4),
-    viewType: viewTypes[i % viewTypes.length],
+    viewTypes: [viewTypes[i % viewTypes.length]],
     ...(features.some((f) => f.includes('حديقة'))
       ? { gardenArea: 40 + (i % 5) * 10 }
       : {}),
@@ -557,7 +557,7 @@ function enrichVisualQaProperty(property) {
     installmentYears,
     monthlyInstallment,
     deliveryYear: 2025,
-    viewType: 'حديقة',
+    viewTypes: ['حديقة'],
     gardenArea: 70,
     finishingType: 'semi_finished',
     images: buildImages(1, property.title).concat(

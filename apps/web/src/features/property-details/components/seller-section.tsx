@@ -2,9 +2,7 @@ import Image from 'next/image';
 import { Building2, Star } from 'lucide-react';
 import { uiLabels } from '@/config/labels';
 import type { Property } from '@/types';
-import { hasSellerPhone } from '../lib/contact';
 import { getSellerTypeLabel } from '../lib/labels';
-import { ContactActions } from './contact-actions';
 
 interface SellerSectionProps {
   property: Property;
@@ -66,14 +64,6 @@ export function SellerSection({ property }: SellerSectionProps) {
             </div>
           </div>
         </div>
-
-        {hasSellerPhone(seller) ? (
-          <ContactActions
-            seller={seller}
-            message={`مرحبا، أنا مهتم بـ ${property.title}`}
-            className="shrink-0"
-          />
-        ) : null}
       </div>
     </section>
   );

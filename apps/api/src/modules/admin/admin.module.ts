@@ -7,14 +7,18 @@ import { MediaModule } from '../media/media.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PermissionsModule } from '../permissions/permissions.module';
 import { PlansModule } from '../plans/plans.module';
+import { PropertiesModule } from '../properties/properties.module';
 
 import { AdminLeadsService } from './admin-leads.service';
 import { AdminMediaService } from './admin-media.service';
 import { AdminPaymentsService } from './admin-payments.service';
+import { AdminCatalogsService } from './admin-catalogs.service';
 import { AdminPropertyManagementService } from './admin-property-management.service';
 import { AdminPropertiesService } from './admin-properties.service';
 import { AdminUsersService } from './admin-users.service';
 import { AdminService } from './admin.service';
+import { AdminCatalogsController } from './controllers/admin-catalogs.controller';
+import { AdminFeaturesController } from './controllers/admin-features.controller';
 import { AdminCompoundsController } from './controllers/admin-compounds.controller';
 import { AdminDashboardController } from './controllers/admin-dashboard.controller';
 import { AdminDevelopersController } from './controllers/admin-developers.controller';
@@ -24,6 +28,7 @@ import { AdminPaymentsController } from './controllers/admin-payments.controller
 import { AdminPlansController } from './controllers/admin-plans.controller';
 import { AdminPropertiesController } from './controllers/admin-properties.controller';
 import { AdminPropertyMediaController } from './controllers/admin-property-media.controller';
+import { AdminPropertyContactController } from './controllers/admin-property-contact.controller';
 import { AdminUsersController } from './controllers/admin-users.controller';
 import { AdminAuthModule } from './auth/admin-auth.module';
 import { AdminPropertyMediaService } from './admin-property-media.service';
@@ -38,10 +43,12 @@ import { AdminPropertyMediaService } from './admin-property-media.service';
     AlertsModule,
     PlansModule,
     PermissionsModule,
+    PropertiesModule,
   ],
   controllers: [
     AdminDashboardController,
     AdminPropertyMediaController,
+    AdminPropertyContactController,
     AdminPropertiesController,
     AdminUsersController,
     AdminDevelopersController,
@@ -50,6 +57,8 @@ import { AdminPropertyMediaService } from './admin-property-media.service';
     AdminPaymentsController,
     AdminLeadsController,
     AdminMediaController,
+    AdminCatalogsController,
+    AdminFeaturesController,
   ],
   providers: [
     AdminService,
@@ -60,6 +69,7 @@ import { AdminPropertyMediaService } from './admin-property-media.service';
     AdminPaymentsService,
     AdminLeadsService,
     AdminMediaService,
+    AdminCatalogsService,
   ],
 })
 export class AdminModule {}

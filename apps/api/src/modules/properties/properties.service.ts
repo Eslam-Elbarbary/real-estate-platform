@@ -4,8 +4,14 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, Property, PropertyStatus } from '@/prisma/generated/prisma-client';
+import {
+  PaymentType,
+  Prisma,
+  Property,
+  PropertyStatus,
+} from '@/prisma/generated/prisma-client';
 import { PrismaService } from '../../database/prisma.service';
+import { assertPaymentFieldsConsistency } from '../admin/utils/payment-fields.validation';
 import { CreateDraftDto } from './dto/create-draft.dto';
 import { SetFeaturesDto } from './dto/set-features.dto';
 import { UpdateBasicDto } from './dto/update-basic.dto';
@@ -17,10 +23,26 @@ import {
   toFeatureResponse,
 } from './mapper/feature.mapper';
 import {
+  OwnerPropertyStatusHistoryDto,
   PropertyResponseDto,
+  toOwnerStatusHistoryResponse,
   toPropertyResponse,
 } from './mapper/property.mapper';
 import { createTemporaryDraftSlug, slugifyTitle } from './utils/slug.util';
+
+const propertyLocationInclude = {
+  area: {
+    include: {
+      city: {
+        include: { country: true },
+      },
+    },
+  },
+  district: true,
+  compound: true,
+  viewAssignments: { include: { view: true } },
+  legalStatus: true,
+} as const;
 
 @Injectable()
 export class PropertiesService {
@@ -57,18 +79,65 @@ export class PropertiesService {
         ownerId,
         ...(status ? { status } : {}),
       },
+      include: {
+        images: {
+          orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }],
+          take: 1,
+          include: { mediaAsset: true },
+        },
+      },
       orderBy: { updatedAt: 'desc' },
     });
 
-    return properties.map((property) => toPropertyResponse(property));
+    return properties.map((property) => {
+      const primary = property.images[0];
+      return toPropertyResponse(property, undefined, {
+        primaryImageUrl: primary?.mediaAsset?.url ?? null,
+      });
+    });
   }
 
   async getMine(
     ownerId: string,
     propertyId: string,
   ): Promise<PropertyResponseDto> {
-    const property = await this.findOwnedOrThrow(ownerId, propertyId);
-    return toPropertyResponse(property);
+    const property = await this.prisma.property.findFirst({
+      where: { id: propertyId, ownerId },
+      include: {
+        images: {
+          orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }],
+          take: 1,
+          include: { mediaAsset: true },
+        },
+        ...propertyLocationInclude,
+      },
+    });
+    if (!property) {
+      throw new NotFoundException('Property not found');
+    }
+    const primary = property.images[0];
+    return toPropertyResponse(property, undefined, {
+      primaryImageUrl: primary?.mediaAsset?.url ?? null,
+    });
+  }
+
+  async listStatusHistory(
+    ownerId: string,
+    propertyId: string,
+  ): Promise<OwnerPropertyStatusHistoryDto[]> {
+    await this.findOwnedOrThrow(ownerId, propertyId);
+    const entries = await this.prisma.propertyStatusHistory.findMany({
+      where: { propertyId },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        fromStatus: true,
+        toStatus: true,
+        reason: true,
+        createdAt: true,
+      },
+    });
+    return entries.map(toOwnerStatusHistoryResponse);
   }
 
   async updateDraft(
@@ -114,6 +183,11 @@ export class PropertiesService {
           ? { disconnect: true }
           : { connect: { id: dto.compoundId } };
     }
+    if (dto.legalStatusId !== undefined) {
+      data.legalStatus = dto.legalStatusId
+        ? { connect: { id: dto.legalStatusId } }
+        : { disconnect: true };
+    }
     if (dto.address !== undefined) {
       data.address = dto.address?.trim() || null;
     }
@@ -144,10 +218,48 @@ export class PropertiesService {
     if (dto.price !== undefined) {
       data.price = dto.price;
     }
+    if (dto.currency !== undefined) {
+      const currency = dto.currency.trim();
+      if (currency) {
+        data.currency = currency;
+      }
+    }
+
+    assertPaymentFieldsConsistency({
+      paymentType: dto.paymentType,
+      downPayment: dto.downPayment,
+      installmentYears: dto.installmentYears,
+      monthlyInstallment: dto.monthlyInstallment,
+    });
+
+    if (dto.paymentType !== undefined) {
+      data.paymentType = dto.paymentType;
+    }
+
+    if (dto.paymentType === PaymentType.CASH) {
+      data.downPayment = null;
+      data.installmentYears = null;
+      data.monthlyInstallment = null;
+    } else {
+      if (dto.downPayment !== undefined) {
+        data.downPayment = dto.downPayment;
+      }
+      if (dto.installmentYears !== undefined) {
+        data.installmentYears = dto.installmentYears;
+      }
+      if (dto.monthlyInstallment !== undefined) {
+        data.monthlyInstallment = dto.monthlyInstallment;
+      }
+    }
+
+    if (dto.propertyViewIds !== undefined) {
+      data.viewAssignments = this.replaceViewAssignments(dto.propertyViewIds);
+    }
 
     const updated = await this.prisma.property.update({
       where: { id: property.id },
       data,
+      include: propertyLocationInclude,
     });
 
     return toPropertyResponse(updated);
@@ -163,9 +275,94 @@ export class PropertiesService {
       throw new ForbiddenException('Only draft properties can be deleted');
     }
 
-    await this.prisma.property.delete({ where: { id: property.id } });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.property.delete({ where: { id: property.id } });
+    });
 
     return { message: 'Draft property deleted successfully' };
+  }
+
+  /** PUBLISHED | REJECTED | EXPIRED → ARCHIVED (owner soft-archive). */
+  async archiveMine(
+    ownerId: string,
+    propertyId: string,
+  ): Promise<PropertyResponseDto> {
+    const property = await this.findOwnedOrThrow(ownerId, propertyId);
+
+    const allowed: PropertyStatus[] = [
+      PropertyStatus.PUBLISHED,
+      PropertyStatus.REJECTED,
+      PropertyStatus.EXPIRED,
+    ];
+
+    if (!allowed.includes(property.status)) {
+      throw new BadRequestException(
+        `Only published, rejected, or expired properties can be archived (current: ${property.status})`,
+      );
+    }
+
+    const now = new Date();
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const next = await tx.property.update({
+        where: { id: property.id },
+        data: {
+          status: PropertyStatus.ARCHIVED,
+          archivedAt: now,
+        },
+        include: propertyLocationInclude,
+      });
+
+      await tx.propertyStatusHistory.create({
+        data: {
+          propertyId: property.id,
+          fromStatus: property.status,
+          toStatus: PropertyStatus.ARCHIVED,
+          changedById: ownerId,
+          reason: 'Archived by owner',
+        },
+      });
+
+      return next;
+    });
+
+    return toPropertyResponse(updated);
+  }
+
+  /** ARCHIVED → DRAFT (owner restore). */
+  async restoreMine(
+    ownerId: string,
+    propertyId: string,
+  ): Promise<PropertyResponseDto> {
+    const property = await this.findOwnedOrThrow(ownerId, propertyId);
+
+    if (property.status !== PropertyStatus.ARCHIVED) {
+      throw new BadRequestException('Only archived properties can be restored');
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const next = await tx.property.update({
+        where: { id: property.id },
+        data: {
+          status: PropertyStatus.DRAFT,
+          archivedAt: null,
+        },
+        include: propertyLocationInclude,
+      });
+
+      await tx.propertyStatusHistory.create({
+        data: {
+          propertyId: property.id,
+          fromStatus: property.status,
+          toStatus: PropertyStatus.DRAFT,
+          changedById: ownerId,
+          reason: 'RESTORED — restored from archive by owner',
+        },
+      });
+
+      return next;
+    });
+
+    return toPropertyResponse(updated);
   }
 
   async updateBasic(
@@ -217,6 +414,8 @@ export class PropertiesService {
       areaId: dto.areaId,
       districtId: dto.districtId,
       compoundId: dto.compoundId,
+      countryId: dto.countryId,
+      cityId: dto.cityId,
     });
 
     const data: Prisma.PropertyUpdateInput = {};
@@ -249,6 +448,7 @@ export class PropertiesService {
     const updated = await this.prisma.property.update({
       where: { id: property.id },
       data,
+      include: propertyLocationInclude,
     });
 
     return toPropertyResponse(updated);
@@ -261,6 +461,13 @@ export class PropertiesService {
   ): Promise<PropertyResponseDto> {
     const property = await this.findOwnedOrThrow(ownerId, propertyId);
     this.assertOwnerEditable(property);
+
+    if (dto.propertyViewIds !== undefined) {
+      await this.assertActivePropertyViews([...new Set(dto.propertyViewIds)]);
+    }
+    if (dto.legalStatusId) {
+      await this.assertActiveLegalStatus(dto.legalStatusId);
+    }
 
     const data: Prisma.PropertyUpdateInput = {};
 
@@ -282,13 +489,25 @@ export class PropertiesService {
     if (dto.furnished !== undefined) {
       data.furnished = dto.furnished;
     }
+    if (dto.finishingType !== undefined) {
+      data.finishingType = dto.finishingType;
+    }
     if (dto.rentPeriod !== undefined) {
       data.rentPeriod = dto.rentPeriod;
+    }
+    if (dto.propertyViewIds !== undefined) {
+      data.viewAssignments = this.replaceViewAssignments(dto.propertyViewIds);
+    }
+    if (dto.legalStatusId !== undefined) {
+      data.legalStatus = dto.legalStatusId
+        ? { connect: { id: dto.legalStatusId } }
+        : { disconnect: true };
     }
 
     const updated = await this.prisma.property.update({
       where: { id: property.id },
       data,
+      include: propertyLocationInclude,
     });
 
     return toPropertyResponse(updated);
@@ -372,10 +591,11 @@ export class PropertiesService {
   private assertOwnerEditable(property: Property): void {
     if (
       property.status !== PropertyStatus.DRAFT &&
-      property.status !== PropertyStatus.REJECTED
+      property.status !== PropertyStatus.REJECTED &&
+      property.status !== PropertyStatus.ARCHIVED
     ) {
       throw new ForbiddenException(
-        'Only draft or rejected properties can be updated',
+        'Only draft, rejected, or archived properties can be updated',
       );
     }
   }
@@ -424,16 +644,57 @@ export class PropertiesService {
     }
   }
 
+  private async assertActivePropertyViews(
+    propertyViewIds: string[],
+  ): Promise<void> {
+    if (propertyViewIds.length === 0) {
+      return;
+    }
+    const views = await this.prisma.propertyView.findMany({
+      where: { id: { in: propertyViewIds }, isActive: true },
+      select: { id: true },
+    });
+    if (views.length !== propertyViewIds.length) {
+      throw new BadRequestException('One or more property view ids are invalid');
+    }
+  }
+
+  private async assertActiveLegalStatus(legalStatusId: string): Promise<void> {
+    const status = await this.prisma.propertyLegalStatus.findFirst({
+      where: { id: legalStatusId, isActive: true },
+      select: { id: true },
+    });
+    if (!status) {
+      throw new BadRequestException('Invalid legal status');
+    }
+  }
+
+  /** Full replace of the view selection, mirroring the features behaviour. */
+  private replaceViewAssignments(
+    propertyViewIds: string[],
+  ): Prisma.PropertyViewAssignmentUpdateManyWithoutPropertyNestedInput {
+    const viewIds = [...new Set(propertyViewIds)];
+    return {
+      deleteMany: {},
+      create: viewIds.map((viewId) => ({
+        view: { connect: { id: viewId } },
+      })),
+    };
+  }
+
   private async validateUpdateReferences(
     property: Property,
-    dto: Pick<
-      UpdatePropertyDto,
-      | 'propertyTypeId'
-      | 'transactionTypeId'
-      | 'areaId'
-      | 'districtId'
-      | 'compoundId'
-    >,
+    dto: {
+      propertyTypeId?: string;
+      transactionTypeId?: string;
+      areaId?: string;
+      districtId?: string | null;
+      compoundId?: string | null;
+      countryId?: string;
+      cityId?: string;
+      propertyViewIds?: string[];
+      legalStatusId?: string | null;
+    },
   ): Promise<void> {
     if (dto.propertyTypeId) {
       await this.assertActivePropertyType(dto.propertyTypeId);
@@ -443,14 +704,45 @@ export class PropertiesService {
       await this.assertActiveTransactionType(dto.transactionTypeId);
     }
 
+    if (dto.propertyViewIds !== undefined) {
+      await this.assertActivePropertyViews([...new Set(dto.propertyViewIds)]);
+    }
+
+    if (dto.legalStatusId) {
+      await this.assertActiveLegalStatus(dto.legalStatusId);
+    }
+
+    let resolvedAreaCityId: string | null = null;
+    let resolvedAreaCountryId: string | null = null;
+
     if (dto.areaId) {
       const area = await this.prisma.area.findFirst({
         where: { id: dto.areaId, isActive: true },
-        select: { id: true },
+        select: {
+          id: true,
+          cityId: true,
+          city: { select: { countryId: true } },
+        },
       });
       if (!area) {
         throw new BadRequestException('Invalid area');
       }
+      resolvedAreaCityId = area.cityId;
+      resolvedAreaCountryId = area.city.countryId;
+    }
+
+    if (dto.cityId && resolvedAreaCityId && dto.cityId !== resolvedAreaCityId) {
+      throw new BadRequestException('Area does not belong to the selected city');
+    }
+
+    if (
+      dto.countryId &&
+      resolvedAreaCountryId &&
+      dto.countryId !== resolvedAreaCountryId
+    ) {
+      throw new BadRequestException(
+        'Area does not belong to the selected country',
+      );
     }
 
     if (dto.districtId) {
@@ -473,10 +765,16 @@ export class PropertiesService {
     if (dto.compoundId) {
       const compound = await this.prisma.compound.findFirst({
         where: { id: dto.compoundId, isActive: true },
-        select: { id: true },
+        select: { id: true, areaId: true },
       });
       if (!compound) {
         throw new BadRequestException('Invalid compound');
+      }
+      const areaId = dto.areaId ?? property.areaId;
+      if (areaId && compound.areaId !== areaId) {
+        throw new BadRequestException(
+          'Compound does not belong to the selected area',
+        );
       }
     }
   }

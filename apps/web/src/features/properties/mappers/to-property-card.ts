@@ -11,19 +11,6 @@ import type {
   TransactionType,
 } from '@/types';
 
-const PROPERTY_TYPES = new Set<PropertyType>([
-  'apartment',
-  'villa',
-  'townhouse',
-  'duplex',
-  'penthouse',
-  'studio',
-  'chalet',
-  'office',
-  'shop',
-  'land',
-]);
-
 export function mapTransactionType(
   code: string | undefined | null,
 ): TransactionType {
@@ -31,11 +18,8 @@ export function mapTransactionType(
 }
 
 export function mapPropertyType(code: string | undefined | null): PropertyType {
-  const normalized = code?.toLowerCase() as PropertyType | undefined;
-  if (normalized && PROPERTY_TYPES.has(normalized)) {
-    return normalized;
-  }
-  return 'apartment';
+  const normalized = code?.trim().toLowerCase();
+  return normalized || 'apartment';
 }
 
 export function mapPaymentType(

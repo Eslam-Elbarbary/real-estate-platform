@@ -1,0 +1,33 @@
+// -----------------------------------------------------------------------------
+// Property contact (owner vs custom listing contact)
+// -----------------------------------------------------------------------------
+
+enum PropertyContactSource {
+  OWNER
+  CUSTOM
+}
+
+enum PropertyContactType {
+  OWNER
+  AGENT
+  COMPANY
+}
+
+model PropertyContact {
+  id          String               @id @default(cuid())
+  propertyId  String               @unique
+  source      PropertyContactSource @default(OWNER)
+  contactType PropertyContactType   @default(OWNER)
+  name        String?
+  phone       String?
+  whatsapp    String?
+  email       String?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([source])
+  @@index([contactType])
+  @@map("property_contacts")
+}

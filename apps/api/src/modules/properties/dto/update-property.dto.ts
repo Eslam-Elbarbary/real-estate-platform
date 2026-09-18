@@ -1,8 +1,15 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { RentPeriod } from '@/prisma/generated/prisma-client';
 import {
+  PaymentType,
+  RentPeriod,
+} from '@/prisma/generated/prisma-client';
+import { Type } from 'class-transformer';
+import {
+  ArrayUnique,
+  IsArray,
   IsBoolean,
   IsEnum,
+  IsInt,
   IsNumber,
   IsOptional,
   IsString,
@@ -54,6 +61,25 @@ export class UpdatePropertyDto {
   @IsString()
   compoundId?: string | null;
 
+  @ApiPropertyOptional({
+    type: [String],
+    description:
+      'PropertyView catalog ids (active only). Replaces the full selection.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsString({ each: true })
+  propertyViewIds?: string[];
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'PropertyLegalStatus catalog id (active only)',
+  })
+  @IsOptional()
+  @IsString()
+  legalStatusId?: string | null;
+
   @ApiPropertyOptional({ example: '12 Abbas El Akkad St' })
   @IsOptional()
   @IsString()
@@ -62,34 +88,40 @@ export class UpdatePropertyDto {
 
   @ApiPropertyOptional({ example: 30.0444 })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   latitude?: number | null;
 
   @ApiPropertyOptional({ example: 31.2357 })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   longitude?: number | null;
 
   @ApiPropertyOptional({ example: 3 })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
   bedrooms?: number | null;
 
   @ApiPropertyOptional({ example: 2 })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
   bathrooms?: number | null;
 
   @ApiPropertyOptional({ example: 150 })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
   areaSqm?: number | null;
 
   @ApiPropertyOptional({ example: 5 })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   floor?: number | null;
 
@@ -98,14 +130,47 @@ export class UpdatePropertyDto {
   @IsBoolean()
   furnished?: boolean | null;
 
-  @ApiPropertyOptional({ enum: RentPeriod })
+  @ApiPropertyOptional({ enum: RentPeriod, nullable: true })
   @IsOptional()
   @IsEnum(RentPeriod)
   rentPeriod?: RentPeriod | null;
 
-  @ApiPropertyOptional({ example: 3500000 })
+  @ApiPropertyOptional({ example: 3500000, nullable: true })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
   price?: number | null;
+
+  @ApiPropertyOptional({ example: 'EGP' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  currency?: string;
+
+  @ApiPropertyOptional({ enum: PaymentType, nullable: true })
+  @IsOptional()
+  @IsEnum(PaymentType)
+  paymentType?: PaymentType | null;
+
+  @ApiPropertyOptional({ example: 500000, nullable: true })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  downPayment?: number | null;
+
+  @ApiPropertyOptional({ example: 8, nullable: true })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  installmentYears?: number | null;
+
+  @ApiPropertyOptional({ example: 25000, nullable: true })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  monthlyInstallment?: number | null;
 }

@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Dialog } from '@/components/ui/dialog';
 import { routes } from '@/config/routes';
-import { hasPermission } from '@/features/auth/permissions';
 import { getAdminErrorMessage } from '@/lib/errors';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/utils/cn';
@@ -16,11 +15,22 @@ import type { PropertyStatus } from '@/types';
 import {
   approvePropertyAction,
   archivePropertyAction,
+  deleteDraftPropertyAction,
   publishPropertyAction,
   rejectPropertyAction,
   restorePropertyAction,
   unpublishPropertyAction,
 } from '../actions';
+import {
+  canApproveProperty,
+  canArchiveProperty,
+  canDeleteProperty,
+  canEditProperty,
+  canPublishProperty,
+  canRejectProperty,
+  canRestoreProperty,
+  canUnpublishProperty,
+} from '../lifecycle';
 
 interface PropertyActionMenuProps {
   propertyId: string;
@@ -28,17 +38,27 @@ interface PropertyActionMenuProps {
   permissions: string[];
   /** Open edit dialog when provided (details page). Otherwise links to details. */
   onEdit?: () => void;
+  /** Preferred edit destination when onEdit is not provided. */
+  editHref?: string;
   showView?: boolean;
   compact?: boolean;
 }
 
-type ConfirmKind = 'unpublish' | 'archive' | 'approve' | 'publish' | 'restore' | null;
+type ConfirmKind =
+  | 'unpublish'
+  | 'archive'
+  | 'approve'
+  | 'publish'
+  | 'restore'
+  | 'delete'
+  | null;
 
 export function PropertyActionMenu({
   propertyId,
   status,
   permissions,
   onEdit,
+  editHref,
   showView = true,
   compact = false,
 }: PropertyActionMenuProps) {
@@ -51,34 +71,14 @@ export function PropertyActionMenu({
   const [reasonError, setReasonError] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const canUpdate = hasPermission(permissions, 'properties.update');
-  const canApprove =
-    status === 'PENDING_REVIEW' && hasPermission(permissions, 'properties.approve');
-  const canReject =
-    status === 'PENDING_REVIEW' && hasPermission(permissions, 'properties.reject');
-  const canPublish =
-    (status === 'DRAFT' || status === 'REJECTED' || status === 'EXPIRED') &&
-    hasPermission(permissions, 'properties.publish');
-  const canUnpublish =
-    status === 'PUBLISHED' && hasPermission(permissions, 'properties.publish');
-  const canArchive =
-    (status === 'PUBLISHED' ||
-      status === 'DRAFT' ||
-      status === 'REJECTED' ||
-      status === 'EXPIRED' ||
-      status === 'PENDING_REVIEW') &&
-    hasPermission(permissions, 'properties.archive');
-  const canRestore =
-    status === 'ARCHIVED' && hasPermission(permissions, 'properties.archive');
-
-  const editAllowed =
-    canUpdate &&
-    (status === 'PUBLISHED' ||
-      status === 'DRAFT' ||
-      status === 'REJECTED' ||
-      status === 'EXPIRED' ||
-      status === 'PENDING_PAYMENT');
-
+  const canApprove = canApproveProperty(status, permissions);
+  const canReject = canRejectProperty(status, permissions);
+  const canPublish = canPublishProperty(status, permissions);
+  const canUnpublish = canUnpublishProperty(status, permissions);
+  const canArchive = canArchiveProperty(status, permissions);
+  const canRestore = canRestoreProperty(status, permissions);
+  const canDelete = canDeleteProperty(status, permissions);
+  const editAllowed = canEditProperty(status, permissions);
   useEffect(() => {
     if (!open) {
       return;
@@ -151,6 +151,13 @@ export function PropertyActionMenu({
         () => restorePropertyAction(propertyId),
         'تم استعادة العقار بنجاح',
       );
+      return;
+    }
+    if (confirmKind === 'delete') {
+      await runAction(
+        () => deleteDraftPropertyAction(propertyId),
+        'تم حذف المسودة بنجاح',
+      );
     }
   }
 
@@ -179,7 +186,7 @@ export function PropertyActionMenu({
     },
     archive: {
       title: 'أرشفة العقار',
-      description: 'هل أنت متأكد من أرشفة هذا العقار؟',
+      description: 'سيتم إخفاء العقار من الموقع مع الاحتفاظ بالبيانات',
       label: 'أرشفة',
       variant: 'danger',
     },
@@ -196,10 +203,16 @@ export function PropertyActionMenu({
       variant: 'primary',
     },
     restore: {
-      title: 'استعادة العقار',
-      description: 'سيتم استعادة العقار من الأرشيف.',
-      label: 'استعادة',
+      title: 'استرجاع العقار',
+      description: 'سيتم إعادة العقار كمسودة',
+      label: 'استرجاع',
       variant: 'primary',
+    },
+    delete: {
+      title: 'حذف المسودة',
+      description: 'هل أنت متأكد من حذف المسودة؟ لا يمكن التراجع',
+      label: 'حذف',
+      variant: 'danger',
     },
   };
 
@@ -211,7 +224,8 @@ export function PropertyActionMenu({
     canPublish ||
     canUnpublish ||
     canArchive ||
-    canRestore;
+    canRestore ||
+    canDelete;
 
   if (!hasMenuItems) {
     return null;
@@ -263,7 +277,7 @@ export function PropertyActionMenu({
 
           {editAllowed && !onEdit ? (
             <Link
-              href={routes.properties.details(propertyId)}
+              href={editHref ?? routes.properties.details(propertyId)}
               role="menuitem"
               className="block px-3 py-2 text-sm text-ink-800 hover:bg-surface-50"
               onClick={() => setOpen(false)}
@@ -352,7 +366,21 @@ export function PropertyActionMenu({
                 setConfirmKind('restore');
               }}
             >
-              استعادة
+              استرجاع
+            </button>
+          ) : null}
+
+          {canDelete ? (
+            <button
+              type="button"
+              role="menuitem"
+              className="block w-full px-3 py-2 text-start text-sm text-danger-700 hover:bg-danger-50"
+              onClick={() => {
+                setOpen(false);
+                setConfirmKind('delete');
+              }}
+            >
+              حذف
             </button>
           ) : null}
         </div>
