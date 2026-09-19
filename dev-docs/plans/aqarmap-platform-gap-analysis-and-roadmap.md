@@ -138,6 +138,32 @@ Even these two probably don't need a new `Role` enum value: a member's global ro
 
 **Net effect on the `Role` enum:** drop `BROKER` entirely (dead weight, never repurposed), retire `DEVELOPER` as a *role* in favor of the `User → Developer` membership link above. End state is 4 roles: `USER`, `MODERATOR`, `ADMIN`, `SUPER_ADMIN`.
 
+### 5.5 Membership roles *within* a company/developer account
+
+`MARKETING_COMPANY` and `COMPOUND_DEVELOPER` are entities with **multiple people sharing access**, so each needs its own small, entity-scoped role — stored on a join table, not the global `Role` enum. A person's platform-wide role stays `USER` regardless; what varies is what they're allowed to do *within the specific company/developer they're a member of*. Authorization works the same way `Property.ownerId` already does: look up the membership row for `(userId, companyId/developerId)`, no new permissions system needed.
+
+**`MARKETING_COMPANY` → new `Company` entity + `CompanyMember` join table**
+
+Agencies broker *other people's* properties, so they don't fit the existing `Developer` model — this needs a genuinely new `Company` entity, plus a nullable `Property.companyId` so a listing can be attributed to both the agent who created it (`ownerId`, unchanged) and the company it's posted under.
+
+| Membership role | Can do |
+|---|---|
+| `OWNER` | Everything: edit company profile, manage billing/subscription/plan, invite/remove/promote members, view & manage **all** listings posted under the company, delete the company |
+| `ADMIN` *(optional, larger agencies)* | Manage members, view & manage all company listings — no billing access, can't delete the company |
+| `AGENT` | Create/edit/archive **only their own** listings under the company; view-only on teammates' listings; no member/settings access |
+
+**`COMPOUND_DEVELOPER` → reuse existing `Developer` entity + new `DeveloperMember` join table**
+
+No new top-level entity — `Developer` already exists. This is purely a `User ↔ Developer` join table with a `role` column.
+
+| Membership role | Can do |
+|---|---|
+| `OWNER` | Edit Developer profile, manage billing/subscription, create/edit Compounds, invite/remove staff |
+| `MANAGER` *(optional)* | Create/edit Compounds, bulk-upload units — no billing or staff management |
+| `STAFF` | Create/edit unit listings (`Property` rows) under an assigned Compound — can't edit the Compound record or developer-wide settings |
+
+Three tiers each (not two, not more): two would be too rigid once an agency/developer grows past a handful of people (someone needs to run the team without touching billing); more than three adds permission-editing complexity that Aqarmap-style platforms don't expose to agencies anyway — just simple seniority tiers.
+
 ---
 
 ## 6. Other missing backend building blocks
