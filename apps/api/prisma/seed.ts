@@ -8,6 +8,8 @@ import { seedDemoUsers } from './seeds/demo-users.seed';
 import { seedBanners } from './seeds/banners.seed';
 import { seedEngagement } from './seeds/engagement.seed';
 import { seedBilling } from './seeds/billing.seed';
+import { seedCompanies } from './seeds/companies.seed';
+import { seedDeveloperAccounts } from './seeds/developer-accounts.seed';
 import { PLATFORM_SETTINGS_DEFAULTS } from '../src/modules/settings/platform-settings.defaults';
 
 function createSeedClient(): { prisma: PrismaClient; pool: Pool } {
@@ -556,8 +558,10 @@ async function main() {
   await seedBanners(prisma);
   await seedEngagement(prisma, demoUserIds);
   await seedBilling(prisma);
+  await seedCompanies(prisma);
+  await seedDeveloperAccounts(prisma);
   console.log(
-    'Seed complete (roles, permissions, super admin, transaction types, property types, features, property views, legal statuses, plans, developers, compounds, platform settings, properties, demo users, banners, engagement, billing).',
+    'Seed complete (roles, permissions, super admin, transaction types, property types, features, property views, legal statuses, plans, developers, compounds, platform settings, properties, demo users, banners, engagement, billing, companies, developer accounts).',
   );
 }
 

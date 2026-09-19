@@ -1,6 +1,6 @@
 import { Container } from '@/components/ui/container';
 import { ProfileCompletionAlert } from '@/features/my-properties/components/profile-completion-alert';
-import type { Location } from '@/types';
+import type { LocationOption } from '@/features/locations/service';
 import { activityCopy } from '../copy';
 import type { PropertyAlert } from '../types';
 import { AlertSubscribeForm } from './alert-subscribe-form';
@@ -8,7 +8,7 @@ import { AlertRow } from './alert-row';
 
 interface AlertsPageProps {
   alerts: PropertyAlert[];
-  locations: Location[];
+  locations: LocationOption[];
   propertyTypeOptions: Array<{ value: string; label: string }>;
 }
 

@@ -1,69 +1,137 @@
-import { getLocationRepository } from '@/data/repositories';
-import { buildPropertySearchPath } from '@/features/property-search/search-params';
-import type { Location } from '@/types';
-import { getAlertsRepository } from './repository';
+import 'server-only';
+
+import {
+  createAlertApi,
+  deleteAlertApi,
+  fetchAlerts,
+  updateAlertApi,
+} from '@/data/repositories/api-alerts';
+import { withRefreshedAccessToken } from '@/features/auth/session';
+import { getSearchLocationOptions } from '@/features/locations/api-options';
+import type { LocationOption } from '@/features/locations/service';
+import {
+  fetchPropertyTypes,
+  fetchTransactionTypes,
+} from '@/features/properties/api/catalogs';
+import {
+  catalogPropertyTypeLabel,
+  toPropertyTypeSlug,
+} from '@/features/properties/lib/property-type-options';
+import type { CatalogTypeDto } from '@/types/api/public-property';
 import type { CreatePropertyAlertInput, PropertyAlert } from '../types';
+import {
+  buildAlertFilters,
+  mapAlertDtoToPropertyAlert,
+  resolveLocationMatchIds,
+} from './mapper';
+
+async function loadCatalogs(): Promise<{
+  propertyTypes: CatalogTypeDto[];
+  transactionTypes: CatalogTypeDto[];
+}> {
+  const [propertyTypes, transactionTypes] = await Promise.all([
+    fetchPropertyTypes().catch(() => []),
+    fetchTransactionTypes().catch(() => []),
+  ]);
+  return { propertyTypes, transactionTypes };
+}
+
+/** Backend requires a non-empty alert name; the UI never collects one, so derive it. */
+function buildAlertName(
+  locations: LocationOption[],
+  propertyType: CatalogTypeDto | undefined,
+  transaction: 'sale' | 'rent',
+): string {
+  const typeName = propertyType ? catalogPropertyTypeLabel(propertyType) : '';
+  const transactionName = transaction === 'rent' ? 'إيجار' : 'بيع';
+  const locationNames = locations.map((item) => item.name).join('، ');
+  return `${typeName} لل${transactionName} - ${locationNames}`.slice(0, 200);
+}
 
 export class AlertsService {
-  constructor(
-    private readonly repository = getAlertsRepository(),
-    private readonly locations = getLocationRepository(),
-  ) {}
-
-  list(userId: string): Promise<PropertyAlert[]> {
-    return this.repository.list(userId);
+  async list(_userId: string): Promise<PropertyAlert[]> {
+    void _userId;
+    const dtos = await withRefreshedAccessToken((token) => fetchAlerts(token));
+    return dtos
+      .map(mapAlertDtoToPropertyAlert)
+      .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
   }
 
-  listLocationOptions(): Promise<Location[]> {
-    return this.locations.findAll();
+  listLocationOptions(): Promise<LocationOption[]> {
+    return getSearchLocationOptions();
   }
 
   async create(
-    userId: string,
+    _userId: string,
     input: Omit<CreatePropertyAlertInput, 'locations'> & {
       locationSlugs: string[];
     },
   ): Promise<PropertyAlert> {
-    const all = await this.locations.findAll();
-    const locations = input.locationSlugs
-      .map((slug) => all.find((item) => item.slug === slug))
-      .filter((item): item is Location => Boolean(item))
-      .map((item) => ({
-        id: item.id,
-        slug: item.slug,
-        label: item.name,
-      }));
+    void _userId;
+    const [locations, catalogs] = await Promise.all([
+      getSearchLocationOptions(),
+      loadCatalogs(),
+    ]);
 
-    if (locations.length === 0) {
+    const selected = input.locationSlugs
+      .map((slug) => locations.find((item) => item.slug === slug))
+      .filter((item): item is LocationOption => Boolean(item));
+
+    if (selected.length === 0) {
       throw new Error('LOCATION_REQUIRED');
     }
 
-    return this.repository.create(userId, {
-      locations,
-      transaction: input.transaction,
-      propertyType: input.propertyType,
-      minPrice: input.minPrice,
-      maxPrice: input.maxPrice,
-      minArea: input.minArea,
-      maxArea: input.maxArea,
+    const propertyTypeEntry = catalogs.propertyTypes.find(
+      (item) => toPropertyTypeSlug(item.code) === input.propertyType,
+    );
+    const transactionTypeEntry = catalogs.transactionTypes.find(
+      (item) =>
+        item.code.toUpperCase() ===
+        (input.transaction === 'rent' ? 'RENT' : 'SALE'),
+    );
+
+    const filters = buildAlertFilters({
+      propertyTypeId: propertyTypeEntry?.id,
+      transactionTypeId: transactionTypeEntry?.id,
+      priceMin: input.minPrice,
+      priceMax: input.maxPrice,
+      areaMin: input.minArea,
+      areaMax: input.maxArea,
+      transactionCode: input.transaction,
+      propertyTypeCode: input.propertyType,
+      locations: selected.map((item) => ({
+        id: item.id,
+        slug: item.slug,
+        label: item.name,
+      })),
+      matchIds: resolveLocationMatchIds(selected[0]),
     });
+
+    const dto = await withRefreshedAccessToken((token) =>
+      createAlertApi(token, {
+        name: buildAlertName(selected, propertyTypeEntry, input.transaction),
+        filters,
+      }),
+    );
+
+    return mapAlertDtoToPropertyAlert(dto);
   }
 
-  setEnabled(userId: string, id: string, enabled: boolean) {
-    return this.repository.setEnabled(userId, id, enabled);
+  async setEnabled(
+    _userId: string,
+    id: string,
+    enabled: boolean,
+  ): Promise<PropertyAlert | null> {
+    void _userId;
+    const dto = await withRefreshedAccessToken((token) =>
+      updateAlertApi(token, id, { isActive: enabled }),
+    );
+    return mapAlertDtoToPropertyAlert(dto);
   }
 
-  buildSearchHref(alert: PropertyAlert): string {
-    const primary = alert.locations[0];
-    return buildPropertySearchPath({
-      transactionType: alert.transaction,
-      propertyType: alert.propertyType,
-      locationSlugs: primary ? [primary.slug] : undefined,
-      minPrice: alert.minPrice,
-      maxPrice: alert.maxPrice,
-      minArea: alert.minArea,
-      maxArea: alert.maxArea,
-    });
+  async remove(_userId: string, id: string): Promise<void> {
+    void _userId;
+    await withRefreshedAccessToken((token) => deleteAlertApi(token, id));
   }
 }
 

@@ -59,17 +59,19 @@ Real, working engine: `SavedSearchMatchingService.notifyMatchingAlerts()` runs w
 
 ## 3. Critical gap: the public site's supply side is mocked
 
-Every file below was opened and confirmed to use cookies or hardcoded fictional data, not the real API:
+**Correction (post-audit):** an earlier pass of this doc flagged the Add Property wizard and My Properties dashboard as mock based on their `repository.ts` files alone. Re-checking `service.ts` (the layer components actually call) showed they're **already real** — `repository.ts` in both cases is dead/legacy code for one field with no backend column. Table below reflects the verified state.
 
-| Feature | Route(s) | File(s) confirming mock | What it should do |
+| Feature | Route(s) | Verified state | Remaining work |
 |---|---|---|---|
-| **Add Property wizard** | `/add-property`, `/my-properties/[id]/{basic,details,price,description,media,contact,checkout,preview,publish}` | `apps/web/src/features/add-property/repository.ts` — draft stored in cookie `demo_listing_drafts` via `lib/cookie-store.ts` | Call the real draft-first `Property` API: create draft → `PATCH` per step → submit for payment/review |
-| **My Properties dashboard** | `/my-properties` | `apps/web/src/features/my-properties/repository.ts` — `MockPropertyManagementRepository`, cookie overlay (`demo_managed_listings_overlay`), seeded from `data/demo-listings.ts` | Call a real "my listings" endpoint (list/filter/status-counts) scoped to the logged-in owner |
-| **Subscription checkout** | `/pro`, `/pro/checkout`, `/account/subscription` | `apps/web/src/features/account/service.ts#activateDemoSubscription`, `features/subscriptions/components/demo-payment-method-modal.tsx` | Call the real `POST /properties/me/:id/subscription` + `POST /payments/:id/pay` with a real payment provider |
-| **Saved search alerts** | `/alerts` | `apps/web/src/features/activity/alerts/repository.ts` — `ALERTS_COOKIE = 'demo_alerts'`, hardcoded `SEED_ALERTS` | Call the real `SavedSearchAlert` API (`/alerts` module already exists and works — pure frontend swap) |
-| **Credits/wallet** | `/credits` | `apps/web/src/features/credits/repository.ts` — comment literally says *"Deterministic fictional demo credit ledger — not real money"*; **no Prisma model exists for this at all** | Either build a real `CreditAccount`/`CreditTransaction` model, or drop the feature if not part of the monetization plan |
+| **Add Property wizard** | `/add-property`, `/my-properties/[id]/{basic,details,price,description,media,contact,checkout,preview,publish}` | ✅ Real — `features/add-property/service.ts` calls `data/repositories/api-property-drafts.ts` / `api-listing-submission.ts`, which hit `/api/v1/properties/drafts`, `/api/v1/properties/me/:id/*` | None. `features/add-property/repository.ts` (cookie shell for the unpersisted `mortgageEligible` field) is legacy and could be deleted once that field gets a real column or is dropped. |
+| **My Properties dashboard** | `/my-properties` | ✅ Real — `features/my-properties/service.ts#searchListings`/`getStatusCounts` call `data/repositories/api-my-properties.ts` → `/api/v1/properties/me` | `getEngagementSummary` returns all-`null` (no aggregate engagement endpoint on the backend yet — real but minor gap). `repository.ts`'s `getById`/`upsertListing` are explicitly commented as unused legacy — safe to delete. |
+| **Per-listing checkout** (select plan → pay, inside the wizard) | `/my-properties/[id]/checkout` | ✅ Real — `getListingDraftService().selectPlan/payListingSubscription` call the real `/api/v1/subscriptions` + payment endpoints | Backend still binds `MockPaymentProvider` (see below) — the wiring is real, the gateway behind it isn't. |
+| **Standalone "Pro membership" page** | `/pro`, `/pro/checkout`, `/account/subscription` | ❌ Mock — `features/account/service.ts#activateDemoSubscription`, `features/subscriptions/components/demo-payment-method-modal.tsx` | This is a *separate* concept from the (real) per-listing checkout above. Decide: wire it to the same real subscription flow, or retire it if it's a redundant/legacy concept. |
+| **Saved search alerts** | `/alerts` | ✅ Real (as of 2026-09-19) — `features/activity/alerts/service.ts` now calls `data/repositories/api-alerts.ts` → real `/api/v1/alerts` CRUD; `mapper.ts` builds/reads the exact `AlertFilters` JSON shape `alert-filter-match.util.ts` expects, so the existing matching engine now actually fires for real alerts. Cookie repository deleted. | None — verified end-to-end against the live API (create/list/patch). |
+| **Credits/wallet** | `/credits` | ❌ Mock — comment literally says *"Deterministic fictional demo credit ledger — not real money"*; **no Prisma model exists for this at all** | Either build a real `CreditAccount`/`CreditTransaction` model, or drop the feature if not part of the monetization plan |
+| **Backend payment gateway** | n/a | ❌ Mock — `payments.module.ts` binds `PAYMENT_PROVIDER` to `MockPaymentProvider` (verified in the DI config directly) | Implement `PaymentProvider` for Paymob/Stripe, swap the binding |
 
-**Business impact:** today, a real visitor who lists a property or buys a plan on the live site sees a fully working-looking UI, but nothing is written to the database and no real payment occurs.
+**Business impact today:** listing a property and paying to publish it **already works end-to-end for real** (draft → review → payment → publish). What's still fake is the standalone "Pro" membership upsell, saved-search alerts, the credits/points system, and the actual money movement behind the real payment call (mock gateway, no live charge).
 
 ---
 
@@ -181,18 +183,17 @@ Three tiers each (not two, not more): two would be too rigid once an agency/deve
 ## 7. Phased roadmap
 
 ### Phase 1 — Make the site actually transactional (highest priority)
-Mostly frontend rewiring against APIs that already exist and already work.
 
-1. Wire `/add-property` + `/my-properties/[id]/*` to the real `Property` API (draft create → per-step `PATCH` → submit) instead of `demo_listing_drafts` cookies.
-2. Wire `/my-properties` dashboard to a real "my listings" endpoint (list + status counts + engagement summary, scoped to the logged-in owner).
-3. Wire `/alerts` to the real `SavedSearchAlert` API — backend already works, this is a pure frontend swap (drop `activity/alerts/repository.ts`'s mock).
-4. Implement a real Paymob `PaymentProvider`; wire `/pro` + `/pro/checkout` + `/account/subscription` to the real `POST /properties/me/:id/subscription` → `POST /payments/:id/pay` flow.
+1. ~~Wire `/add-property` + `/my-properties/[id]/*` to the real `Property` API~~ — **already done**, verified real.
+2. ~~Wire `/my-properties` dashboard to a real "my listings" endpoint~~ — **already done**, verified real. Minor cleanup remaining: delete dead `repository.ts`/`demo-listings.ts` mock code once nothing references it, and consider adding a real engagement-summary aggregate endpoint.
+3. ~~Wire `/alerts` to the real `SavedSearchAlert` API~~ — **done 2026-09-19**: new `types/api/alerts.ts`, `data/repositories/api-alerts.ts`, `features/activity/alerts/mapper.ts`, rewrote `service.ts`, deleted the cookie repository. Verified against the live API.
+4. Implement a real Paymob `PaymentProvider`, swap it in for `MockPaymentProvider`. Separately decide the fate of the standalone `/pro` + `/pro/checkout` + `/account/subscription` pages (wire to the real per-listing subscription flow, or retire as redundant).
 5. Add email delivery for the notification types that matter most at launch: lead received, listing approved/rejected/published, payment receipt.
 
 ### Phase 2 — Multi-tenant selling (no role/RBAC changes needed)
 6. Enforce plan-based listing limits (read `Plan.features.listingLimit` in `properties.service.ts` create/submit path) — covers the "marketer" tier entirely; no new role.
-7. Build the `Company`/agency model + `CompanyMember` membership for `MARKETING_COMPANY` accounts; company-scoped listing ownership.
-8. Build a `User → Developer` membership link + self-service API scoped to it, so `COMPOUND_DEVELOPER` accounts can manage their own `Developer`/`Compound` records (currently admin-only) and bulk-list units.
+7. ~~Build the `Company`/agency model + `CompanyMember` membership~~ — **done 2026-09-19**. `Company`/`CompanyMember`/`CompanyMemberRole` (OWNER/ADMIN/AGENT) added, `Property.companyId` wired, self-service `/companies` API (create, profile, members — add/promote/demote/remove, self-leave, last-owner protection) plus a minimal `/admin/companies` oversight endpoint (list + activate/deactivate, gated by new `companies.view`/`companies.update` permissions). Seed data: 1 demo company with an OWNER + AGENT member, one seeded property reassigned to it. Verified end-to-end against the live API, including every authorization edge case (member vs non-member, role-gated actions, last-owner guard, self-leave). **No frontend UI yet** — this shipped as backend-only; a company management page (admin oversight) and a self-service agency dashboard (web app) are natural follow-ups whenever that's prioritized.
+8. ~~Build a `User → Developer` membership link + self-service API scoped to it~~ — **done 2026-09-19**. `DeveloperMember`/`DeveloperMemberRole` (OWNER/MANAGER/STAFF) added, self-service `/developer-accounts` API mirroring the Company model: create (creator becomes OWNER), profile get/update/delete, members list/add/promote/demote/remove with self-leave and last-owner protection, plus scoped compound sub-resource management (`GET/POST /developer-accounts/:id/compounds`, `PATCH /developer-accounts/:id/compounds/:compoundId`) so OWNER/MANAGER members can create and edit compounds under their own developer account without touching the admin-only `/admin/compounds` endpoints. No new admin permissions needed — `developers.*`/`compounds.*` already existed for staff oversight. Seed: the existing `prime-urban` developer got an OWNER + STAFF member. Verified end-to-end against the live API (member/non-member, role-gated profile and compound edits, promotion/demotion, last-owner guard, self-leave). **Bulk-listing units is not built** — a STAFF/MANAGER member still creates `Property` rows through the existing owner-scoped `/properties` flow and sets `compoundId` there; no dedicated bulk-upload endpoint exists yet, matching how `Company` shipped without wiring `companyId` into property creation either. **No frontend UI yet**, same as the Company model.
 9. Drop the dead `BROKER` role; retire `DEVELOPER` as a role in favor of the membership link in item 8. End state: `USER`, `MODERATOR`, `ADMIN`, `SUPER_ADMIN`.
 
 ### Phase 3 — Content & differentiation
@@ -209,10 +210,12 @@ Forum ("ask a question"), exhibitions/expo events, credits/points program (only 
 
 ## 8. Recommended starting point
 
-**Phase 1, items 1–2**: wire `/add-property` and `/my-properties` to the real `Property` API. Rationale:
-- It's the single biggest gap between "looks like a marketplace" and "is a marketplace."
-- The backend draft-first flow already exists, already works, and has been exercised repeatedly this session (seeds, admin review flow).
-- It's almost entirely frontend work — no new Prisma models, no new NestJS modules, just replacing cookie repositories with real API calls and removing the demo-data layer.
+Items 1–3 are now done (items 1–2 turned out to already be real; item 3 was implemented and verified 2026-09-19). Remaining in Phase 1:
+
+- **Item 4** (payment gateway + `/pro` page fate) needs a provider decision (Paymob is the natural Egypt default) and a business call on whether to wire `/pro` to the real per-listing subscription flow or retire it — worth discussing explicitly before starting.
+- **Item 5** (email notifications) needs an email provider/service picked first (e.g. SES, Postmark, Resend).
+
+Once those two decisions are made, both are similarly-scoped, mostly self-contained pieces of work.
 
 ---
 
@@ -225,10 +228,11 @@ Forum ("ask a question"), exhibitions/expo events, credits/points program (only 
 | Compounds directory & guide | `/compounds`, `/compound/[slug]` | ✅ Real |
 | Favorites/wishlist | `/favorites` | ✅ Real |
 | Contact agent (call/WhatsApp/form) | property details page actions | ✅ Real |
-| List a property | `/add-property` | ❌ Mock (cookies) |
-| Manage my listings | `/my-properties` | ❌ Mock (cookies) |
-| Paid packages / featured listings | `/packages`, `/pro` | ❌ Mock checkout |
-| Saved search alerts | `/alerts` | ❌ Mock (real backend unused) |
+| List a property | `/add-property` | ✅ Real |
+| Manage my listings | `/my-properties` | ✅ Real |
+| Pay to publish a listing (per-listing plan) | `/my-properties/[id]/checkout` | ✅ Real wiring, mock gateway behind it |
+| Standalone "Pro" membership packages | `/packages`, `/pro` | ❌ Mock checkout |
+| Saved search alerts | `/alerts` | ✅ Real |
 | Price Guide / Market Index | `/market-index` | ❌ Mock |
 | AI valuation estimate | `/valuation` | ❌ Mock |
 | Agent/company directory & ratings | `/advice/agents` | ❌ Mock |

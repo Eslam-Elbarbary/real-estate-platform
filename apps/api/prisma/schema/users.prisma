@@ -29,6 +29,8 @@ model User {
   mediaAssets           MediaAsset[]
   propertyNotes         PropertyNote[]
   savedSearchAlerts     SavedSearchAlert[]
+  companyMemberships    CompanyMember[]
+  developerMemberships  DeveloperMember[]
 
   @@index([phone])
   @@index([isActive])

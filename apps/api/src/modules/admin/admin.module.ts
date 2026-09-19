@@ -14,12 +14,14 @@ import { AdminMediaService } from './admin-media.service';
 import { AdminPaymentsService } from './admin-payments.service';
 import { AdminCatalogsService } from './admin-catalogs.service';
 import { AdminLocationsService } from './admin-locations.service';
+import { AdminCompaniesService } from './admin-companies.service';
 import { AdminPropertyManagementService } from './admin-property-management.service';
 import { AdminPropertiesService } from './admin-properties.service';
 import { AdminUsersService } from './admin-users.service';
 import { AdminService } from './admin.service';
 import { AdminCatalogsController } from './controllers/admin-catalogs.controller';
 import { AdminLocationsController } from './controllers/admin-locations.controller';
+import { AdminCompaniesController } from './controllers/admin-companies.controller';
 import { AdminFeaturesController } from './controllers/admin-features.controller';
 import { AdminCompoundsController } from './controllers/admin-compounds.controller';
 import { AdminDashboardController } from './controllers/admin-dashboard.controller';
@@ -62,6 +64,7 @@ import { AdminPropertyMediaService } from './admin-property-media.service';
     AdminCatalogsController,
     AdminFeaturesController,
     AdminLocationsController,
+    AdminCompaniesController,
   ],
   providers: [
     AdminService,
@@ -74,6 +77,7 @@ import { AdminPropertyMediaService } from './admin-property-media.service';
     AdminMediaService,
     AdminCatalogsService,
     AdminLocationsService,
+    AdminCompaniesService,
   ],
 })
 export class AdminModule {}

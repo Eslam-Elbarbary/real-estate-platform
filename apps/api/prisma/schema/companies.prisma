@@ -1,0 +1,54 @@
+// -----------------------------------------------------------------------------
+// Companies (real-estate agencies / brokerages) — self-service, multi-user
+// -----------------------------------------------------------------------------
+// A Company lets several agents share access to the same pool of listings
+// under one brand. Membership role is scoped to the company (not global RBAC):
+// authorization is "look up the CompanyMember row for (userId, companyId)",
+// the same pattern already used for Property.ownerId checks.
+
+enum CompanyMemberRole {
+  /// Full control: profile, billing/subscription, members, all company listings, delete company.
+  OWNER
+  /// Manage members and all company listings — no billing, can't delete the company.
+  ADMIN
+  /// Manage only their own listings under the company; view-only on teammates'.
+  AGENT
+}
+
+model Company {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  nameEn       String
+  nameAr       String?
+  description  String?
+  logoUrl      String?
+  logoPublicId String?
+  phone        String?
+  email        String?
+  website      String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  members    CompanyMember[]
+  properties Property[]
+
+  @@map("companies")
+}
+
+/// A user's membership + role within a Company.
+model CompanyMember {
+  id        String            @id @default(cuid())
+  companyId String
+  userId    String
+  role      CompanyMemberRole @default(AGENT)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, userId])
+  @@index([userId])
+  @@map("company_members")
+}

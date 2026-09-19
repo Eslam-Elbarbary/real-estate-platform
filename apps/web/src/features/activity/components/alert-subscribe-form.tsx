@@ -11,7 +11,8 @@ import {
 } from '@/config/search';
 import { formatCurrency } from '@/lib/formatting/currency';
 import { formatArea } from '@/lib/formatting/area';
-import type { Location, PropertyType, TransactionType } from '@/types';
+import type { PropertyType, TransactionType } from '@/types';
+import type { LocationOption } from '@/features/locations/service';
 import { createAlertAction } from '../actions';
 import { ALERT_AREA_OPTIONS, activityCopy } from '../copy';
 
@@ -24,7 +25,7 @@ export interface AlertPropertyTypeOption {
 }
 
 interface AlertSubscribeFormProps {
-  locations: Location[];
+  locations: LocationOption[];
   propertyTypeOptions: AlertPropertyTypeOption[];
 }
 

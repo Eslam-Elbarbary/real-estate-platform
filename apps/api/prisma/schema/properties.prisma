@@ -43,6 +43,8 @@ model Property {
   districtId        String?
   compoundId        String?
   legalStatusId     String?
+  /// Set when this listing was posted on behalf of an agency (Company); ownerId is still the agent.
+  companyId         String?
 
   title           String?
   slug            String         @unique
@@ -90,6 +92,7 @@ model Property {
   district        District?            @relation(fields: [districtId], references: [id], onDelete: SetNull)
   compound        Compound?            @relation(fields: [compoundId], references: [id], onDelete: SetNull)
   legalStatus     PropertyLegalStatus? @relation(fields: [legalStatusId], references: [id], onDelete: SetNull)
+  company         Company?             @relation(fields: [companyId], references: [id], onDelete: SetNull)
 
   images          PropertyImage[]
   features        PropertyFeature[]
@@ -109,6 +112,7 @@ model Property {
   @@index([districtId])
   @@index([compoundId])
   @@index([legalStatusId])
+  @@index([companyId])
   @@index([reviewedById])
   @@index([price])
   @@index([paymentType])

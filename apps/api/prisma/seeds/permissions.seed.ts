@@ -137,6 +137,18 @@ export const PERMISSIONS: PermissionSeed[] = [
     name: 'Delete Compounds',
     description: 'Remove compound profiles',
   },
+  // Companies (agencies) — self-service creation/management is member-role based,
+  // not RBAC; these two permissions cover admin/staff moderation only.
+  {
+    code: 'companies.view',
+    name: 'View Companies',
+    description: 'View agency/company accounts for moderation',
+  },
+  {
+    code: 'companies.update',
+    name: 'Update Companies',
+    description: 'Activate or deactivate agency/company accounts',
+  },
   // Leads
   {
     code: 'leads.view',

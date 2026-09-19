@@ -22,6 +22,8 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { CatalogsModule } from './modules/catalogs/catalogs.module';
 import { CompoundsModule } from './modules/compounds/compounds.module';
 import { DevelopersModule } from './modules/developers/developers.module';
+import { CompaniesModule } from './modules/companies/companies.module';
+import { DeveloperAccountsModule } from './modules/developer-accounts/developer-accounts.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { FavoritesModule } from './modules/favorites/favorites.module';
 import { NotesModule } from './modules/notes/notes.module';
@@ -55,6 +57,8 @@ import { HealthModule } from './modules/health/health.module';
     PaymentsModule,
     CompoundsModule,
     DevelopersModule,
+    CompaniesModule,
+    DeveloperAccountsModule,
     LeadsModule,
     FavoritesModule,
     NotesModule,

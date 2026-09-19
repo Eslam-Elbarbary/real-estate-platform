@@ -16,6 +16,29 @@ model Developer {
   updatedAt    DateTime @updatedAt
 
   compounds Compound[]
+  members   DeveloperMember[]
 
   @@map("developers")
+}
+
+enum DeveloperMemberRole {
+  OWNER
+  MANAGER
+  STAFF
+}
+
+model DeveloperMember {
+  id          String              @id @default(cuid())
+  developerId String
+  userId      String
+  role        DeveloperMemberRole @default(STAFF)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  developer Developer @relation(fields: [developerId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([developerId, userId])
+  @@index([userId])
+  @@map("developer_members")
 }
