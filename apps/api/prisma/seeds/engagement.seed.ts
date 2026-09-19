@@ -18,6 +18,7 @@ const PROPERTY_SLUGS = {
   twinHouse: 'seed-new-cairo-twin-house',
   clinic: 'seed-new-cairo-clinic-yearly-rent',
   office: 'seed-office-rejected',
+  landPlot: 'seed-land-plot-new-cairo',
 } as const;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -31,7 +32,11 @@ async function seedFavorites(
   const favorites: Array<{ userId: string; propertyId: string }> = [
     { userId: userIds.buyerOne, propertyId: propertyIds.apartment },
     { userId: userIds.buyerOne, propertyId: propertyIds.villa },
+    { userId: userIds.buyerOne, propertyId: propertyIds.chalet },
+    { userId: userIds.buyerOne, propertyId: propertyIds.landPlot },
     { userId: userIds.buyerTwo, propertyId: propertyIds.chalet },
+    { userId: userIds.buyerTwo, propertyId: propertyIds.rentApartment },
+    { userId: userIds.buyerTwo, propertyId: propertyIds.twinHouse },
   ];
 
   for (const favorite of favorites) {
@@ -302,7 +307,7 @@ export async function seedEngagement(
 
   if (process.env.NODE_ENV !== 'production') {
     console.log(
-      `  engagement: 3 favorites, ${LEADS.length} leads, notes, ${NOTIFICATIONS.length} notifications, 2 saved search alerts`,
+      `  engagement: 7 favorites, ${LEADS.length} leads, notes, ${NOTIFICATIONS.length} notifications, 2 saved search alerts`,
     );
   }
 }

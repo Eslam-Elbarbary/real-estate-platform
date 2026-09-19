@@ -94,6 +94,8 @@ type SeedProperty = {
   address?: string;
   latitude?: number;
   longitude?: number;
+  /** Public listing view counter — only ever non-zero for statuses that were actually publicly visible. */
+  viewCount?: number;
 
   featureCodes?: string[];
   viewCodes?: string[];
@@ -148,6 +150,7 @@ const SEED_PROPERTIES: SeedProperty[] = [
     address: 'Mountain View iCity, Fifth Settlement, New Cairo',
     latitude: 30.0296,
     longitude: 31.4913,
+    viewCount: 842,
     featureCodes: ['PARKING', 'ELEVATOR', 'AC', 'SECURITY'],
     viewCodes: ['GARDEN', 'POOL'],
     contact: {
@@ -202,6 +205,7 @@ const SEED_PROPERTIES: SeedProperty[] = [
     address: 'Madinaty, New Cairo',
     latitude: 30.0665,
     longitude: 31.6404,
+    viewCount: 613,
     featureCodes: ['PARKING', 'GARDEN', 'POOL', 'SECURITY', 'GYM'],
     viewCodes: ['NILE', 'GARDEN'],
     contact: {
@@ -248,6 +252,9 @@ const SEED_PROPERTIES: SeedProperty[] = [
     floor: 5,
     yearBuilt: 2021,
     address: 'Fifth Settlement, New Cairo',
+    latitude: 30.025,
+    longitude: 31.485,
+    viewCount: 356,
     featureCodes: ['AC', 'BALCONY'],
     viewCodes: ['CITY_VIEW'],
     contact: {
@@ -287,6 +294,8 @@ const SEED_PROPERTIES: SeedProperty[] = [
     areaSqm: 220,
     yearBuilt: 2022,
     address: 'Fifth Settlement, New Cairo',
+    latitude: 30.018,
+    longitude: 31.47,
     featureCodes: ['PARKING', 'GARDEN'],
     contact: {
       source: PropertyContactSource.OWNER,
@@ -326,6 +335,8 @@ const SEED_PROPERTIES: SeedProperty[] = [
     areaSqm: 90,
     floor: 0,
     address: 'New Cairo',
+    latitude: 30.01,
+    longitude: 31.46,
     submittedAt: daysAgo(20),
     reviewedAt: daysAgo(18),
     reviewedByAdmin: true,
@@ -346,6 +357,9 @@ const SEED_PROPERTIES: SeedProperty[] = [
     finishingType: FinishingType.FINISHED,
     areaSqm: 45,
     address: 'New Cairo',
+    latitude: 30.035,
+    longitude: 31.495,
+    viewCount: 128,
     submittedAt: daysAgo(120),
     reviewedAt: daysAgo(119),
     reviewedByAdmin: true,
@@ -365,6 +379,9 @@ const SEED_PROPERTIES: SeedProperty[] = [
     price: 5_000_000,
     areaSqm: 500,
     address: 'New Cairo',
+    latitude: 30.042,
+    longitude: 31.5,
+    viewCount: 274,
     viewCodes: ['OPEN_VIEW'],
     contact: {
       source: PropertyContactSource.CUSTOM,
@@ -395,6 +412,8 @@ const SEED_PROPERTIES: SeedProperty[] = [
     areaSqm: 240,
     yearBuilt: 2022,
     address: 'New Cairo',
+    latitude: 30.008,
+    longitude: 31.455,
   },
   {
     slug: 'seed-penthouse-expired',
@@ -413,6 +432,9 @@ const SEED_PROPERTIES: SeedProperty[] = [
     areaSqm: 200,
     floor: 12,
     address: 'New Cairo',
+    latitude: 30.03,
+    longitude: 31.488,
+    viewCount: 391,
     featureCodes: ['POOL', 'AC'],
     viewCodes: ['CITY_VIEW'],
     submittedAt: daysAgo(90),
@@ -442,6 +464,9 @@ const SEED_PROPERTIES: SeedProperty[] = [
     areaSqm: 230,
     yearBuilt: 2023,
     address: 'Fifth Settlement, New Cairo',
+    latitude: 30.021,
+    longitude: 31.478,
+    viewCount: 205,
     featureCodes: ['PARKING', 'STORAGE'],
     viewCodes: ['MAIN_STREET'],
     contact: {
@@ -480,6 +505,9 @@ const SEED_PROPERTIES: SeedProperty[] = [
     areaSqm: 60,
     floor: 0,
     address: 'Fifth Settlement, New Cairo',
+    latitude: 30.015,
+    longitude: 31.465,
+    viewCount: 97,
     contact: {
       source: PropertyContactSource.CUSTOM,
       contactType: PropertyContactType.AGENT,
@@ -519,6 +547,9 @@ const SEED_PROPERTIES: SeedProperty[] = [
     floor: 1,
     yearBuilt: 2022,
     address: 'North Coast, Alexandria',
+    latitude: 30.8218,
+    longitude: 28.9553,
+    viewCount: 460,
     featureCodes: ['POOL', 'AC', 'PARKING'],
     viewCodes: ['SEA'],
     contact: {
@@ -719,6 +750,7 @@ async function seedOneProperty(
     address: seed.address ?? null,
     latitude: seed.latitude ?? null,
     longitude: seed.longitude ?? null,
+    viewCount: seed.viewCount ?? 0,
     submittedAt: seed.submittedAt ?? null,
     reviewedAt: seed.reviewedAt ?? null,
     reviewedById,
