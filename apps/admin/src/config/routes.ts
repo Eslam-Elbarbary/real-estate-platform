@@ -25,6 +25,7 @@ export const routes = {
     views: '/catalogs/views',
     legalStatuses: '/catalogs/legal-statuses',
     finishingTypes: '/catalogs/finishing-types',
+    locations: '/catalogs/locations',
   },
   features: {
     root: '/features',

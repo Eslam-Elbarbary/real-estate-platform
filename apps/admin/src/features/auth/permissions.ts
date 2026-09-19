@@ -61,6 +61,11 @@ export type AdminPermission =
   | 'property_legal_statuses.create'
   | 'property_legal_statuses.update'
   | 'property_legal_statuses.delete'
+  // Locations
+  | 'locations.view'
+  | 'locations.create'
+  | 'locations.update'
+  | 'locations.delete'
   // Settings
   | 'settings.view'
   | 'settings.update'

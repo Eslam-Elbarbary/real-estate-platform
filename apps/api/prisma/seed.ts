@@ -3,6 +3,11 @@ import { Pool } from 'pg';
 import { PlanStatus, PrismaClient } from './generated/prisma-client';
 import * as bcrypt from 'bcrypt';
 import { seedPermissionsAndRoleMappings } from './seeds/permissions.seed';
+import { demoImage, seedProperties } from './seeds/properties.seed';
+import { seedDemoUsers } from './seeds/demo-users.seed';
+import { seedBanners } from './seeds/banners.seed';
+import { seedEngagement } from './seeds/engagement.seed';
+import { seedBilling } from './seeds/billing.seed';
 import { PLATFORM_SETTINGS_DEFAULTS } from '../src/modules/settings/platform-settings.defaults';
 
 function createSeedClient(): { prisma: PrismaClient; pool: Pool } {
@@ -357,7 +362,7 @@ const SEED_DEVELOPERS = [
     nameEn: 'Prime Urban Developments',
     nameAr: 'Prime Urban',
     description: 'Seed developer for local development.',
-    logoUrl: 'https://cdn.example.com/developers/prime-urban.svg',
+    logoUrl: demoImage('sample'),
     website: 'https://prime-urban.example.com',
     isActive: true,
   },
@@ -366,7 +371,7 @@ const SEED_DEVELOPERS = [
     nameEn: 'Nile Horizon',
     nameAr: 'Nile Horizon',
     description: 'Secondary seed developer.',
-    logoUrl: 'https://cdn.example.com/developers/nile-horizon.svg',
+    logoUrl: demoImage('samples/people/bicycle'),
     website: 'https://nile-horizon.example.com',
     isActive: true,
   },
@@ -386,7 +391,7 @@ const SEED_COMPOUNDS = [
     nameAr: 'Mountain View iCity',
     description: 'Flagship compound in New Cairo.',
     developerSlug: 'prime-urban',
-    coverUrl: 'https://cdn.example.com/compounds/mountain-view-icity.jpg',
+    coverUrl: demoImage('samples/landscapes/nature-mountains'),
     isActive: true,
   },
   {
@@ -395,7 +400,7 @@ const SEED_COMPOUNDS = [
     nameAr: 'مدينتي',
     description: 'Large integrated community compound.',
     developerSlug: 'nile-horizon',
-    coverUrl: 'https://cdn.example.com/compounds/madinaty.jpg',
+    coverUrl: demoImage('samples/landscapes/beach-boat'),
     isActive: true,
   },
   {
@@ -546,8 +551,13 @@ async function main() {
   await seedPlans();
   await seedDevelopersAndCompounds();
   await seedPlatformSettings();
+  await seedProperties(prisma);
+  const demoUserIds = await seedDemoUsers(prisma);
+  await seedBanners(prisma);
+  await seedEngagement(prisma, demoUserIds);
+  await seedBilling(prisma);
   console.log(
-    'Seed complete (roles, permissions, super admin, transaction types, property types, features, property views, legal statuses, plans, developers, compounds, platform settings).',
+    'Seed complete (roles, permissions, super admin, transaction types, property types, features, property views, legal statuses, plans, developers, compounds, platform settings, properties, demo users, banners, engagement, billing).',
   );
 }
 

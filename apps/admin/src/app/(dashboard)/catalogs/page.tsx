@@ -46,6 +46,11 @@ const SECTIONS = [
     title: 'أنواع التشطيب',
     description: 'قيم النظام (للقراءة فقط حالياً)',
   },
+  {
+    href: routes.catalogs.locations,
+    title: 'المواقع',
+    description: 'الدول والمدن والمناطق والأحياء',
+  },
 ] as const;
 
 export default async function CatalogsHubPage() {

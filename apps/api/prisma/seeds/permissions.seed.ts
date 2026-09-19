@@ -260,6 +260,27 @@ export const PERMISSIONS: PermissionSeed[] = [
     name: 'Delete Legal Statuses',
     description: 'Delete unused legal statuses or deactivate linked ones',
   },
+  // Locations (dedicated; catalogs.* still work as aliases)
+  {
+    code: 'locations.view',
+    name: 'View Locations',
+    description: 'View countries, cities, areas, and districts',
+  },
+  {
+    code: 'locations.create',
+    name: 'Create Locations',
+    description: 'Create countries, cities, areas, and districts',
+  },
+  {
+    code: 'locations.update',
+    name: 'Update Locations',
+    description: 'Edit and activate/deactivate countries, cities, areas, and districts',
+  },
+  {
+    code: 'locations.delete',
+    name: 'Delete Locations',
+    description: 'Delete unused districts or deactivate linked ones',
+  },
   // Settings
   {
     code: 'settings.view',
